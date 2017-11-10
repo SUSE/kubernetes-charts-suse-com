@@ -1,0 +1,7 @@
+FROM opensuse:leap
+
+RUN zypper --non-interactive ar 'https://download.opensuse.org/repositories/devel:/CaaSP:/2.0:/ControllerNode/openSUSE_Leap_42.3/devel:CaaSP:2.0:ControllerNode.repo' \
+  && zypper --gpg-auto-import-keys ref \
+  && zypper --non-interactive up \
+  && zypper --non-interactive in aws-cli helm
+
