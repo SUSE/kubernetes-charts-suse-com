@@ -9,6 +9,7 @@ jobs:
 - name: sync
   plan:
   - get: ci
+    trigger: true
   - task: sync
     config:
       platform: linux
