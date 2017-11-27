@@ -1,0 +1,145 @@
+---
+# The nfs-broker role contains the following jobs:
+#
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure HCF
+#
+# Also: metron_agent, nfsbroker
+
+{{- if gt (int .Values.sizing.nfs_broker.count) 3 }}
+_maxReplicas: {{ fail "nfs_broker cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if lt (int .Values.sizing.nfs_broker.count) 1 }}
+_minReplicas: {{ fail "nfs_broker must have at least 1 instances" }}
+{{- end }}
+
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "nfs-broker"
+  labels:
+    skiff-role-name: "nfs-broker"
+spec:
+  replicas: {{ .Values.sizing.nfs_broker.count }}
+  selector:
+    matchLabels:
+      skiff-role-name: "nfs-broker"
+  template:
+    metadata:
+      annotations:
+        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6))) }}
+        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"nfs-broker\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
+        {{- end }}
+      labels:
+        skiff-role-name: "nfs-broker"
+      name: "nfs-broker"
+    spec:
+      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6)) }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "skiff-role-name"
+                  operator: "In"
+                  values:
+                  - "nfs-broker"
+              topologyKey: "beta.kubernetes.io/os"
+            weight: 100
+      {{- end }}
+      containers:
+      - env:
+        - name: "CATS_SUITES"
+          value: {{ .Values.env.CATS_SUITES | quote }}
+        - name: "HCF_LOG_HOST"
+          value: {{ .Values.env.HCF_LOG_HOST | quote }}
+        - name: "HCF_LOG_PORT"
+          value: {{ .Values.env.HCF_LOG_PORT | quote }}
+        - name: "HCF_LOG_PROTOCOL"
+          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
+        - name: "HCP_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "hcp-ca-cert"
+              name: "secret"
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secret"
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
+          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secret"
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secret"
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secret"
+        - name: "PERSI_NFS_ALLOWED_OPTIONS"
+          value: {{ .Values.env.PERSI_NFS_ALLOWED_OPTIONS | quote }}
+        - name: "PERSI_NFS_BROKER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "persi-nfs-broker-password"
+              name: "secret"
+        - name: "PERSI_NFS_DEFAULT_OPTIONS"
+          value: {{ .Values.env.PERSI_NFS_DEFAULT_OPTIONS | quote }}
+        - name: "PERSI_NFS_MYSQL_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "persi-nfs-mysql-password"
+              name: "secret"
+        - name: "UAA_HOST"
+          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
+        - name: "UAA_PORT"
+          value: {{ .Values.env.UAA_PORT | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:49fdc5e7ec0dc146273f71a83ef1c1747e3bb9a5"
+        livenessProbe: ~
+        name: "nfs-broker"
+        ports:
+        - containerPort: 8999
+          name: "nfsbroker"
+          protocol: "TCP"
+        readinessProbe:
+          tcpSocket:
+            port: 8999
+        resources: ~
+        securityContext:
+          privileged: true
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "nfs-broker"
+  spec:
+    ports:
+    - name: "nfsbroker"
+      port: 8999
+      protocol: "TCP"
+      targetPort: "nfsbroker"
+    selector:
+      skiff-role-name: "nfs-broker"
+    type: "ClusterIP"
+kind: "List"
