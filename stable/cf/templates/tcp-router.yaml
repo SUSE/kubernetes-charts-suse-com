@@ -4,6 +4,10 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# - wait-for-uaa: Wait for UAA to be ready before starting any jobs
+#
 # Also: tcp_router, consul_agent, metron_agent
 
 {{- if gt (int .Values.sizing.tcp_router.count) 3 }}
@@ -100,6 +104,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -134,11 +143,8 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:27bea42f3bf4f366f9f28a88871ce6e9a3ea3003"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:ddef9775070046435896c82284dea9386a58508a"
+        livenessProbe: ~
         name: "tcp-router"
         ports:
         - containerPort: 80
@@ -239,7 +245,7 @@ items:
       targetPort: "tcp-routing-8"
     selector:
       skiff-role-name: "tcp-router"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -290,5 +296,5 @@ items:
       targetPort: "tcp-routing-8"
     selector:
       skiff-role-name: "tcp-router"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

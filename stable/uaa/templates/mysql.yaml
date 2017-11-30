@@ -67,11 +67,8 @@ spec:
             secretKeyRef:
               key: "uaadb-password"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:5b3fc7fd77267846d088350c8f959e3c3729bef5"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:305ec638641b604628bcd2cefdcf647588cfce38"
+        livenessProbe: ~
         name: "mysql"
         ports:
         - containerPort: 3306
@@ -131,7 +128,9 @@ items:
   metadata:
     name: "mysql-set"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
+    {{- end }}
     ports:
     - name: "mysql"
       port: 3306
@@ -159,7 +158,7 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "mysql"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -192,5 +191,5 @@ items:
       targetPort: "xtrabackup"
     selector:
       skiff-role-name: "mysql"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

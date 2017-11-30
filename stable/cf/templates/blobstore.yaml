@@ -92,15 +92,15 @@ spec:
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
+              name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
               name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
@@ -134,15 +134,8 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secret"
-        - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
-        - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:2f18d43921d405b10bd32c2285935534fe273f8b"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:ac3faa0fea22d76feda42f95bc713c8d3d6dee46"
+        livenessProbe: ~
         name: "blobstore"
         ports:
         - containerPort: 8080
@@ -183,7 +176,9 @@ items:
   metadata:
     name: "blobstore-set"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
+    {{- end }}
     ports:
     - name: "blobstore-ext"
       port: 8080
@@ -195,7 +190,7 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "blobstore"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -212,5 +207,5 @@ items:
       targetPort: "blobstore"
     selector:
       skiff-role-name: "blobstore"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"
