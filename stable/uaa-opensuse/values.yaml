@@ -1,0 +1,114 @@
+---
+env:
+  # Base domain name of the UAA endpoint; `uaa.${DOMAIN}` must be correctly
+  # configured to point to this UAA instance
+  DOMAIN: ~
+
+  HCP_SERVICE_DOMAIN_SUFFIX: ~
+
+  # PEM-encoded CA certificate used to sign the TLS certificate used by all
+  # components to secure their communications.
+  INTERNAL_CA_CERT: ~
+
+  # PEM-encoded CA key.
+  INTERNAL_CA_KEY: ~
+
+  JWT_SIGNING_PEM: "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----\n"
+  KUBE_SERVICE_DOMAIN_SUFFIX: ~
+
+  # Password used for the monit API.
+  MONIT_PASSWORD: ~
+
+  # The password for the MySQL server admin user.
+  MYSQL_ADMIN_PASSWORD: ~
+
+  # The password for the cluster logger health user.
+  MYSQL_CLUSTER_HEALTH_PASSWORD: ~
+
+  # The password used to contact the sidecar endpoints via Basic Auth.
+  MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD: ~
+
+  # An indicator to increment when changing the number of MySQL hosts in the
+  # cluster, to properly trigger component restarts.
+  MYSQL_HCF_CLUSTER_CONFIG_REVISION: "0"
+
+  # PEM-encoded certificate
+  SAML_SERVICEPROVIDER_CERT: ~
+
+  # PEM-encoded key.
+  SAML_SERVICEPROVIDER_KEY: ~
+
+  # The password for access to the UAA database.
+  UAADB_PASSWORD: ~
+
+  # The password of the admin client - a client named admin with uaa.admin as an
+  # authority.
+  UAA_ADMIN_CLIENT_SECRET: ~
+
+  # The server's ssl certificate. The default is a self-signed certificate and
+  # should always be replaced for production deployments.
+  UAA_SERVER_CERT: ~
+
+  # The server's ssl private key. Only passphrase-less keys are supported.
+  UAA_SERVER_KEY: ~
+
+sizing:
+  HA: false
+
+  # The mysql role contains the following jobs:
+  #
+  # - global-properties: Dummy BOSH job used to host global parameters that are
+  #   required to configure SCF / fissile
+  #
+  # - patch-properties: Dummy BOSH job used to host parameters that are used in
+  #   HCF patches for upstream bugs
+  #
+  # Also: mysql
+  mysql:
+    # The mysql role cannot be scaled.
+    count: 1
+    disk_sizes:
+      mysql_data: 20
+    memory: 3072
+    vcpu_count: 2
+
+  # The secret-generation role contains the following jobs:
+  #
+  # - generate-secrets: This job will generate the secrets for the cluster
+  secret_generation:
+    # The secret-generation role cannot be scaled.
+    count: 1
+    memory: 256
+    vcpu_count: 1
+
+  # The uaa role contains the following jobs:
+  #
+  # - global-properties: Dummy BOSH job used to host global parameters that are
+  #   required to configure SCF / fissile
+  #
+  # - uaa: The UAA is the identity management service for Cloud Foundry. It's
+  #   primary role is as an OAuth2 provider, issuing tokens for client
+  #   applications to use when they act on behalf of Cloud Foundry users. It can
+  #   also authenticate users with their Cloud Foundry credentials, and can act
+  #   as an SSO service using those credentials (or others). It has endpoints
+  #   for managing user accounts and for registering OAuth2 clients, as well as
+  #   various other management functions.
+  uaa:
+    # The uaa role can scale between 1 and 65535 instances.
+    count: 1
+    memory: 2048
+    vcpu_count: 2
+
+services:
+  loadbalanced: false
+kube:
+  external_ip: "192.168.77.77"
+  storage_class:
+    persistent: "persistent"
+    shared: "shared"
+  registry:
+    hostname: "docker.io"
+    username: ""
+    password: ""
+  organization: "splatform"
+  auth: ~
