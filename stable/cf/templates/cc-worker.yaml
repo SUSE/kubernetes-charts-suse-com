@@ -4,6 +4,8 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
 # - cloud_controller_worker: Cloud Controller worker processes background tasks
 #   submitted via the.
 #
@@ -60,17 +62,10 @@ spec:
       - env:
         - name: "ALLOW_APP_SSH_ACCESS"
           value: {{ required "ALLOW_APP_SSH_ACCESS configuration missing" .Values.env.ALLOW_APP_SSH_ACCESS | quote }}
-        - name: "APP_TOKEN_UPLOAD_GRACE_PERIOD"
-          value: {{ required "APP_TOKEN_UPLOAD_GRACE_PERIOD configuration missing" .Values.env.APP_TOKEN_UPLOAD_GRACE_PERIOD | quote }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
-              name: "secret"
-        - name: "BULK_API_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bulk-api-password"
               name: "secret"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
@@ -91,14 +86,6 @@ spec:
               name: "secret"
         - name: "CDN_URI"
           value: {{ .Values.env.CDN_URI | quote }}
-        - name: "CLUSTER_BUILD"
-          value: {{ required "CLUSTER_BUILD configuration missing" .Values.env.CLUSTER_BUILD | quote }}
-        - name: "CLUSTER_DESCRIPTION"
-          value: {{ required "CLUSTER_DESCRIPTION configuration missing" .Values.env.CLUSTER_DESCRIPTION | quote }}
-        - name: "CLUSTER_NAME"
-          value: {{ required "CLUSTER_NAME configuration missing" .Values.env.CLUSTER_NAME | quote }}
-        - name: "CLUSTER_VERSION"
-          value: {{ required "CLUSTER_VERSION configuration missing" .Values.env.CLUSTER_VERSION | quote }}
         - name: "CONSUL_AGENT_CERT"
           valueFrom:
             secretKeyRef:
@@ -137,8 +124,6 @@ spec:
           value: {{ required "DEFAULT_APP_SSH_ACCESS configuration missing" .Values.env.DEFAULT_APP_SSH_ACCESS | quote }}
         - name: "DEFAULT_STACK"
           value: {{ .Values.env.DEFAULT_STACK | quote }}
-        - name: "DISABLE_CUSTOM_BUILDPACKS"
-          value: {{ required "DISABLE_CUSTOM_BUILDPACKS configuration missing" .Values.env.DISABLE_CUSTOM_BUILDPACKS | quote }}
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
         - name: "HCF_LOG_HOST"
@@ -162,6 +147,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -174,8 +164,6 @@ spec:
           value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
         - name: "MAX_APP_DISK_IN_MB"
           value: {{ required "MAX_APP_DISK_IN_MB configuration missing" .Values.env.MAX_APP_DISK_IN_MB | quote }}
-        - name: "MAX_HEALTH_CHECK_TIMEOUT"
-          value: {{ required "MAX_HEALTH_CHECK_TIMEOUT configuration missing" .Values.env.MAX_HEALTH_CHECK_TIMEOUT | quote }}
         - name: "METRON_CERT"
           valueFrom:
             secretKeyRef:
@@ -198,8 +186,6 @@ spec:
             secretKeyRef:
               key: "staging-upload-password"
               name: "secret"
-        - name: "SUPPORT_ADDRESS"
-          value: {{ required "SUPPORT_ADDRESS configuration missing" .Values.env.SUPPORT_ADDRESS | quote }}
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
@@ -213,11 +199,8 @@ spec:
           value: {{ required "USE_DIEGO_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote }}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{ required "USE_STAGER_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:23119a3afc5b175a4fc649a3ff3da1f20bfc04bc"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:573e86cf92dde95c5881ad7a549647cffc65078e"
+        livenessProbe: ~
         name: "cc-worker"
         ports: ~
         readinessProbe: ~
