@@ -1,9 +1,6 @@
 # Tag for images
-consoleVersion: cap-0.9.7-g218fb95
-# Docker Org
-dockerOrg: cap-beta
-# Docker Registry where images are available
-dockerRegistry: registry.suse.com
+consoleVersion: cap-0.9.8-g4f95ed2
+dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
 dbProvider: mysql
@@ -17,12 +14,9 @@ useLb: false
 console:
   port: 443
 # externalIP: 127.0.0.1
-noShared: true
 images:
   console: stratos-console
   proxy: stratos-proxy
-  postgres: stratos-postgres
-  preflight: stratos-preflight-job
   postflight: stratos-postflight-job
   mariadb: stratos-mariadb
 
@@ -74,4 +68,9 @@ kube:
   external_console_https_port: 8443
   storage_class:
     persistent:
-dockerRegistrySecret:
+  organization: cap-beta
+  registry:
+    hostname: registry.suse.com
+    username:
+    password:
+    email: default
