@@ -4,6 +4,8 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
 # Also: tps, cc_uploader, consul_agent, metron_agent
 
 {{- if gt (int .Values.sizing.cc_uploader.count) 3 }}
@@ -128,6 +130,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -163,15 +170,8 @@ spec:
             secretKeyRef:
               key: "tps-cc-client-key"
               name: "secret"
-        - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
-        - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:0dbc049967584fabac0b1edc677e73afbbd1d18c"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:354e8af9ffb8917d83d6aba632791c41daad0864"
+        livenessProbe: ~
         name: "cc-uploader"
         ports:
         - containerPort: 9091
@@ -209,5 +209,5 @@ items:
       targetPort: "cc-up-dbg"
     selector:
       skiff-role-name: "cc-uploader"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

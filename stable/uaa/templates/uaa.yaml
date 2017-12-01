@@ -43,6 +43,16 @@ spec:
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
         - name: "HCP_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.HCP_SERVICE_DOMAIN_SUFFIX | quote }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "JWT_SIGNING_PEM"
           value: {{ .Values.env.JWT_SIGNING_PEM | quote }}
         - name: "KUBERNETES_NAMESPACE"
@@ -86,15 +96,8 @@ spec:
             secretKeyRef:
               key: "uaa-server-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:f46dd76cfd7a33f231c9da5bdfbe6c03f3e09e95"
-        livenessProbe:
-          failureThreshold: 0
-          initialDelaySeconds: 1800
-          periodSeconds: 60
-          successThreshold: 0
-          tcpSocket:
-            port: 2289
-          timeoutSeconds: 0
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:3bbb6ad6aede91e2c2bc45ef6f423abcca627343"
+        livenessProbe: ~
         name: "uaa"
         ports:
         - containerPort: 8080
@@ -144,7 +147,7 @@ items:
       targetPort: "uaa-ssl"
     selector:
       skiff-role-name: "uaa"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -159,5 +162,5 @@ items:
       targetPort: "uaa-ssl"
     selector:
       skiff-role-name: "uaa"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"
