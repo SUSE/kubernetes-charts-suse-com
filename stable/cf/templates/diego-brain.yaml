@@ -4,6 +4,8 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
 # Also: consul_agent, rep-certstrap, auctioneer, metron_agent
 
 {{- if gt (int .Values.sizing.diego_brain.count) 3 }}
@@ -128,6 +130,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -158,15 +165,8 @@ spec:
             secretKeyRef:
               key: "rep-server-key"
               name: "secret"
-        - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
-        - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:6df22075ea57e15eef1d8a88badc095505601090"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:2147131a3cc7d9574f22a147443fa7fb19e49124"
+        livenessProbe: ~
         name: "diego-brain"
         ports:
         - containerPort: 9016
@@ -197,5 +197,5 @@ items:
       targetPort: "diego-auction"
     selector:
       skiff-role-name: "diego-brain"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

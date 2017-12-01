@@ -4,7 +4,9 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
-# Also: consul_agent, metron_agent, routing-api, tcp_emitter
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# Also: consul_agent, metron_agent, routing-api
 
 {{- if gt (int .Values.sizing.routing_api.count) 3 }}
 _maxReplicas: {{ fail "routing_api cannot have more than 3 instances" }}
@@ -53,16 +55,6 @@ spec:
       {{- end }}
       containers:
       - env:
-        - name: "BBS_CLIENT_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-crt"
-              name: "secret"
-        - name: "BBS_CLIENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-key"
-              name: "secret"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "CONSUL_AGENT_CERT"
@@ -120,6 +112,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -154,20 +151,12 @@ spec:
               name: "secret"
         - name: "RESERVABLE_PORTS"
           value: {{ required "RESERVABLE_PORTS configuration missing" .Values.env.RESERVABLE_PORTS | quote }}
-        - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-tcp-emitter-secret"
-              name: "secret"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:1ae1644470b4943104a13afb23110a32ca1eb845"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:0a74335fcee85f0e5d3ae68192dfb352bc486aea"
+        livenessProbe: ~
         name: "routing-api"
         ports:
         - containerPort: 3000
@@ -183,6 +172,10 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
 ---
 apiVersion: "v1"
 items:
@@ -191,7 +184,9 @@ items:
   metadata:
     name: "routing-api-set"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
+    {{- end }}
     ports:
     - name: "routing-api"
       port: 3000
@@ -199,7 +194,7 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "routing-api"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -212,5 +207,5 @@ items:
       targetPort: "routing-api"
     selector:
       skiff-role-name: "routing-api"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

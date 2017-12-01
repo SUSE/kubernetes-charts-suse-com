@@ -4,6 +4,8 @@
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
 # Also: consul_agent, metron_agent
 
 {{- if gt (int .Values.sizing.consul.count) 3 }}
@@ -100,6 +102,11 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secret"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -125,15 +132,8 @@ spec:
             secretKeyRef:
               key: "monit-password"
               name: "secret"
-        - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
-        - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-consul:f23ff3ac4bfc5731e6ba4d573bffada288b3605e"
-        livenessProbe:
-          initialDelaySeconds: 600
-          tcpSocket:
-            port: 2289
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-consul:3e9d2c31017acdc9f0496bc402f05f235c4e66b2"
+        livenessProbe: ~
         name: "consul"
         ports:
         - containerPort: 8300
@@ -170,6 +170,10 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: "consul-data"
@@ -189,7 +193,9 @@ items:
   metadata:
     name: "consul-set"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
+    {{- end }}
     ports:
     - name: "server-rpc"
       port: 8300
@@ -221,7 +227,7 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "consul"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -258,5 +264,5 @@ items:
       targetPort: "http-api"
     selector:
       skiff-role-name: "consul"
-    type: "ClusterIP"
+    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"
