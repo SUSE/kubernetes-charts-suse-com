@@ -8,7 +8,7 @@
 #
 # - route_registrar: Used for registering routes
 #
-# Also: cf-usb, consul_agent
+# Also: cf-usb
 
 {{- if gt (int .Values.sizing.cf_usb.count) 3 }}
 _maxReplicas: {{ fail "cf_usb cannot have more than 3 instances" }}
@@ -76,31 +76,6 @@ spec:
             secretKeyRef:
               key: "cf-usb-password"
               name: "secret"
-        - name: "CONSUL_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-cert"
-              name: "secret"
-        - name: "CONSUL_AGENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-key"
-              name: "secret"
-        - name: "CONSUL_ENCRYPTION_KEYS"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-encryption-keys"
-              name: "secret"
-        - name: "CONSUL_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-cert"
-              name: "secret"
-        - name: "CONSUL_SERVER_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-key"
-              name: "secret"
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
         - name: "HCF_LOG_HOST"
@@ -109,11 +84,6 @@ spec:
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -130,12 +100,8 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
-        - name: "KUBE_SIZING_CONSUL_COUNT"
-          value: {{ .Values.sizing.consul.count | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
-        - name: "LOG_LEVEL"
-          value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
@@ -151,6 +117,11 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secret"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secret"
         - name: "UAA_CLIENTS_CF_USB_SECRET"
           valueFrom:
             secretKeyRef:
@@ -160,7 +131,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:e23c82ee256f2c6d253c8c4de3b9006989c68019"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:4eef5004c10429782adbb54a84f8bfdfa64c6669"
         livenessProbe: ~
         name: "cf-usb"
         ports:

@@ -61,11 +61,6 @@ spec:
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -97,6 +92,11 @@ spec:
             secretKeyRef:
               key: "monit-password"
               name: "secret"
+        - name: "MYSQL_PERSI_NFS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-persi-nfs-password"
+              name: "secret"
         - name: "PERSI_NFS_ALLOWED_OPTIONS"
           value: {{ .Values.env.PERSI_NFS_ALLOWED_OPTIONS | quote }}
         - name: "PERSI_NFS_BROKER_PASSWORD"
@@ -106,12 +106,12 @@ spec:
               name: "secret"
         - name: "PERSI_NFS_DEFAULT_OPTIONS"
           value: {{ .Values.env.PERSI_NFS_DEFAULT_OPTIONS | quote }}
-        - name: "PERSI_NFS_MYSQL_PASSWORD"
+        - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
-              key: "persi-nfs-mysql-password"
+              key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:5abb4f5ed1c7ca00ce7b63debf0cea612e76a5f2"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:195811ef960a55e3e652ca0fec47987f50e420c7"
         livenessProbe: ~
         name: "nfs-broker"
         ports:

@@ -1,45 +1,45 @@
 ---
-# The diego-access role contains the following jobs:
+# The diego-locket role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure HCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# Also: ssh_proxy, metron_agent, file_server
+# Also: locket, metron_agent
 
-{{- if gt (int .Values.sizing.diego_access.count) 3 }}
-_maxReplicas: {{ fail "diego_access cannot have more than 3 instances" }}
+{{- if gt (int .Values.sizing.diego_locket.count) 3 }}
+_maxReplicas: {{ fail "diego_locket cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.diego_access.count) 1) (lt (int .Values.sizing.diego_access.count) 2)) }}
-_minHAReplicas: {{ fail "diego_access must have at least 2 instances for HA" }}
+{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.diego_locket.count) 1) (lt (int .Values.sizing.diego_locket.count) 3)) }}
+_minHAReplicas: {{ fail "diego_locket must have at least 3 instances for HA" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.diego_access.count) 1 }}
-_minReplicas: {{ fail "diego_access must have at least 1 instances" }}
+{{- if lt (int .Values.sizing.diego_locket.count) 1 }}
+_minReplicas: {{ fail "diego_locket must have at least 1 instances" }}
 {{- end }}
 
 apiVersion: "extensions/v1beta1"
 kind: "Deployment"
 metadata:
-  name: "diego-access"
+  name: "diego-locket"
   labels:
-    skiff-role-name: "diego-access"
+    skiff-role-name: "diego-locket"
 spec:
-  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.diego_access.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.diego_access.count }} {{- end }}
+  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.diego_locket.count) 1) -}} 3 {{- else -}} {{ .Values.sizing.diego_locket.count }} {{- end }}
   selector:
     matchLabels:
-      skiff-role-name: "diego-access"
+      skiff-role-name: "diego-locket"
   template:
     metadata:
       annotations:
         {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-access\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
+        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-locket\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
         {{- end }}
       labels:
-        skiff-role-name: "diego-access"
-      name: "diego-access"
+        skiff-role-name: "diego-locket"
+      name: "diego-locket"
     spec:
       {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6)) }}
       affinity:
@@ -51,29 +51,24 @@ spec:
                 - key: "skiff-role-name"
                   operator: "In"
                   values:
-                  - "diego-access"
+                  - "diego-locket"
               topologyKey: "beta.kubernetes.io/os"
             weight: 100
       {{- end }}
       containers:
       - env:
-        - name: "APP_SSH_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "app-ssh-key"
-              name: "secret"
-        - name: "BBS_CLIENT_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-crt"
-              name: "secret"
-        - name: "BBS_CLIENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-key"
-              name: "secret"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
+        - name: "DIEGO_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-cert"
+              name: "secret"
+        - name: "DIEGO_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-key"
+              name: "secret"
         - name: "HCF_LOG_HOST"
           value: {{ .Values.env.HCF_LOG_HOST | quote }}
         - name: "HCF_LOG_PORT"
@@ -113,40 +108,26 @@ spec:
             secretKeyRef:
               key: "monit-password"
               name: "secret"
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secret"
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        - name: "UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-diego-ssh-proxy-secret"
-              name: "secret"
-        - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
-        - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-access:9a98dd532a8e0782227f4047bafacab42b70c49a"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-locket:9d342b7e0eadfb75f8477763d16b440828e22bf9"
         livenessProbe: ~
-        name: "diego-access"
+        name: "diego-locket"
         ports:
-        - containerPort: 2222
-          name: "diego-ssh"
-          protocol: "TCP"
-        - containerPort: 8080
-          name: "diego-files"
+        - containerPort: 8891
+          name: "locket"
           protocol: "TCP"
         readinessProbe:
-          failureThreshold: 0
-          httpGet:
-            path: "/v1/static/"
-            port: 8080
-            scheme: "HTTP"
-          initialDelaySeconds: 0
-          periodSeconds: 0
-          successThreshold: 0
-          timeoutSeconds: 0
+          tcpSocket:
+            port: 8891
         resources: ~
         securityContext: ~
         volumeMounts: ~
@@ -160,33 +141,14 @@ items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "diego-access"
+    name: "diego-locket"
   spec:
     ports:
-    - name: "diego-ssh"
-      port: 2222
+    - name: "locket"
+      port: 8891
       protocol: "TCP"
-      targetPort: "diego-ssh"
-    - name: "diego-files"
-      port: 8080
-      protocol: "TCP"
-      targetPort: "diego-files"
+      targetPort: "locket"
     selector:
-      skiff-role-name: "diego-access"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "diego-access-public"
-  spec:
-    externalIPs:
-    - {{ .Values.kube.external_ip | quote }}
-    ports:
-    - name: "diego-ssh"
-      port: 2222
-      protocol: "TCP"
-      targetPort: "diego-ssh"
-    selector:
-      skiff-role-name: "diego-access"
+      skiff-role-name: "diego-locket"
     type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

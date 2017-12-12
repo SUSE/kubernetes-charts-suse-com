@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart for SUSE UAA
 name: uaa
-version: 2.4.1-beta3+cf278.0.g12f5d3a8
+version: 2.5.0-beta4+cf278.0.gafa3d0e9

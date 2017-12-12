@@ -12,7 +12,7 @@
 #   most closely matches the host header of the request and load balances across
 #   the associated backends.
 #
-# Also: consul_agent, metron_agent
+# Also: metron_agent
 
 {{- if gt (int .Values.sizing.router.count) 65535 }}
 _maxReplicas: {{ fail "router cannot have more than 65535 instances" }}
@@ -74,31 +74,6 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
-        - name: "CONSUL_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-cert"
-              name: "secret"
-        - name: "CONSUL_AGENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-key"
-              name: "secret"
-        - name: "CONSUL_ENCRYPTION_KEYS"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-encryption-keys"
-              name: "secret"
-        - name: "CONSUL_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-cert"
-              name: "secret"
-        - name: "CONSUL_SERVER_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-key"
-              name: "secret"
         - name: "DNS_HEALTH_CHECK_HOST"
           value: {{ required "DNS_HEALTH_CHECK_HOST configuration missing" .Values.env.DNS_HEALTH_CHECK_HOST | quote }}
         - name: "FORCE_FORWARDED_PROTO_AS_HTTPS"
@@ -109,11 +84,6 @@ spec:
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -130,8 +100,6 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
-        - name: "KUBE_SIZING_CONSUL_COUNT"
-          value: {{ .Values.sizing.consul.count | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
         - name: "LOG_LEVEL"
@@ -178,6 +146,11 @@ spec:
             secretKeyRef:
               key: "router-status-password"
               name: "secret"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secret"
         - name: "UAA_CLIENTS_GOROUTER_SECRET"
           valueFrom:
             secretKeyRef:
@@ -187,7 +160,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:89d887aece322ad62750d6e1e47cee844f28ad07"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:fe71b2a6ae8d5868aa5de8027eea84a3bc3f3736"
         livenessProbe: ~
         name: "router"
         ports:
