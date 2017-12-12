@@ -53,8 +53,16 @@ spec:
             secretKeyRef:
               key: "internal-ca-key"
               name: "secret"
-        - name: "JWT_SIGNING_PEM"
-          value: {{ .Values.env.JWT_SIGNING_PEM | quote }}
+        - name: "JWT_SIGNING_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "jwt-signing-cert"
+              name: "secret"
+        - name: "JWT_SIGNING_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "jwt-signing-key"
+              name: "secret"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -96,7 +104,7 @@ spec:
             secretKeyRef:
               key: "uaa-server-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:3bbb6ad6aede91e2c2bc45ef6f423abcca627343"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:324365668171d452530d358d272daf3449766aca"
         livenessProbe: ~
         name: "uaa"
         ports:

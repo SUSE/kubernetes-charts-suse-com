@@ -63,27 +63,12 @@ spec:
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
-        - name: "ETCD_CLIENT_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "etcd-client-crt"
-              name: "secret"
-        - name: "ETCD_CLIENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "etcd-client-key"
-              name: "secret"
         - name: "HCF_LOG_HOST"
           value: {{ .Values.env.HCF_LOG_HOST | quote }}
         - name: "HCF_LOG_PORT"
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -100,8 +85,6 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
-        - name: "KUBE_SIZING_ETCD_COUNT"
-          value: {{ .Values.sizing.etcd.count | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
         - name: "METRON_CERT"
@@ -134,6 +117,11 @@ spec:
             secretKeyRef:
               key: "trafficcontroller-key"
               name: "secret"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secret"
         - name: "UAA_CLIENTS_DOPPLER_SECRET"
           valueFrom:
             secretKeyRef:
@@ -143,7 +131,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:95619dcd5bd0daad09634c5bf82b41b06e2f7a79"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:33d2ebd7696457faa4d863861ea109173ccb0439"
         livenessProbe: ~
         name: "loggregator"
         ports:

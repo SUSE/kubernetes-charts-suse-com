@@ -70,7 +70,7 @@ spec:
             secretKeyRef:
               key: "mysql-proxy-admin-password"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:f89fc83205618b011c68566b351c67b82683fcfb"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:0c1cd4b2b4f439d7ca2a143532f4dffa15c499e7"
         livenessProbe: ~
         name: "mysql-proxy"
         ports:

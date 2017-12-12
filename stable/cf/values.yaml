@@ -85,9 +85,6 @@ env:
   # hardwired set of suites.
   CATS_SUITES: ~
 
-  # The password for access to the Cloud Controller database.
-  CCDB_ROLE_PASSWORD: ~
-
   # The PEM-encoded certificate for internal cloud controller traffic.
   CC_SERVER_CRT: ~
 
@@ -131,22 +128,6 @@ env:
   # 'version' attribute in the /v2/info endpoint
   CLUSTER_VERSION: "2"
 
-  # PEM-encoded agent certificate.
-  CONSUL_AGENT_CERT: ~
-
-  # PEM-encoded client key.
-  CONSUL_AGENT_KEY: ~
-
-  # Part of: A list of passphrases that will be converted into encryption keys,
-  # the first key in the list is the active one.
-  CONSUL_ENCRYPTION_KEYS: ~
-
-  # PEM-encoded server certificate.
-  CONSUL_SERVER_CERT: ~
-
-  # PEM-encoded server key.
-  CONSUL_SERVER_KEY: ~
-
   # Key for encrypting sensitive values in the Cloud Controller database.
   DB_ENCRYPTION_KEY: ~
 
@@ -182,6 +163,12 @@ env:
   # to containers.
   DIEGO_CELL_SUBNET: "10.38.0.0/16"
 
+  # PEM-encoded client certificate
+  DIEGO_CLIENT_CERT: ~
+
+  # PEM-encoded client key
+  DIEGO_CLIENT_KEY: ~
+
   # Disable external buildpacks. Only admin buildpacks and system buildpacks
   # will be available to users.
   DISABLE_CUSTOM_BUILDPACKS: "false"
@@ -202,24 +189,6 @@ env:
   # The number of versions of an application to keep. You will be able to
   # rollback to this amount of versions.
   DROPLET_MAX_STAGED_STORED: "5"
-
-  # PEM-encoded client certificate.
-  ETCD_CLIENT_CRT: ~
-
-  # PEM-encoded client key.
-  ETCD_CLIENT_KEY: ~
-
-  # PEM-encoded peer certificate.
-  ETCD_PEER_CRT: ~
-
-  # PEM-encoded peer key.
-  ETCD_PEER_KEY: ~
-
-  # PEM-encoded server certificate.
-  ETCD_SERVER_CRT: ~
-
-  # PEM-encoded server key.
-  ETCD_SERVER_KEY: ~
 
   # Enables setting the X-Forwarded-Proto header if SSL termination happened
   # upstream and the header value was set incorrectly. When this property is set
@@ -254,9 +223,6 @@ env:
   # The protocol used by rsyslog to talk to the log destination. The allowed
   # values are tcp, and udp. The default is tcp.
   HCF_LOG_PROTOCOL: "tcp"
-
-  # The CA certificate for UAA
-  HCP_CA_CERT: "-----BEGIN CERTIFICATE-----\nMIIE6jCCAtKgAwIBAgIBATANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDEwppbnRl\ncm5hbENBMB4XDTE3MTIwMTAwNTA0NFoXDTI3MTIwMTAwNTA0NlowFTETMBEGA1UE\nAxMKaW50ZXJuYWxDQTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMtN\nn4OXIFx7FAx3lmVtIrZ0vCNSwVrfkNIupZ3738zVi8O/ShMMYdLHcCELs9uym08a\nh/zqkpyN0SpysKCjBfLpKMEpSwNUjpmoMfEx0vDHUiRNiIr6scdxAhYwVa2DO7H+\nEwjciqKYNS4+++kl5Q+d2ckVIxyeQO3Hl1/Yv4Ya5mNuTHxkadqszLG0Z8MQicTm\nqZIKdDY7VXRwhScOhgwgN103F1o8djBRlxL0kh1YPlERnbmHKCtnXMTXtBcDZIEG\nnWGgmr1sLHc7sQAyG9jPnMxpOGSkaPEmmD9yGTMVEYo9IfWihD6e5ex7TYYqt/M1\na45QAtE2qWKV0vmKxQ9V8TeToIBRU0suikm9iPlxb4Mcq89sDE0dVlocfJg9yVqf\n4HQQkluzsyUxbNbVH4NKJJQwoam5Vw5NePwuYleoN7OwpJ792ECN42uS+ligc0h1\nRJF7IbCgHnZ2Hfxf4hkU5UfS3E+Ka6m9ZlC5b2+UxaPAPau9JPIMBc+Aj89rpoyM\n3l6KGYAiDvDHchRcs3gvUaQYLdQfNjJemmje+LrAYRlAzNStmyvHlnnjELaac8WZ\n3+qeTNAY2bFRsPBIiwWQvcyDbV4XuC7z4Co7fHdtE+eNFLJ5JxlaWTHgGHbtpJV/\nHZfFggf3X8GDAbFzm6CquZQNHikIXTO2sR5ipQUJAgMBAAGjRTBDMA4GA1UdDwEB\n/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBQ0wWj+B3Gexujk\n5ncQMDwHwxgNHDANBgkqhkiG9w0BAQsFAAOCAgEAFjzblgwhqo6Uwu2NvP6Jf8Db\nyiZjPx8MfN2VMHZcMxT/cmbdFniW28lT5wN4Eq67bpnq3cHMaD/ZEyykl/niZSqW\nun4WT56bJWysISeVSVr3eoWrKPXGYFlIFUmAiP6K7YO8jvoDuDoPNATV+qEODYIE\nARMJtASXiX7aTOpGDfo/Z91xfl1dIZzr5Lld1zHJuXJKt1d1V8/E32LIuk3Qeqyo\n8brpUxzk9pqyujloHmdh+GnDuMQv6Bs71Wqk5go9daQJPmySSiN/0LoGM5zyUa21\nWfjktTAebuQ+d9OIQHwxgkV54EGxh2cUtdMDt6eLgGJwb7Ak25IirGxJBYgQMsr2\nnjqKZz1uNGMIAKcix3UrtgTDjxhXKj5WVcWTAgrfF28cX9L0dRateu1fni5hGH0b\ngC1mwDz2U5yeVxqX6kkxvNO96waCPGLy2zGemZbEzW5vbK57wosbYrJJI0Mg7Uo/\n7HYq/ZNqEWYHUWjO4bHNcODbupU3fOtoHrQsEGyGUfwh0Y5Rodxsbi6ynEeRVgcl\nQxPW/iBuWKXa8hgbDbjh4Z8VtXblFST8/EyHsAnzUvz3dTk937LFje+OI68FDugg\n1E5b89Ep/1wscT69pTDM7mabuEaoXBNA25oixO8lb8NvaL+VV+zoqNMTkycbLGFI\n661wasS0DgzBw4cj9W0=\n-----END CERTIFICATE-----\n"
 
   # Location of the proxy to use for secure web access.
   HTTPS_PROXY: ~
@@ -300,6 +266,9 @@ env:
   # The password for the MySQL server admin user.
   MYSQL_ADMIN_PASSWORD: ~
 
+  # The password for access to the Cloud Controller database.
+  MYSQL_CCDB_ROLE_PASSWORD: ~
+
   # The password for access to the usb config database.
   # Example: password
   MYSQL_CF_USB_PASSWORD: ~
@@ -307,11 +276,17 @@ env:
   # The password for the cluster logger health user.
   MYSQL_CLUSTER_HEALTH_PASSWORD: ~
 
+  # Database password for the diego locket service.
+  MYSQL_DIEGO_LOCKET_PASSWORD: ~
+
   # The password for access to MySQL by diego.
   MYSQL_DIEGO_PASSWORD: ~
 
   # Password used to authenticate to the MySQL Galera healthcheck endpoint.
   MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD: ~
+
+  # Database password for storing broker state for the Persi NFS Broker
+  MYSQL_PERSI_NFS_PASSWORD: ~
 
   # The password for Basic Auth used to secure the MySQL proxy API.
   MYSQL_PROXY_ADMIN_PASSWORD: ~
@@ -402,15 +377,6 @@ env:
   # Example: cn=Users,dc=corp,dc=test,dc=com
   PERSI_NFS_DRIVER_LDAP_USER_FQDN: ""
 
-  # Database password for storing broker state for the Persi NFS Broker
-  PERSI_NFS_MYSQL_PASSWORD: ~
-
-  # PEM-encoded client certificate
-  REP_CLIENT_CERT: ~
-
-  # PEM-encoded client key
-  REP_CLIENT_KEY: ~
-
   # PEM-encoded server certificate
   REP_SERVER_CERT: ~
 
@@ -456,12 +422,6 @@ env:
   # Support contact information for the cluster
   SUPPORT_ADDRESS: "support@example.com"
 
-  # PEM-encoded certificate
-  SYSLOGDRAINBINDER_CERT: ~
-
-  # PEM-encoded key.
-  SYSLOGDRAINBINDER_KEY: ~
-
   # TCP routing domain of the SCF cluster; only used for testing;
   # Example: tcp.my-scf-cluster.com
   TCP_DOMAIN: ~
@@ -485,12 +445,12 @@ env:
   # Concatenation of trusted CA certificates to be made available on the cell.
   TRUSTED_CERTS: ~
 
-  # The password for access to the UAA database.
-  UAADB_PASSWORD: ~
-
   # The password of the admin client - a client named admin with uaa.admin as an
   # authority.
   UAA_ADMIN_CLIENT_SECRET: ~
+
+  # The CA certificate for UAA
+  UAA_CA_CERT: ~
 
   # The password for UAA access by the Cloud Controller.
   UAA_CC_CLIENT_SECRET: ~
@@ -564,10 +524,9 @@ sizing:
   #
   # - route_registrar: Used for registering routes
   #
-  # Also: consul_agent, metron_agent, statsd_injector, go-buildpack,
-  # binary-buildpack, nodejs-buildpack, ruby-buildpack, php-buildpack,
-  # python-buildpack, staticfile-buildpack, java-offline-buildpack,
-  # dotnet-core-buildpack
+  # Also: metron_agent, statsd_injector, go-buildpack, binary-buildpack,
+  # nodejs-buildpack, ruby-buildpack, php-buildpack, python-buildpack,
+  # staticfile-buildpack, java-offline-buildpack, dotnet-core-buildpack
   api:
     # The api role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
@@ -582,7 +541,7 @@ sizing:
   #
   # - route_registrar: Used for registering routes
   #
-  # Also: consul_agent, blobstore, metron_agent
+  # Also: blobstore, metron_agent
   blobstore:
     # The blobstore role cannot be scaled.
     count: 1
@@ -602,7 +561,7 @@ sizing:
   #   Cloud Controller clean up tasks for app usage events, audit events, failed
   #   jobs, and more. Only single instance of this job is necessary.
   #
-  # Also: consul_agent, metron_agent, statsd_injector
+  # Also: metron_agent, statsd_injector
   cc_clock:
     # The cc-clock role cannot be scaled.
     count: 1
@@ -616,7 +575,7 @@ sizing:
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # Also: tps, cc_uploader, consul_agent, metron_agent
+  # Also: tps, cc_uploader, metron_agent
   cc_uploader:
     # The cc-uploader role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
@@ -634,7 +593,7 @@ sizing:
   # - cloud_controller_worker: Cloud Controller worker processes background
   #   tasks submitted via the.
   #
-  # Also: consul_agent, metron_agent
+  # Also: metron_agent
   cc_worker:
     # The cc-worker role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
@@ -651,29 +610,11 @@ sizing:
   #
   # - route_registrar: Used for registering routes
   #
-  # Also: cf-usb, consul_agent
+  # Also: cf-usb
   cf_usb:
     # The cf-usb role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
-
-  # The consul role contains the following jobs:
-  #
-  # - global-properties: Dummy BOSH job used to host global parameters that are
-  #   required to configure HCF
-  #
-  # - authorize-internal-ca: Install both internal and UAA CA certificates
-  #
-  # Also: consul_agent, metron_agent
-  consul:
-    # The consul role can scale between 1 and 3 instances.
-    # The instance count must be an odd number (not divisible by 2).
-    # For high availability it needs at least 3 instances.
-    count: 1
-    disk_sizes:
-      consul_data: 1
     memory: 256
     vcpu_count: 2
 
@@ -684,7 +625,7 @@ sizing:
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # Also: ssh_proxy, consul_agent, metron_agent, file_server
+  # Also: ssh_proxy, metron_agent, file_server
   diego_access:
     # The diego-access role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
@@ -699,7 +640,7 @@ sizing:
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # Also: rep-certstrap, bbs, consul_agent, metron_agent
+  # Also: bbs, metron_agent
   diego_api:
     # The diego-api role can scale between 1 and 3 instances.
     # The instance count must be an odd number (not divisible by 2).
@@ -715,7 +656,7 @@ sizing:
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # Also: consul_agent, rep-certstrap, auctioneer, metron_agent
+  # Also: auctioneer, metron_agent
   diego_brain:
     # The diego-brain role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
@@ -732,7 +673,7 @@ sizing:
   #
   # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
   #
-  # Also: rep, route_emitter, consul_agent, garden, cflinuxfs2-rootfs-setup,
+  # Also: rep, route_emitter, garden, cflinuxfs2-rootfs-setup,
   # opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, grootfs, nfsv3driver
   diego_cell:
     # The diego-cell role can scale between 1 and 254 instances.
@@ -744,41 +685,31 @@ sizing:
     memory: 4096
     vcpu_count: 4
 
-  # The doppler role contains the following jobs:
-  #
-  # - global-properties: Dummy BOSH job used to host global parameters that are
-  #   required to configure HCF
-  #
-  # Also: doppler, syslog_drain_binder, metron_agent, consul_agent
-  doppler:
-    # The doppler role can scale between 1 and 65535 instances.
-    # For high availability it needs at least 2 instances.
-    count: 1
-    memory: 256
-    vcpu_count: 2
-
-  # The etcd role contains the following jobs:
+  # The diego-locket role contains the following jobs:
   #
   # - global-properties: Dummy BOSH job used to host global parameters that are
   #   required to configure HCF
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # - patch-properties: Dummy BOSH job used to host parameters that are used in
-  #   HCF patches for upstream bugs
-  #
-  # - etcd_metrics_server: The etcd Metrics Server is meant to be collocated
-  #   with the etcd server to collect and expose runtime statistics for the
-  #   Collector.
-  #
-  # Also: etcd, metron_agent
-  etcd:
-    # The etcd role can scale between 1 and 3 instances.
-    # The instance count must be an odd number (not divisible by 2).
+  # Also: locket, metron_agent
+  diego_locket:
+    # The diego-locket role can scale between 1 and 3 instances.
     # For high availability it needs at least 3 instances.
     count: 1
-    disk_sizes:
-      cf_etcd_data: 2
+    memory: 256
+    vcpu_count: 2
+
+  # The doppler role contains the following jobs:
+  #
+  # - global-properties: Dummy BOSH job used to host global parameters that are
+  #   required to configure HCF
+  #
+  # Also: doppler, metron_agent
+  doppler:
+    # The doppler role can scale between 1 and 65535 instances.
+    # For high availability it needs at least 2 instances.
+    count: 1
     memory: 256
     vcpu_count: 2
 
@@ -840,7 +771,7 @@ sizing:
   # - nats: The NATS server provides publish-subscribe messaging system for the
   #   Cloud Controller, the DEA , HM9000, and other Cloud Foundry components.
   #
-  # Also: metron_agent, consul_agent
+  # Also: metron_agent
   nats:
     # The nats role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
@@ -892,7 +823,7 @@ sizing:
   #   most closely matches the host header of the request and load balances
   #   across the associated backends.
   #
-  # Also: consul_agent, metron_agent
+  # Also: metron_agent
   router:
     # The router role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
@@ -907,7 +838,7 @@ sizing:
   #
   # - authorize-internal-ca: Install both internal and UAA CA certificates
   #
-  # Also: consul_agent, metron_agent, routing-api
+  # Also: metron_agent, routing-api
   routing_api:
     # The routing-api role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
@@ -933,7 +864,7 @@ sizing:
   #
   # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
   #
-  # Also: tcp_router, consul_agent, metron_agent
+  # Also: tcp_router, metron_agent
   tcp_router:
     # The tcp-router role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.

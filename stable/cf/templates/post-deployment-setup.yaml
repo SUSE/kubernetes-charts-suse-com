@@ -38,11 +38,6 @@ spec:
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "HTTPS_PROXY"
           value: {{ .Values.env.HTTPS_PROXY | quote }}
         - name: "HTTP_PROXY"
@@ -79,6 +74,11 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-admin-client-secret"
+              name: "secret"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
               name: "secret"
         - name: "UAA_CC_CLIENT_SECRET"
           valueFrom:
@@ -144,7 +144,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:94eb549c8b5bcd189f90fa7041627eb054975fe9"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:6c813eeafb13153a145772e7afdab3f951fca854"
         livenessProbe: ~
         name: "post-deployment-setup"
         ports: ~

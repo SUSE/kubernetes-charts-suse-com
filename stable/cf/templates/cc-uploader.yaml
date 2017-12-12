@@ -6,7 +6,7 @@
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# Also: tps, cc_uploader, consul_agent, metron_agent
+# Also: tps, cc_uploader, metron_agent
 
 {{- if gt (int .Values.sizing.cc_uploader.count) 3 }}
 _maxReplicas: {{ fail "cc_uploader cannot have more than 3 instances" }}
@@ -89,42 +89,12 @@ spec:
             secretKeyRef:
               key: "cc-uploader-key"
               name: "secret"
-        - name: "CONSUL_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-cert"
-              name: "secret"
-        - name: "CONSUL_AGENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-agent-key"
-              name: "secret"
-        - name: "CONSUL_ENCRYPTION_KEYS"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-encryption-keys"
-              name: "secret"
-        - name: "CONSUL_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-cert"
-              name: "secret"
-        - name: "CONSUL_SERVER_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "consul-server-key"
-              name: "secret"
         - name: "HCF_LOG_HOST"
           value: {{ .Values.env.HCF_LOG_HOST | quote }}
         - name: "HCF_LOG_PORT"
           value: {{ .Values.env.HCF_LOG_PORT | quote }}
         - name: "HCF_LOG_PROTOCOL"
           value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
-        - name: "HCP_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "hcp-ca-cert"
-              name: "secret"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -141,8 +111,6 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
-        - name: "KUBE_SIZING_CONSUL_COUNT"
-          value: {{ .Values.sizing.consul.count | quote }}
         - name: "LOG_LEVEL"
           value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
         - name: "METRON_CERT"
@@ -170,7 +138,12 @@ spec:
             secretKeyRef:
               key: "tps-cc-client-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:354e8af9ffb8917d83d6aba632791c41daad0864"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secret"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:524f1bd2dfc3d4bec67db00f6a16e5f627c772a2"
         livenessProbe: ~
         name: "cc-uploader"
         ports:
