@@ -2,7 +2,7 @@
 # The cc-uploader role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -89,12 +89,6 @@ spec:
             secretKeyRef:
               key: "cc-uploader-key"
               name: "secret"
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -128,6 +122,14 @@ spec:
             secretKeyRef:
               key: "monit-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "TPS_CC_CLIENT_CRT"
           valueFrom:
             secretKeyRef:
@@ -143,7 +145,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:524f1bd2dfc3d4bec67db00f6a16e5f627c772a2"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:b04ebdaf296be5c2a3991adf56801a63a9e01ed3"
         livenessProbe: ~
         name: "cc-uploader"
         ports:

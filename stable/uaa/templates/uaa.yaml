@@ -41,8 +41,6 @@ spec:
       - env:
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
-        - name: "HCP_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.HCP_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -74,6 +72,8 @@ spec:
             secretKeyRef:
               key: "monit-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
         - name: "SAML_SERVICEPROVIDER_CERT"
           valueFrom:
             secretKeyRef:
@@ -104,7 +104,7 @@ spec:
             secretKeyRef:
               key: "uaa-server-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:324365668171d452530d358d272daf3449766aca"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:82269f6ff45dc81e41119c1038ff3f36195dcf01"
         livenessProbe: ~
         name: "uaa"
         ports:

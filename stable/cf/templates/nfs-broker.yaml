@@ -2,7 +2,7 @@
 # The nfs-broker role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -55,12 +55,6 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -106,12 +100,20 @@ spec:
               name: "secret"
         - name: "PERSI_NFS_DEFAULT_OPTIONS"
           value: {{ .Values.env.PERSI_NFS_DEFAULT_OPTIONS | quote }}
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:195811ef960a55e3e652ca0fec47987f50e420c7"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:d5c2732acb57cf2b368fca62a34238c799af03bb"
         livenessProbe: ~
         name: "nfs-broker"
         ports:

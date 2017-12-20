@@ -2,7 +2,7 @@
 # The routing-api role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -71,12 +71,6 @@ spec:
           value: {{ required "DNS_HEALTH_CHECK_HOST configuration missing" .Values.env.DNS_HEALTH_CHECK_HOST | quote }}
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -115,8 +109,16 @@ spec:
             secretKeyRef:
               key: "mysql-routing-api-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
         - name: "RESERVABLE_PORTS"
           value: {{ required "RESERVABLE_PORTS configuration missing" .Values.env.RESERVABLE_PORTS | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -126,7 +128,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:e2e2d6aed64a17fa997bfa6aefbc9f23044780da"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:f0f6a2e021636c8fb82a36d9970f884844b49699"
         livenessProbe: ~
         name: "routing-api"
         ports:

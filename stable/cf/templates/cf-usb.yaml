@@ -2,7 +2,7 @@
 # The cf-usb role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -78,12 +78,6 @@ spec:
               name: "secret"
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -117,6 +111,14 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -131,7 +133,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:4eef5004c10429782adbb54a84f8bfdfa64c6669"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:04599e9e96e69e6d44d7f5023b637f59cc459e9f"
         livenessProbe: ~
         name: "cf-usb"
         ports:

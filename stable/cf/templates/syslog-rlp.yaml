@@ -1,38 +1,39 @@
 ---
-# The mysql-proxy role contains the following jobs:
+# The syslog-rlp role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   SCF patches for upstream bugs
-#
-# Also: proxy
+# Also: metron_agent, reverse_log_proxy
 
-{{- if gt (int .Values.sizing.mysql_proxy.count) 1 }}
-_maxReplicas: {{ fail "mysql_proxy cannot have more than 1 instances" }}
+{{- if gt (int .Values.sizing.syslog_rlp.count) 65535 }}
+_maxReplicas: {{ fail "syslog_rlp cannot have more than 65535 instances" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.mysql_proxy.count) 1 }}
-_minReplicas: {{ fail "mysql_proxy must have at least 1 instances" }}
+{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.syslog_rlp.count) 1) (lt (int .Values.sizing.syslog_rlp.count) 2)) }}
+_minHAReplicas: {{ fail "syslog_rlp must have at least 2 instances for HA" }}
+{{- end }}
+
+{{- if lt (int .Values.sizing.syslog_rlp.count) 1 }}
+_minReplicas: {{ fail "syslog_rlp must have at least 1 instances" }}
 {{- end }}
 
 apiVersion: "extensions/v1beta1"
 kind: "Deployment"
 metadata:
-  name: "mysql-proxy"
+  name: "syslog-rlp"
   labels:
-    skiff-role-name: "mysql-proxy"
+    skiff-role-name: "syslog-rlp"
 spec:
-  replicas: {{ .Values.sizing.mysql_proxy.count }}
+  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.syslog_rlp.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.syslog_rlp.count }} {{- end }}
   selector:
     matchLabels:
-      skiff-role-name: "mysql-proxy"
+      skiff-role-name: "syslog-rlp"
   template:
     metadata:
-      name: "mysql-proxy"
+      name: "syslog-rlp"
       labels:
-        skiff-role-name: "mysql-proxy"
+        skiff-role-name: "syslog-rlp"
     spec:
       containers:
       - env:
@@ -54,15 +55,20 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secret"
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secret"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
-        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-proxy-admin-password"
               name: "secret"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
@@ -72,29 +78,26 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:4a4e03f04ebdacdef4b5c2e277f83006a3fb3ac4"
+        - name: "SYSLOG_RLP_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "syslog-rlp-cert"
+              name: "secret"
+        - name: "SYSLOG_RLP_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "syslog-rlp-key"
+              name: "secret"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:c9344fd84e52f293cd9206e114001d979d322fdf"
         livenessProbe: ~
-        name: "mysql-proxy"
+        name: "syslog-rlp"
         ports:
-        - containerPort: 3306
-          name: "mysql-proxy"
-          protocol: "TCP"
-        - containerPort: 80
-          name: "api"
-          protocol: "TCP"
-        - containerPort: 1936
-          name: "healthcheck"
+        - containerPort: 8082
+          name: "rlp"
           protocol: "TCP"
         readinessProbe:
-          failureThreshold: 0
-          httpGet:
-            path: "/"
-            port: 1936
-            scheme: "HTTP"
-          initialDelaySeconds: 0
-          periodSeconds: 0
-          successThreshold: 0
-          timeoutSeconds: 0
+          tcpSocket:
+            port: 8082
         resources: ~
         securityContext: ~
         volumeMounts: ~
@@ -108,22 +111,14 @@ items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "mysql-proxy"
+    name: "syslog-rlp"
   spec:
     ports:
-    - name: "mysql-proxy"
-      port: 3306
+    - name: "rlp"
+      port: 8082
       protocol: "TCP"
-      targetPort: "mysql-proxy"
-    - name: "api"
-      port: 80
-      protocol: "TCP"
-      targetPort: "api"
-    - name: "healthcheck"
-      port: 1936
-      protocol: "TCP"
-      targetPort: "healthcheck"
+      targetPort: "rlp"
     selector:
-      skiff-role-name: "mysql-proxy"
+      skiff-role-name: "syslog-rlp"
     type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

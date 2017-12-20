@@ -2,10 +2,10 @@
 # The mysql role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   HCF patches for upstream bugs
+#   SCF patches for upstream bugs
 #
 # Also: mysql
 
@@ -58,12 +58,6 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -130,7 +124,15 @@ spec:
             secretKeyRef:
               key: "mysql-routing-api-password"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:f6731ec2120f15402d944c9374e8038374387576"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:e4d701176e8148ff25c8faf494102569de8481f8"
         livenessProbe: ~
         name: "mysql"
         ports:

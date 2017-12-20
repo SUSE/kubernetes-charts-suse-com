@@ -2,7 +2,7 @@
 # The nats role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - nats: The NATS server provides publish-subscribe messaging system for the
 #   Cloud Controller, the DEA , HM9000, and other Cloud Foundry components.
@@ -58,12 +58,6 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -102,7 +96,15 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:1f2892d62cbcfaa291a81674c13184a962e09215"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:16aaef8f3672916b04b81b3422096d312dd67fa7"
         livenessProbe: ~
         name: "nats"
         ports:

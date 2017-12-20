@@ -2,7 +2,7 @@
 # The diego-cell role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -105,12 +105,6 @@ spec:
           value: {{ .Values.env.GARDEN_LINUX_DNS_SERVER | quote }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{ required "GARDEN_ROOTFS_DRIVER configuration missing" .Values.env.GARDEN_ROOTFS_DRIVER | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "HTTPS_PROXY"
           value: {{ .Values.env.HTTPS_PROXY | quote }}
         - name: "HTTP_PROXY"
@@ -182,6 +176,8 @@ spec:
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_USER | quote }}
         - name: "PERSI_NFS_DRIVER_LDAP_USER_FQDN"
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_USER_FQDN | quote }}
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
         - name: "REP_SERVER_CERT"
           valueFrom:
             secretKeyRef:
@@ -194,6 +190,12 @@ spec:
               name: "secret"
         - name: "ROOTFS_TRUSTED_CERTS"
           value: {{ .Values.env.ROOTFS_TRUSTED_CERTS | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "TRUSTED_CERTS"
           value: {{ .Values.env.TRUSTED_CERTS | quote }}
         - name: "UAA_CA_CERT"
@@ -210,7 +212,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:b8bb742041c7b6e62168d179a5777ef0a4ef137f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:bf2dd3f2e7b9a0155f36d586f647e4e2cf97173a"
         livenessProbe: ~
         name: "diego-cell"
         ports:
