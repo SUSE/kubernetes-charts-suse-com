@@ -2,7 +2,7 @@
 # The post-deployment-setup role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -13,7 +13,7 @@
 apiVersion: {{ if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6)) -}} batch/v1 {{- else -}} extensions/v1beta1 {{- end }}
 kind: "Job"
 metadata:
-  name: "post-deployment-setup"
+  name: "post-deployment-setup-{{ .Release.Revision }}"
 spec:
   template:
     metadata:
@@ -32,12 +32,6 @@ spec:
             secretKeyRef:
               key: "cluster-admin-password"
               name: "secret"
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "HTTPS_PROXY"
           value: {{ .Values.env.HTTPS_PROXY | quote }}
         - name: "HTTP_PROXY"
@@ -70,6 +64,14 @@ spec:
             secretKeyRef:
               key: "persi-nfs-broker-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAA_ADMIN_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
@@ -120,15 +122,15 @@ spec:
             secretKeyRef:
               key: "uaa-clients-gorouter-secret"
               name: "secret"
-        - name: "UAA_CLIENTS_HCF_AUTO_CONFIG_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-hcf-auto-config-secret"
-              name: "secret"
         - name: "UAA_CLIENTS_LOGIN_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-login-secret"
+              name: "secret"
+        - name: "UAA_CLIENTS_SCF_AUTO_CONFIG_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-scf-auto-config-secret"
               name: "secret"
         - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
           valueFrom:
@@ -144,7 +146,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:6c813eeafb13153a145772e7afdab3f951fca854"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:f6596fca7086824744e5c46f731681c2382597bb"
         livenessProbe: ~
         name: "post-deployment-setup"
         ports: ~

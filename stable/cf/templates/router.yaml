@@ -2,7 +2,7 @@
 # The router role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure HCF
+#   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
@@ -78,12 +78,6 @@ spec:
           value: {{ required "DNS_HEALTH_CHECK_HOST configuration missing" .Values.env.DNS_HEALTH_CHECK_HOST | quote }}
         - name: "FORCE_FORWARDED_PROTO_AS_HTTPS"
           value: {{ required "FORCE_FORWARDED_PROTO_AS_HTTPS configuration missing" .Values.env.FORCE_FORWARDED_PROTO_AS_HTTPS | quote }}
-        - name: "HCF_LOG_HOST"
-          value: {{ .Values.env.HCF_LOG_HOST | quote }}
-        - name: "HCF_LOG_PORT"
-          value: {{ .Values.env.HCF_LOG_PORT | quote }}
-        - name: "HCF_LOG_PROTOCOL"
-          value: {{ required "HCF_LOG_PROTOCOL configuration missing" .Values.env.HCF_LOG_PROTOCOL | quote }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -124,6 +118,8 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secret"
+        - name: "RELEASE_REVISION"
+          value: {{ .Release.Revision | quote }}
         - name: "ROUTER_BALANCING_ALGORITHM"
           value: {{ .Values.env.ROUTER_BALANCING_ALGORITHM | quote }}
         - name: "ROUTER_SERVICES_SECRET"
@@ -146,6 +142,12 @@ spec:
             secretKeyRef:
               key: "router-status-password"
               name: "secret"
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -160,7 +162,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:fe71b2a6ae8d5868aa5de8027eea84a3bc3f3736"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:18846f3f558a93ea850903669384a61b1660ecc7"
         livenessProbe: ~
         name: "router"
         ports:

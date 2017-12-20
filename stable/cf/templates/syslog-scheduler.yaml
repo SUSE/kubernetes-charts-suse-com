@@ -1,38 +1,35 @@
 ---
-# The mysql-proxy role contains the following jobs:
+# The syslog-scheduler role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   SCF patches for upstream bugs
-#
-# Also: proxy
+# Also: scheduler, metron_agent
 
-{{- if gt (int .Values.sizing.mysql_proxy.count) 1 }}
-_maxReplicas: {{ fail "mysql_proxy cannot have more than 1 instances" }}
+{{- if gt (int .Values.sizing.syslog_scheduler.count) 1 }}
+_maxReplicas: {{ fail "syslog_scheduler cannot have more than 1 instances" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.mysql_proxy.count) 1 }}
-_minReplicas: {{ fail "mysql_proxy must have at least 1 instances" }}
+{{- if lt (int .Values.sizing.syslog_scheduler.count) 1 }}
+_minReplicas: {{ fail "syslog_scheduler must have at least 1 instances" }}
 {{- end }}
 
 apiVersion: "extensions/v1beta1"
 kind: "Deployment"
 metadata:
-  name: "mysql-proxy"
+  name: "syslog-scheduler"
   labels:
-    skiff-role-name: "mysql-proxy"
+    skiff-role-name: "syslog-scheduler"
 spec:
-  replicas: {{ .Values.sizing.mysql_proxy.count }}
+  replicas: {{ .Values.sizing.syslog_scheduler.count }}
   selector:
     matchLabels:
-      skiff-role-name: "mysql-proxy"
+      skiff-role-name: "syslog-scheduler"
   template:
     metadata:
-      name: "mysql-proxy"
+      name: "syslog-scheduler"
       labels:
-        skiff-role-name: "mysql-proxy"
+        skiff-role-name: "syslog-scheduler"
     spec:
       containers:
       - env:
@@ -54,15 +51,20 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secret"
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secret"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
-        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-proxy-admin-password"
               name: "secret"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
@@ -72,24 +74,28 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:4a4e03f04ebdacdef4b5c2e277f83006a3fb3ac4"
+        - name: "SYSLOG_SCHED_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "syslog-sched-cert"
+              name: "secret"
+        - name: "SYSLOG_SCHED_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "syslog-sched-key"
+              name: "secret"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:249e01d1b5431fd780c81e3528b78e10fb97be74"
         livenessProbe: ~
-        name: "mysql-proxy"
+        name: "syslog-scheduler"
         ports:
-        - containerPort: 3306
-          name: "mysql-proxy"
-          protocol: "TCP"
-        - containerPort: 80
-          name: "api"
-          protocol: "TCP"
-        - containerPort: 1936
-          name: "healthcheck"
+        - containerPort: 8080
+          name: "schedula3075ea4"
           protocol: "TCP"
         readinessProbe:
           failureThreshold: 0
           httpGet:
-            path: "/"
-            port: 1936
+            path: "/health"
+            port: 8080
             scheme: "HTTP"
           initialDelaySeconds: 0
           periodSeconds: 0
@@ -108,22 +114,14 @@ items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "mysql-proxy"
+    name: "syslog-scheduler"
   spec:
     ports:
-    - name: "mysql-proxy"
-      port: 3306
+    - name: "schedula3075ea4"
+      port: 8080
       protocol: "TCP"
-      targetPort: "mysql-proxy"
-    - name: "api"
-      port: 80
-      protocol: "TCP"
-      targetPort: "api"
-    - name: "healthcheck"
-      port: 1936
-      protocol: "TCP"
-      targetPort: "healthcheck"
+      targetPort: "schedula3075ea4"
     selector:
-      skiff-role-name: "mysql-proxy"
+      skiff-role-name: "syslog-scheduler"
     type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

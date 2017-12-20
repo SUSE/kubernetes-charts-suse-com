@@ -4,8 +4,6 @@ env:
   # configured to point to this UAA instance
   DOMAIN: ~
 
-  HCP_SERVICE_DOMAIN_SUFFIX: ~
-
   # PEM-encoded CA certificate used to sign the TLS certificate used by all
   # components to secure their communications.
   INTERNAL_CA_CERT: ~
@@ -62,7 +60,7 @@ sizing:
   #   required to configure SCF / fissile
   #
   # - patch-properties: Dummy BOSH job used to host parameters that are used in
-  #   HCF patches for upstream bugs
+  #   patches for upstream bugs
   #
   # Also: mysql
   mysql:
