@@ -112,6 +112,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
+        - name: "KUBE_AZ"
+          value: "z1"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "LOG_LEVEL"
@@ -153,6 +155,10 @@ spec:
             secretKeyRef:
               key: "staging-upload-password"
               name: "secret"
+        - name: "SUSE_STACK"
+          value: "opensuse42"
+        - name: "SUSE_STACK_DESCRIPTION"
+          value: "openSUSE-based filesystem"
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -171,7 +177,7 @@ spec:
           value: {{ required "USE_DIEGO_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote }}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{ required "USE_STAGER_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:87dd04d35af1bdf2a003bcc0f8ee59105ebe825b"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:08abcb98d9675979df89b5f09e7a76cc39705326"
         livenessProbe: ~
         name: "cc-clock"
         ports: ~
