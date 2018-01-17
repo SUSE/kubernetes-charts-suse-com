@@ -123,6 +123,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
+        - name: "KUBE_AZ"
+          value: "z1"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
@@ -196,6 +198,10 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+        - name: "SUSE_STACK"
+          value: "opensuse42"
+        - name: "SUSE_STACK_DIRNAME"
+          value: "opensuse42"
         - name: "TRUSTED_CERTS"
           value: {{ .Values.env.TRUSTED_CERTS | quote }}
         - name: "UAA_CA_CERT"
@@ -212,7 +218,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:bf2dd3f2e7b9a0155f36d586f647e4e2cf97173a"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:b63e6688fdefa927541c6e096003402fc55ee155"
         livenessProbe: ~
         name: "diego-cell"
         ports:

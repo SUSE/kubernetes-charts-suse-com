@@ -104,7 +104,7 @@ spec:
             secretKeyRef:
               key: "uaa-server-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:82269f6ff45dc81e41119c1038ff3f36195dcf01"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:a72322b906781897bfd61668d870d3841bd671a6"
         livenessProbe: ~
         name: "uaa"
         ports:

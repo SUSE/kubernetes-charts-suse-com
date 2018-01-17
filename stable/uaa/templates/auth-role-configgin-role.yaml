@@ -19,4 +19,10 @@ rules:
   - "services"
   verbs:
   - "get"
+- apiGroups:
+  - "apps"
+  resources:
+  - "statefulsets"
+  verbs:
+  - "get"
 {{- end }}
