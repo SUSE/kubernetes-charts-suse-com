@@ -68,7 +68,7 @@ kube:
   external_console_https_port: 8443
   storage_class:
     persistent:
-  organization: cap-beta
+  organization: cap
   registry:
     hostname: registry.suse.com
     username:
