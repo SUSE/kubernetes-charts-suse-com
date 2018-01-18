@@ -292,7 +292,7 @@ env:
   # error is returned to the client. Please be aware that browsers cannot
   # correctly display this error. Setting size to 0 disables checking of client
   # request body size. This limits application uploads, buildpack uploads, etc.
-  NGINX_MAX_REQUEST_BODY_SIZE: "1536"
+  NGINX_MAX_REQUEST_BODY_SIZE: "2048"
 
   # Comma separated list of IP addresses and domains which should not be
   # directoed through a proxy, if any.
