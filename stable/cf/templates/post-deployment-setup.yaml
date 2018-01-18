@@ -146,7 +146,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:f6596fca7086824744e5c46f731681c2382597bb"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:7f3b8d2aa9d983bc902853fc4ed96493e2c0b6f8"
         livenessProbe: ~
         name: "post-deployment-setup"
         ports: ~

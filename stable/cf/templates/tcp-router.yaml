@@ -77,6 +77,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
+        - name: "KUBE_AZ"
+          value: "z1"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "LOG_LEVEL"
@@ -118,7 +120,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:6c9c00334830ea813a5b86e9fd6d474de035a918"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:7edf5c0bd9cec4c2d9bf62ee4c4e6c870850d531"
         livenessProbe: ~
         name: "tcp-router"
         ports:
