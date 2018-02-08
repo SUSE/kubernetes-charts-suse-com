@@ -106,7 +106,7 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:df8b774b59f95e13949f1ac5490e769a090defba"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:77dc6b0175cbc9af89779cb283fa382512a82235"
         livenessProbe: ~
         name: "nats"
         ports:

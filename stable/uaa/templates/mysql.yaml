@@ -67,7 +67,7 @@ spec:
             secretKeyRef:
               key: "uaadb-password"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:3e39d5949f20fe6f3f2dee6593875bffeb230f90"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:d6ae92e8e93d12edc6347ca52e3977993fe52878"
         livenessProbe: ~
         name: "mysql"
         ports:

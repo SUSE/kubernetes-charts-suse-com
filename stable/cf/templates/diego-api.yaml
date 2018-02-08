@@ -151,7 +151,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:f6efa868f06bd776bbef660ffe83ae420fdf80a4"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:953d8fde52b19e3181589ef5614b201ee43d153c"
         livenessProbe: ~
         name: "diego-api"
         ports:

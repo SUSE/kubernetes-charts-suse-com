@@ -137,7 +137,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:bb7ffa123d8f841e78f9bef6991db5b5a951e166"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:be9fde4d84a2f003dfe46e08326c61bd59fdb135"
         livenessProbe: ~
         name: "diego-brain"
         ports:

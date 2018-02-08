@@ -90,7 +90,7 @@ spec:
             secretKeyRef:
               key: "syslog-rlp-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:895dcfbcf1a3dff1efe33416578d9d0eecdb3380"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:6e4b13dcc6cd27f01fd4cc6543d44c7cc485673a"
         livenessProbe: ~
         name: "syslog-rlp"
         ports:

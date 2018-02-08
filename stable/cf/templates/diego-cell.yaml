@@ -218,7 +218,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:06dc745f14b0e1825975c04cf7ae7a1bdcf5de3f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:487d690b9a926ba5c4634bf5cfbfe4421d1a982b"
         livenessProbe: ~
         name: "diego-cell"
         ports:

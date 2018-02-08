@@ -108,7 +108,7 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-doppler:2496787d76926f23abea2cf6d7e8e345a2522635"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-doppler:ca94300155ab435f0b8219a100ef5a78f9b2e25f"
         livenessProbe: ~
         name: "doppler"
         ports:

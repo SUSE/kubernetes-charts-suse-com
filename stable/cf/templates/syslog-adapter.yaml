@@ -90,7 +90,7 @@ spec:
             secretKeyRef:
               key: "syslog-adapt-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:c7b50eb45b233684a5b8a66cb413b04097fbd34f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:39d99deb3b3c17ad762680f7b936076864f311d6"
         livenessProbe: ~
         name: "syslog-adapter"
         ports:

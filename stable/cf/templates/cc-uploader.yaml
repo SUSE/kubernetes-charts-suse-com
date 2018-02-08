@@ -147,7 +147,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:ea6eebf9f27f100379a2cc37917fd4bd85453584"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:8b82fb289f599d9506732a6a0d53592a3cac59d7"
         livenessProbe: ~
         name: "cc-uploader"
         ports:

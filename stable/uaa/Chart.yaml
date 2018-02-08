@@ -1,4 +1,4 @@
-apiVersion: 2.6.11+cf278.0.g351f040f
+apiVersion: 2.6.10-rc3+cf278.66.ga50c9bc1
 description: A Helm chart for SUSE UAA
 name: uaa
-version: 2.6.11
+version: 2.6.10-rc3

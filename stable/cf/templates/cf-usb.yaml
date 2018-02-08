@@ -133,7 +133,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:4767fd886a9f5c224600df2cc0ca0df126d717bd"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:b339583909e3b506abbdcdfebe14f89c33e528b5"
         livenessProbe: ~
         name: "cf-usb"
         ports:
