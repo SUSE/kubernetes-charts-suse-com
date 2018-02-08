@@ -131,7 +131,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-access:439c4ef6863d6deefeb8bce5c203be9515dd86fc"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-access:db6fbf480a31471067fedf9712fa498ef2c6939a"
         livenessProbe: ~
         name: "diego-access"
         ports:

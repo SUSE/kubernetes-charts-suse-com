@@ -72,7 +72,7 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:905eab8469e94b1582a7753cc4c34d2b082b38c1"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:736048e20c7d1bb208c16d0040045c1dd9ac43cf"
         livenessProbe: ~
         name: "mysql-proxy"
         ports:

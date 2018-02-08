@@ -86,7 +86,7 @@ spec:
             secretKeyRef:
               key: "syslog-sched-key"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:37ba4b9ebd9b849f9c8ae3b82d9ff1d045726b55"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:43dc96f35c3f973187bd28b446713bf9c57b399b"
         livenessProbe: ~
         name: "syslog-scheduler"
         ports:

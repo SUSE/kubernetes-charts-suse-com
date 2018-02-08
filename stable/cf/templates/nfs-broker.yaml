@@ -115,7 +115,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:81f61d4baf8e8b44ca9084ce45d7bc4d0bf2b1b3"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:a8c06d29b583876ea0014588e8ef44311f832a67"
         livenessProbe: ~
         name: "nfs-broker"
         ports:

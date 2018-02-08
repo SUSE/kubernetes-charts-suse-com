@@ -106,8 +106,8 @@ kube:
     persistent: "persistent"
     shared: "shared"
   registry:
-    hostname: "registry.suse.com"
+    hostname: "staging.registry.howdoi.website"
     username: ""
     password: ""
-  organization: "cap"
-  auth: ~
+  organization: "splatform"
+  auth: "rbac"
