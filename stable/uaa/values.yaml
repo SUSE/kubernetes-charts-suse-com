@@ -110,4 +110,4 @@ kube:
     username: ""
     password: ""
   organization: "cap"
-  auth: ~
+  auth: "rbac"

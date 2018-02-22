@@ -109,7 +109,7 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:959e7fa04c0e1bf53d8d6018f6d3861bf304e897"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:0776f747ab0f056e9992ef037dbeed05022deead"
         livenessProbe: ~
         name: "blobstore"
         ports:
