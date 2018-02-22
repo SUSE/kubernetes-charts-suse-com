@@ -130,7 +130,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:92f0c484e7c978803761a71bc80bc8aa1e784631"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:6f4f7e39bc2f53ecb4ea2d7a0e970075191f44d2"
         livenessProbe: ~
         name: "routing-api"
         ports:

@@ -135,7 +135,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:81fbd6965cb19bc67c0e3166402690392c366cfa"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:17093cd136eb8f5e3fb9f1e5f94e45a7e672566c"
         livenessProbe: ~
         name: "loggregator"
         ports:
