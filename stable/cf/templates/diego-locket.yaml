@@ -122,7 +122,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-locket:ec4debcedcc23ba02ec9dc3b9feda10cf30fb5be"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-locket:6c02dab72aeb8b46e1d03589e4f6644d4c042705"
         livenessProbe: ~
         name: "diego-locket"
         ports:

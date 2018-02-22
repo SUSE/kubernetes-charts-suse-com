@@ -218,7 +218,7 @@ spec:
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:06dc745f14b0e1825975c04cf7ae7a1bdcf5de3f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:7975b012c381415ee8987e3155ed5d18dad8f5c6"
         livenessProbe: ~
         name: "diego-cell"
         ports:
@@ -245,9 +245,6 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        - mountPath: "/var/vcap/data/garden"
-          name: "garden-data"
-          readOnly: false
         - mountPath: "/var/vcap/data/grootfs"
           name: "grootfs-data"
           readOnly: false
@@ -260,16 +257,6 @@ spec:
     type: "RollingUpdate"
   {{- end }}
   volumeClaimTemplates:
-  - metadata:
-      name: "garden-data"
-      annotations:
-        volume.beta.kubernetes.io/storage-class: {{ .Values.kube.storage_class.persistent | quote }}
-    spec:
-      accessModes:
-      - "ReadWriteOnce"
-      resources:
-        requests:
-          storage: "{{ .Values.sizing.diego_cell.disk_sizes.garden_data }}G"
   - metadata:
       name: "grootfs-data"
       annotations:
