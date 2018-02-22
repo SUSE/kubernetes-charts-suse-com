@@ -109,5 +109,5 @@ kube:
     hostname: "registry.suse.com"
     username: ""
     password: ""
-  organization: "cap"
-  auth: ~
+  organization: "splatform"
+  auth: "rbac"

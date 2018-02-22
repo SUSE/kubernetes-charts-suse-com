@@ -476,6 +476,9 @@ env:
   # The password for UAA access by the Routing API.
   UAA_CLIENTS_CC_ROUTING_SECRET: ~
 
+  # Used for third party service dashboard SSO.
+  UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET: ~
+
   # Used for fetching service key values from CredHub.
   UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET: ~
 
@@ -698,7 +701,6 @@ sizing:
     # For high availability it needs at least 3 instances.
     count: 1
     disk_sizes:
-      garden_data: 50
       grootfs_data: 50
     memory: 4096
     vcpu_count: 4
@@ -939,5 +941,5 @@ kube:
     hostname: "registry.suse.com"
     username: ""
     password: ""
-  organization: "cap"
-  auth: ~
+  organization: "splatform"
+  auth: "rbac"
