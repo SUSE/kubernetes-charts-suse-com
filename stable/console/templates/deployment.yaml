@@ -116,7 +116,7 @@ spec:
         - name: UPGRADE_LOCK_FILENAME
           value: upgrade.lock
         - name: ALLOWED_ORIGINS
-          value: https://localhost
+          value: "https://localhost"
         - name: ENCRYPTION_KEY_VOLUME
           value: "{{ .Release.Name }}-encryption-key-volume"
         - name: ENCRYPTION_KEY_FILENAME
@@ -159,13 +159,13 @@ spec:
         {{- end }}
         {{- if .Values.env.UAA_HOST }}  
         - name: UAA_ENDPOINT 
-          value: https://scf.{{.Values.env.UAA_HOST}}:{{.Values.env.UAA_PORT}}
+          value: "https://scf.{{.Values.env.UAA_HOST}}:{{.Values.env.UAA_PORT}}"
         - name: CONSOLE_CLIENT 
           value: cf
         - name: CONSOLE_CLIENT_SECRET
           value:
         - name: AUTO_REG_CF_URL
-          value: https://api.{{.Values.env.DOMAIN}}
+          value: "https://api.{{.Values.env.DOMAIN}}"
         - name: CONSOLE_ADMIN_SCOPE 
           value: cloud_controller.admin
         - name: SKIP_SSL_VALIDATION 
