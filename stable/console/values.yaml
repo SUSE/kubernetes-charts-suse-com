@@ -1,5 +1,5 @@
 # Tag for images
-consoleVersion: cap-1.0.0-g9146a49
+consoleVersion: cap-1.0.2-g0f880b9
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
