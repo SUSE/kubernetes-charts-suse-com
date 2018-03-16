@@ -16,6 +16,10 @@ _maxReplicas: {{ fail "routing_api cannot have more than 3 instances" }}
 _minHAReplicas: {{ fail "routing_api must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.routing_api.count) 1 }}
 _minReplicas: {{ fail "routing_api must have at least 1 instances" }}
 {{- end }}
@@ -61,12 +65,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "diego-client-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "DIEGO_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "diego-client-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "DNS_HEALTH_CHECK_HOST"
           value: {{ required "DNS_HEALTH_CHECK_HOST configuration missing" .Values.env.DNS_HEALTH_CHECK_HOST | quote }}
         - name: "DOMAIN"
@@ -75,12 +79,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -95,22 +99,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_ROUTING_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-routing-api-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "RESERVABLE_PORTS"
@@ -125,12 +129,17 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:6f4f7e39bc2f53ecb4ea2d7a0e970075191f44d2"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:1487bc86ee93ae39831a05dcecf1c28e0c67dd97"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "routing-api"
         ports:
@@ -140,17 +149,29 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 3000
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.routing_api.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.routing_api.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+  volumeClaimTemplates: []
 ---
 apiVersion: "v1"
 items:

@@ -14,6 +14,10 @@ _maxReplicas: {{ fail "syslog_adapter cannot have more than 65535 instances" }}
 _minHAReplicas: {{ fail "syslog_adapter must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.syslog_adapter.count) 1 }}
 _minReplicas: {{ fail "syslog_adapter must have at least 1 instances" }}
 {{- end }}
@@ -43,12 +47,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -61,17 +65,17 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "SCF_LOG_HOST"
@@ -84,13 +88,18 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "syslog-adapt-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "SYSLOG_ADAPT_KEY"
           valueFrom:
             secretKeyRef:
               key: "syslog-adapt-key"
-              name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:cb53850f64d0288570247574b314b7d47f791138"
+              name: "secret-{{ .Release.Revision }}"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:dfe0615a4a7ad55a776858f6440ab94384e28c32"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "syslog-adapter"
         ports:
@@ -110,13 +119,24 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.syslog_adapter.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.syslog_adapter.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
 ---
 apiVersion: "v1"
 items:

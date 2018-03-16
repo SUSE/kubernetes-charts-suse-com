@@ -9,7 +9,7 @@
 # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
 #
 # Also: rep, route_emitter, garden, cflinuxfs2-rootfs-setup,
-# opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, grootfs, nfsv3driver
+# opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, nfsv3driver
 
 {{- if gt (int .Values.sizing.diego_cell.count) 254 }}
 _maxReplicas: {{ fail "diego_cell cannot have more than 254 instances" }}
@@ -17,6 +17,10 @@ _maxReplicas: {{ fail "diego_cell cannot have more than 254 instances" }}
 
 {{- if and .Values.sizing.HA (and (ne (int .Values.sizing.diego_cell.count) 1) (lt (int .Values.sizing.diego_cell.count) 3)) }}
 _minHAReplicas: {{ fail "diego_cell must have at least 3 instances for HA" }}
+{{- end }}
+
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.diego_cell.count) 1 }}
@@ -71,12 +75,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "bbs-client-crt"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "BBS_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "bbs-client-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "DIEGO_CELL_DISK_CAPACITY_MB"
@@ -91,12 +95,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "diego-client-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "DIEGO_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "diego-client-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "GARDEN_DOCKER_REGISTRY"
           value: {{ required "GARDEN_DOCKER_REGISTRY configuration missing" .Values.env.GARDEN_DOCKER_REGISTRY | quote }}
         - name: "GARDEN_INSECURE_DOCKER_REGISTRIES"
@@ -113,12 +117,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -135,22 +139,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "NO_PROXY"
           value: {{ .Values.env.NO_PROXY | quote }}
         - name: "PERSI_NFS_DRIVER_ALLOWED_IN_MOUNT"
@@ -169,7 +173,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "persi-nfs-driver-ldap-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "PERSI_NFS_DRIVER_LDAP_PORT"
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_PORT | quote }}
         - name: "PERSI_NFS_DRIVER_LDAP_PROTOCOL"
@@ -184,12 +188,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "rep-server-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "REP_SERVER_KEY"
           valueFrom:
             secretKeyRef:
               key: "rep-server-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "ROOTFS_TRUSTED_CERTS"
           value: {{ .Values.env.ROOTFS_TRUSTED_CERTS | quote }}
         - name: "SCF_LOG_HOST"
@@ -208,17 +212,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-tcp-emitter-secret"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:7975b012c381415ee8987e3155ed5d18dad8f5c6"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:a9dcfad518d1d092e60991ee790228d662bcae05"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "diego-cell"
         ports:
@@ -241,7 +250,17 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.diego_cell.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.diego_cell.memory)) }}Mi"
+          {{- end }}
+
         securityContext:
           privileged: true
         volumeMounts:
@@ -252,6 +271,7 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"

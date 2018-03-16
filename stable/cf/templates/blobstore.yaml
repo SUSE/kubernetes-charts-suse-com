@@ -12,6 +12,10 @@
 _maxReplicas: {{ fail "blobstore cannot have more than 1 instances" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.blobstore.count) 1 }}
 _minReplicas: {{ fail "blobstore must have at least 1 instances" }}
 {{- end }}
@@ -41,22 +45,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "BLOBSTORE_SECURE_LINK"
           valueFrom:
             secretKeyRef:
               key: "blobstore-secure-link"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "BLOBSTORE_TLS_CERT"
           valueFrom:
             secretKeyRef:
               key: "blobstore-tls-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "BLOBSTORE_TLS_KEY"
           valueFrom:
             secretKeyRef:
               key: "blobstore-tls-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "DOMAIN"
@@ -65,12 +69,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -85,22 +89,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "SCF_LOG_HOST"
@@ -109,7 +113,12 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:0776f747ab0f056e9992ef037dbeed05022deead"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:f58b8a02b8553e75a17d1cd98b12a6e08d4d5091"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "blobstore"
         ports:
@@ -122,7 +131,17 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 8080
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.blobstore.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.blobstore.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts:
         - mountPath: "/var/vcap/store"
@@ -132,6 +151,7 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"

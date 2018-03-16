@@ -525,6 +525,7 @@ env:
   USE_STAGER_PRIVILEGED_CONTAINERS: "false"
 
 sizing:
+  # Flag to activate high-availability mode
   HA: false
 
   # The api role contains the following jobs:
@@ -552,7 +553,7 @@ sizing:
     # The api role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 2560
+    memory: 2421
     vcpu_count: 4
 
   # The blobstore role contains the following jobs:
@@ -568,7 +569,7 @@ sizing:
     count: 1
     disk_sizes:
       blobstore_data: 50
-    memory: 1536
+    memory: 420
     vcpu_count: 2
 
   # The cc-clock role contains the following jobs:
@@ -586,7 +587,7 @@ sizing:
   cc_clock:
     # The cc-clock role cannot be scaled.
     count: 1
-    memory: 512
+    memory: 789
     vcpu_count: 2
 
   # The cc-uploader role contains the following jobs:
@@ -601,7 +602,7 @@ sizing:
     # The cc-uploader role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
+    memory: 129
     vcpu_count: 4
 
   # The cc-worker role contains the following jobs:
@@ -619,7 +620,7 @@ sizing:
     # The cc-worker role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
+    memory: 753
     vcpu_count: 2
 
   # The cf-usb role contains the following jobs:
@@ -636,7 +637,7 @@ sizing:
     # The cf-usb role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 117
     vcpu_count: 2
 
   # The diego-access role contains the following jobs:
@@ -651,7 +652,7 @@ sizing:
     # The diego-access role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 123
     vcpu_count: 2
 
   # The diego-api role contains the following jobs:
@@ -667,7 +668,7 @@ sizing:
     # The instance count must be an odd number (not divisible by 2).
     # For high availability it needs at least 3 instances.
     count: 1
-    memory: 256
+    memory: 138
     vcpu_count: 2
 
   # The diego-brain role contains the following jobs:
@@ -682,7 +683,7 @@ sizing:
     # The diego-brain role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 99
     vcpu_count: 4
 
   # The diego-cell role contains the following jobs:
@@ -695,14 +696,14 @@ sizing:
   # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
   #
   # Also: rep, route_emitter, garden, cflinuxfs2-rootfs-setup,
-  # opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, grootfs, nfsv3driver
+  # opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, nfsv3driver
   diego_cell:
     # The diego-cell role can scale between 1 and 254 instances.
     # For high availability it needs at least 3 instances.
     count: 1
     disk_sizes:
       grootfs_data: 50
-    memory: 4096
+    memory: 4677
     vcpu_count: 4
 
   # The diego-locket role contains the following jobs:
@@ -717,7 +718,7 @@ sizing:
     # The diego-locket role can scale between 1 and 3 instances.
     # For high availability it needs at least 3 instances.
     count: 1
-    memory: 256
+    memory: 90
     vcpu_count: 2
 
   # The doppler role contains the following jobs:
@@ -730,7 +731,7 @@ sizing:
     # The doppler role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 390
     vcpu_count: 2
 
   # The loggregator role contains the following jobs:
@@ -747,8 +748,20 @@ sizing:
     # The loggregator role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 153
     vcpu_count: 2
+
+  # Global memory configuration
+  memory:
+    # Factor to calculate the limits from the requests
+    # Must be 1 or larger.
+    limit_factor: 3
+
+    # Flag to activate memory requests
+    requests: false
+
+    # Flag to activate memory limits
+    limits: false
 
   # The mysql role contains the following jobs:
   #
@@ -765,7 +778,7 @@ sizing:
     count: 1
     disk_sizes:
       mysql_data: 20
-    memory: 3072
+    memory: 2841
     vcpu_count: 2
 
   # The mysql-proxy role contains the following jobs:
@@ -780,7 +793,7 @@ sizing:
   mysql_proxy:
     # The mysql-proxy role cannot be scaled.
     count: 1
-    memory: 256
+    memory: 63
     vcpu_count: 2
 
   # The nats role contains the following jobs:
@@ -796,7 +809,7 @@ sizing:
     # The nats role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 60
     vcpu_count: 2
 
   # The nfs-broker role contains the following jobs:
@@ -810,7 +823,7 @@ sizing:
   nfs_broker:
     # The nfs-broker role can scale between 1 and 3 instances.
     count: 1
-    memory: 128
+    memory: 63
     vcpu_count: 2
 
   # The post-deployment-setup role contains the following jobs:
@@ -848,7 +861,7 @@ sizing:
     # The router role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 135
     vcpu_count: 4
 
   # The routing-api role contains the following jobs:
@@ -863,7 +876,7 @@ sizing:
     # The routing-api role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
+    memory: 114
     vcpu_count: 4
 
   # The secret-generation role contains the following jobs:
@@ -885,7 +898,7 @@ sizing:
     # The syslog-adapter role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 78
     vcpu_count: 2
 
   # The syslog-rlp role contains the following jobs:
@@ -898,7 +911,7 @@ sizing:
     # The syslog-rlp role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 93
     vcpu_count: 2
 
   # The syslog-scheduler role contains the following jobs:
@@ -910,7 +923,7 @@ sizing:
   syslog_scheduler:
     # The syslog-scheduler role cannot be scaled.
     count: 1
-    memory: 256
+    memory: 69
     vcpu_count: 2
 
   # The tcp-router role contains the following jobs:
@@ -927,13 +940,13 @@ sizing:
     # The tcp-router role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
+    memory: 99
     vcpu_count: 2
 
 services:
   loadbalanced: false
 kube:
-  external_ip: "192.168.77.77"
+  external_ips: []
   storage_class:
     persistent: "persistent"
     shared: "shared"
