@@ -13,6 +13,10 @@
 _maxReplicas: {{ fail "mysql cannot have more than 1 instances" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.mysql.count) 1 }}
 _minReplicas: {{ fail "mysql must have at least 1 instances" }}
 {{- end }}
@@ -44,30 +48,35 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-admin-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cluster-health-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-galera-healthcheck-endpoint-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "UAADB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "uaadb-password"
-              name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:8362990b11d7ab7d81c1b494003ceef5cef466ac"
+              name: "secret-{{ .Release.Revision }}"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:bf136eb9b2e1acbabd8786013928fa7d3e960438"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "mysql"
         ports:
@@ -99,7 +108,17 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.mysql.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.mysql.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts:
         - mountPath: "/var/vcap/store"
@@ -109,6 +128,7 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"

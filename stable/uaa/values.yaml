@@ -19,6 +19,10 @@ env:
 
   KUBE_SERVICE_DOMAIN_SUFFIX: ~
 
+  # The cluster's log level: off, fatal, error, warn, info, debug, debug1,
+  # debug2.
+  LOG_LEVEL: "info"
+
   # Password used for the monit API.
   MONIT_PASSWORD: ~
 
@@ -52,7 +56,20 @@ env:
   UAA_SERVER_KEY: ~
 
 sizing:
+  # Flag to activate high-availability mode
   HA: false
+
+  # Global memory configuration
+  memory:
+    # Factor to calculate the limits from the requests
+    # Must be 1 or larger.
+    limit_factor: 3
+
+    # Flag to activate memory requests
+    requests: false
+
+    # Flag to activate memory limits
+    limits: false
 
   # The mysql role contains the following jobs:
   #
@@ -68,7 +85,7 @@ sizing:
     count: 1
     disk_sizes:
       mysql_data: 20
-    memory: 3072
+    memory: 1779
     vcpu_count: 2
 
   # The secret-generation role contains the following jobs:
@@ -95,13 +112,13 @@ sizing:
   uaa:
     # The uaa role can scale between 1 and 65535 instances.
     count: 1
-    memory: 2048
+    memory: 2205
     vcpu_count: 2
 
 services:
   loadbalanced: false
 kube:
-  external_ip: "192.168.77.77"
+  external_ips: []
   storage_class:
     persistent: "persistent"
     shared: "shared"

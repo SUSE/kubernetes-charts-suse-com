@@ -22,6 +22,10 @@ _maxReplicas: {{ fail "router cannot have more than 65535 instances" }}
 _minHAReplicas: {{ fail "router must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.router.count) 1 }}
 _minReplicas: {{ fail "router must have at least 1 instances" }}
 {{- end }}
@@ -82,12 +86,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -104,22 +108,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "ROUTER_BALANCING_ALGORITHM"
@@ -128,22 +132,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "router-services-secret"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "ROUTER_SSL_CERT"
           valueFrom:
             secretKeyRef:
               key: "router-ssl-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "ROUTER_SSL_KEY"
           valueFrom:
             secretKeyRef:
               key: "router-ssl-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "ROUTER_STATUS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "router-status-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -154,17 +158,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_CLIENTS_GOROUTER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-gorouter-secret"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:faf79323df1ea61c9510a6f3883acafb5f090779"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:57446f1e5a1454c3ca36c7fa7edd954f29b866fb"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "router"
         ports:
@@ -187,13 +196,24 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.router.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.router.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
 ---
 apiVersion: "v1"
 items:
@@ -223,8 +243,7 @@ items:
   metadata:
     name: "router-public"
   spec:
-    externalIPs:
-    - {{ .Values.kube.external_ip | quote }}
+    externalIPs: {{ 				default 					( append .Values.kube.external_ips 						( .Values.kube.external_ip ) 					) 					.Values.kube.external_ips 				| toJson 			}}
     ports:
     - name: "router"
       port: 80

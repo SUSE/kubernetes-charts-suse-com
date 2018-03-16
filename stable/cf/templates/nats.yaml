@@ -17,6 +17,10 @@ _maxReplicas: {{ fail "nats cannot have more than 3 instances" }}
 _minHAReplicas: {{ fail "nats must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.nats.count) 1 }}
 _minReplicas: {{ fail "nats must have at least 1 instances" }}
 {{- end }}
@@ -62,12 +66,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -82,22 +86,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "SCF_LOG_HOST"
@@ -106,7 +110,12 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:867af9a8974b7ba9c468378974a3593088304dc0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nats:f6c6d4d6ae3136c7bee77e8f1013ad3a8f8e2df1"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "nats"
         ports:
@@ -119,17 +128,29 @@ spec:
         readinessProbe:
           tcpSocket:
             port: 4222
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.nats.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.nats.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+  volumeClaimTemplates: []
 ---
 apiVersion: "v1"
 items:

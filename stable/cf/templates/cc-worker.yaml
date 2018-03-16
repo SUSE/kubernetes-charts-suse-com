@@ -19,6 +19,10 @@ _maxReplicas: {{ fail "cc_worker cannot have more than 65535 instances" }}
 _minHAReplicas: {{ fail "cc_worker must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.cc_worker.count) 1 }}
 _minReplicas: {{ fail "cc_worker must have at least 1 instances" }}
 {{- end }}
@@ -66,26 +70,26 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "CC_SERVER_CRT"
           valueFrom:
             secretKeyRef:
               key: "cc-server-crt"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "CC_SERVER_KEY"
           valueFrom:
             secretKeyRef:
               key: "cc-server-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "CDN_URI"
           value: {{ .Values.env.CDN_URI | quote }}
         - name: "DB_ENCRYPTION_KEY"
           valueFrom:
             secretKeyRef:
               key: "db-encryption-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "DEFAULT_APP_DISK_IN_MB"
           value: {{ required "DEFAULT_APP_DISK_IN_MB configuration missing" .Values.env.DEFAULT_APP_DISK_IN_MB | quote }}
         - name: "DEFAULT_APP_MEMORY"
@@ -100,17 +104,17 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-api-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -127,22 +131,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "SCF_LOG_HOST"
@@ -157,7 +161,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "staging-upload-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "SUSE_STACK"
           value: "sle12"
         - name: "SUSE_STACK_DESCRIPTION"
@@ -166,17 +170,17 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-routing-secret"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-service-dashboards-client-secret"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
@@ -185,15 +189,31 @@ spec:
           value: {{ required "USE_DIEGO_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote }}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{ required "USE_STAGER_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:16249789a3c68b9390218dc698e7bd313af48164"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:5bd183100dd1c5f4b1ae410ca2bea40d6b855d5d"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "cc-worker"
         ports: ~
         readinessProbe: ~
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.cc_worker.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.cc_worker.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600

@@ -17,6 +17,10 @@ _maxReplicas: {{ fail "mysql cannot have more than 3 instances" }}
 _minHAReplicas: {{ fail "mysql must have at least 2 instances for HA" }}
 {{- end }}
 
+{{- if lt (int .Values.sizing.memory.limit_factor) 1 }}
+_minLimitFactor: {{ fail "The memory limit factor must be at least 1" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.mysql.count) 1 }}
 _minReplicas: {{ fail "mysql must have at least 1 instances" }}
 {{- end }}
@@ -62,12 +66,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -78,52 +82,52 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-admin-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cf-usb-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cluster-health-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-locket-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_DIEGO_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-galera-healthcheck-endpoint-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_PERSI_NFS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-persi-nfs-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "MYSQL_ROUTING_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-routing-api-password"
-              name: "secret"
+              name: "secret-{{ .Release.Revision }}"
         - name: "RELEASE_REVISION"
           value: {{ .Release.Revision | quote }}
         - name: "SCF_LOG_HOST"
@@ -132,7 +136,12 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:c0df4d17ef7534826459a519f542523d23994dba"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:74c5872f4fa6de46c409051d40a924973e8eb3c3"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "mysql"
         ports:
@@ -164,7 +173,17 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          {{- if .Values.sizing.memory.requests }}
+          requests:
+            memory: "{{ int .Values.sizing.mysql.memory }}Mi"
+          {{- end }}
+
+          {{- if .Values.sizing.memory.limits }}
+          limits:
+            memory: "{{ (mul (int .Values.sizing.memory.limit_factor) (int .Values.sizing.mysql.memory)) }}Mi"
+          {{- end }}
+
         securityContext: ~
         volumeMounts:
         - mountPath: "/var/vcap/store"
@@ -174,6 +193,7 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
@@ -225,39 +245,6 @@ items:
       port: 4444
       protocol: "TCP"
       targetPort: 0
-    selector:
-      skiff-role-name: "mysql"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "mysql"
-  spec:
-    ports:
-    - name: "mysql"
-      port: 3306
-      protocol: "TCP"
-      targetPort: "mysql"
-    - name: "galera-tcp"
-      port: 4567
-      protocol: "TCP"
-      targetPort: "galera-tcp"
-    - name: "galera-udp"
-      port: 4567
-      protocol: "UDP"
-      targetPort: "galera-udp"
-    - name: "galera-ist"
-      port: 4568
-      protocol: "TCP"
-      targetPort: "galera-ist"
-    - name: "healthcheck"
-      port: 9200
-      protocol: "TCP"
-      targetPort: "healthcheck"
-    - name: "xtrabackup"
-      port: 4444
-      protocol: "TCP"
-      targetPort: "xtrabackup"
     selector:
       skiff-role-name: "mysql"
     type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
