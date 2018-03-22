@@ -1,0 +1,4 @@
+apiVersion: v1
+description: A Helm chart for SUSE Universal Service Broker Sidecar for access to PostgreSQL
+name: cf-usb-sidecar-postgres
+version: 1.0.0
