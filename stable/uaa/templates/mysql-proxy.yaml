@@ -2,19 +2,15 @@
 # The mysql-proxy role contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure SCF
+#   required to configure SCF / fissile
 #
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   SCF patches for upstream bugs
+#   patches for upstream bugs
 #
 # Also: proxy
 
 {{- if gt (int .Values.sizing.mysql_proxy.count) 3 }}
 _maxReplicas: {{ fail "mysql_proxy cannot have more than 3 instances" }}
-{{- end }}
-
-{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.mysql_proxy.count) 1) (lt (int .Values.sizing.mysql_proxy.count) 2)) }}
-_minHAReplicas: {{ fail "mysql_proxy must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.mysql_proxy.count) 1 }}
@@ -28,7 +24,7 @@ metadata:
   labels:
     skiff-role-name: "mysql-proxy"
 spec:
-  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.mysql_proxy.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.mysql_proxy.count }} {{- end }}
+  replicas: {{ .Values.sizing.mysql_proxy.count }}
   selector:
     matchLabels:
       skiff-role-name: "mysql-proxy"
@@ -42,41 +38,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
-
-        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -99,7 +60,7 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:ed9952ba8e2f8d06e4dbc5f646f461f1d61954c0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql-proxy:ec0c88d694f88ed38feccaf077f0d81ec51c824a"
         lifecycle:
           preStop:
             exec:

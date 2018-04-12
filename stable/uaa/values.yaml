@@ -4,55 +4,42 @@ env:
   # configured to point to this UAA instance
   DOMAIN: ~
 
-  # PEM-encoded CA certificate used to sign the TLS certificate used by all
-  # components to secure their communications.
-  INTERNAL_CA_CERT: ~
-
-  # PEM-encoded CA key.
-  INTERNAL_CA_KEY: ~
-
-  # PEM-encoded JWT certificate.
-  JWT_SIGNING_CERT: ~
-
-  # PEM-encoded JWT signing key.
-  JWT_SIGNING_KEY: ~
-
   KUBE_SERVICE_DOMAIN_SUFFIX: ~
 
-  # Password used for the monit API.
-  MONIT_PASSWORD: ~
+  # The cluster's log level: off, fatal, error, warn, info, debug, debug1,
+  # debug2.
+  LOG_LEVEL: "info"
 
-  # The password for the MySQL server admin user.
-  MYSQL_ADMIN_PASSWORD: ~
+  # The log destination to talk to. This has to point to a syslog server.
+  SCF_LOG_HOST: ~
 
-  # The password for the cluster logger health user.
-  MYSQL_CLUSTER_HEALTH_PASSWORD: ~
+  # The port used by rsyslog to talk to the log destination. If not set it
+  # defaults to 514, the standard port of syslog.
+  SCF_LOG_PORT: ~
 
-  # The password used to contact the sidecar endpoints via Basic Auth.
-  MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD: ~
-
-  # PEM-encoded certificate
-  SAML_SERVICEPROVIDER_CERT: ~
-
-  # PEM-encoded key.
-  SAML_SERVICEPROVIDER_KEY: ~
-
-  # The password for access to the UAA database.
-  UAADB_PASSWORD: ~
-
-  # The password of the admin client - a client named admin with uaa.admin as an
-  # authority.
-  UAA_ADMIN_CLIENT_SECRET: ~
-
-  # The server's ssl certificate. The default is a self-signed certificate and
-  # should always be replaced for production deployments.
-  UAA_SERVER_CERT: ~
-
-  # The server's ssl private key. Only passphrase-less keys are supported.
-  UAA_SERVER_KEY: ~
+  # The protocol used by rsyslog to talk to the log destination. The allowed
+  # values are tcp, and udp. The default is tcp.
+  SCF_LOG_PROTOCOL: "tcp"
 
 sizing:
+  # Flag to activate high-availability mode
   HA: false
+
+  # Global CPU configuration
+  cpu:
+    # Flag to activate cpu requests
+    requests: false
+
+    # Flag to activate cpu limits
+    limits: false
+
+  # Global memory configuration
+  memory:
+    # Flag to activate memory requests
+    requests: false
+
+    # Flag to activate memory limits
+    limits: false
 
   # The mysql role contains the following jobs:
   #
@@ -64,21 +51,70 @@ sizing:
   #
   # Also: mysql
   mysql:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The mysql role cannot be scaled.
     count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
     disk_sizes:
       mysql_data: 20
-    memory: 3072
-    vcpu_count: 2
+
+    # Unit [MiB]
+    memory:
+      request: 1779
+      limit: ~
+
+  # The mysql-proxy role contains the following jobs:
+  #
+  # - global-properties: Dummy BOSH job used to host global parameters that are
+  #   required to configure SCF / fissile
+  #
+  # - patch-properties: Dummy BOSH job used to host parameters that are used in
+  #   patches for upstream bugs
+  #
+  # Also: proxy
+  mysql_proxy:
+    # Node affinity rules can be specified here
+    affinity: {}
+
+    # The mysql-proxy role can scale between 1 and 3 instances.
+    count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 63
+      limit: ~
 
   # The secret-generation role contains the following jobs:
   #
   # - generate-secrets: This job will generate the secrets for the cluster
   secret_generation:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The secret-generation role cannot be scaled.
     count: 1
-    memory: 256
-    vcpu_count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 1000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 256
+      limit: ~
 
   # The uaa role contains the following jobs:
   #
@@ -93,15 +129,68 @@ sizing:
   #   for managing user accounts and for registering OAuth2 clients, as well as
   #   various other management functions.
   uaa:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The uaa role can scale between 1 and 65535 instances.
     count: 1
-    memory: 2048
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 2205
+      limit: ~
+
+secrets:
+  # The password of the admin client - a client named admin with uaa.admin as an
+  # authority.
+  # This value is immutable and must not be changed once set.
+  UAA_ADMIN_CLIENT_SECRET: ~
+
+  # PEM-encoded CA certificate used to sign the TLS certificate used by all
+  # components to secure their communications.
+  # This value uses a generated default.
+  INTERNAL_CA_CERT: ~
+
+  # PEM-encoded CA key.
+  # This value uses a generated default.
+  INTERNAL_CA_KEY: ~
+
+  # PEM-encoded JWT certificate.
+  # This value uses a generated default.
+  JWT_SIGNING_CERT: ~
+
+  # PEM-encoded JWT signing key.
+  # This value uses a generated default.
+  JWT_SIGNING_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  SAML_SERVICEPROVIDER_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  SAML_SERVICEPROVIDER_KEY: ~
+
+  # The server's ssl certificate. The default is a self-signed certificate and
+  # should always be replaced for production deployments.
+  # This value uses a generated default.
+  UAA_SERVER_CERT: ~
+
+  # The server's ssl private key. Only passphrase-less keys are supported.
+  # This value uses a generated default.
+  UAA_SERVER_KEY: ~
 
 services:
   loadbalanced: false
 kube:
-  external_ip: "192.168.77.77"
+  external_ips: []
+  # Increment this counter to rotate all generated secrets
+  secrets_generation_counter: 1
   storage_class:
     persistent: "persistent"
     shared: "shared"
