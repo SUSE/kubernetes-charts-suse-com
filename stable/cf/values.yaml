@@ -7,54 +7,8 @@ env:
   # Allow users to change the value of the app-level allow_ssh attribute.
   ALLOW_APP_SSH_ACCESS: "true"
 
-  # PEM encoded RSA private key used to identify host.
-  APP_SSH_KEY: ~
-
-  # MD5 fingerprint of the host key of the SSH proxy that brokers connections to
-  # application instances.
-  APP_SSH_KEY_FINGERPRINT: ~
-
   # Extra token expiry time while uploading big apps, in seconds.
   APP_TOKEN_UPLOAD_GRACE_PERIOD: "1200"
-
-  # PEM-encoded certificate
-  AUCTIONEER_REP_CERT: ~
-
-  # PEM-encoded key
-  AUCTIONEER_REP_KEY: ~
-
-  # PEM-encoded server certificate
-  AUCTIONEER_SERVER_CERT: ~
-
-  # PEM-encoded server key
-  AUCTIONEER_SERVER_KEY: ~
-
-  # The password for access to the diego BBS database.
-  BBS_ACTIVE_KEY_PASSPHRASE: ~
-
-  # PEM-encoded certificate
-  BBS_AUCTIONEER_CERT: ~
-
-  # PEM-encoded key
-  BBS_AUCTIONEER_KEY: ~
-
-  # PEM-encoded client certificate.
-  BBS_CLIENT_CRT: ~
-
-  # PEM-encoded client key.
-  BBS_CLIENT_KEY: ~
-
-  # PEM-encoded certificate
-  BBS_REP_CERT: ~
-
-  # PEM-encoded key
-  BBS_REP_KEY: ~
-
-  # PEM-encoded client certificate.
-  BBS_SERVER_CRT: ~
-
-  # PEM-encoded client key.
-  BBS_SERVER_KEY: ~
 
   # List of allow / deny rules for the blobstore internal server. Will be
   # followed by 'deny all'. Each entry must be follow by a semicolon.
@@ -63,58 +17,15 @@ env:
   # Maximal allowed file size for upload to blobstore, in megabytes.
   BLOBSTORE_MAX_UPLOAD_SIZE: "5000"
 
-  # The basic auth password that Cloud Controller uses to connect to the
-  # blobstore server. Auto-generated if not provided. Passwords must be
-  # alphanumeric (URL-safe).
-  BLOBSTORE_PASSWORD: ~
-
-  # The secret used for signing URLs between Cloud Controller and blobstore.
-  BLOBSTORE_SECURE_LINK: ~
-
-  # The PEM-encoded certificate (optionally as a certificate chain) for serving
-  # blobs over TLS/SSL.
-  BLOBSTORE_TLS_CERT: ~
-
-  # The PEM-encoded private key for signing TLS/SSL traffic.
-  BLOBSTORE_TLS_KEY: ~
-
-  # The password for the bulk api.
-  BULK_API_PASSWORD: ~
-
   # The set of CAT test suites to run. If not specified it falls back to a
   # hardwired set of suites.
   CATS_SUITES: ~
 
-  # The PEM-encoded certificate for internal cloud controller traffic.
-  CC_SERVER_CRT: ~
-
-  # The PEM-encoded private key for internal cloud controller traffic.
-  CC_SERVER_KEY: ~
-
-  # The PEM-encoded certificate for internal cloud controller uploader traffic.
-  CC_UPLOADER_CRT: ~
-
-  # The PEM-encoded private key for internal cloud controller uploader traffic.
-  CC_UPLOADER_KEY: ~
-
   # URI for a CDN to use for buildpack downloads.
   CDN_URI: ""
 
-  # PEM-encoded broker server certificate.
-  CF_USB_BROKER_SERVER_CERT: ~
-
-  # PEM-encoded broker server key.
-  CF_USB_BROKER_SERVER_KEY: ~
-
-  # The password for access to the Universal Service Broker.
-  # Example: password
-  CF_USB_PASSWORD: ~
-
   # The Oauth2 authorities available to the cluster administrator.
   CLUSTER_ADMIN_AUTHORITIES: "scim.write,scim.read,openid,cloud_controller.admin,clients.read,clients.write,doppler.firehose,routing.router_groups.read,routing.router_groups.write"
-
-  # The password for the cluster administrator.
-  CLUSTER_ADMIN_PASSWORD: ~
 
   # 'build' attribute in the /v2/info endpoint
   CLUSTER_BUILD: "2.0.2"
@@ -127,9 +38,6 @@ env:
 
   # 'version' attribute in the /v2/info endpoint
   CLUSTER_VERSION: "2"
-
-  # Key for encrypting sensitive values in the Cloud Controller database.
-  DB_ENCRYPTION_KEY: ~
 
   # The standard amount of disk (in MB) given to an application when not
   # overriden by the user via manifest, command line, etc.
@@ -163,12 +71,6 @@ env:
   # to containers.
   DIEGO_CELL_SUBNET: "10.38.0.0/16"
 
-  # PEM-encoded client certificate
-  DIEGO_CLIENT_CERT: ~
-
-  # PEM-encoded client key
-  DIEGO_CLIENT_KEY: ~
-
   # Disable external buildpacks. Only admin buildpacks and system buildpacks
   # will be available to users.
   DISABLE_CUSTOM_BUILDPACKS: "false"
@@ -179,12 +81,6 @@ env:
   # Base domain of the SCF cluster.
   # Example: my-scf-cluster.com
   DOMAIN: ~
-
-  # PEM-encoded certificate.
-  DOPPLER_CERT: ~
-
-  # PEM-encoded key.
-  DOPPLER_KEY: ~
 
   # The number of versions of an application to keep. You will be able to
   # rollback to this amount of versions.
@@ -219,16 +115,6 @@ env:
   # Location of the proxy to use for regular web access.
   HTTP_PROXY: ~
 
-  # Basic auth password for access to the Cloud Controller's internal API.
-  INTERNAL_API_PASSWORD: ~
-
-  # PEM-encoded CA certificate used to sign the TLS certificate used by all
-  # components to secure their communications.
-  INTERNAL_CA_CERT: ~
-
-  # PEM-encoded CA key.
-  INTERNAL_CA_KEY: ~
-
   KUBE_SERVICE_DOMAIN_SUFFIX: ~
 
   # The cluster's log level: off, fatal, error, warn, info, debug, debug1,
@@ -242,49 +128,6 @@ env:
 
   # Maximum health check timeout that can be set for an app, in seconds.
   MAX_HEALTH_CHECK_TIMEOUT: "180"
-
-  # PEM-encoded certificate.
-  METRON_CERT: ~
-
-  # PEM-encoded key.
-  METRON_KEY: ~
-
-  # Password used for the monit API.
-  MONIT_PASSWORD: ~
-
-  # The password for the MySQL server admin user.
-  MYSQL_ADMIN_PASSWORD: ~
-
-  # The password for access to the Cloud Controller database.
-  MYSQL_CCDB_ROLE_PASSWORD: ~
-
-  # The password for access to the usb config database.
-  # Example: password
-  MYSQL_CF_USB_PASSWORD: ~
-
-  # The password for the cluster logger health user.
-  MYSQL_CLUSTER_HEALTH_PASSWORD: ~
-
-  # Database password for the diego locket service.
-  MYSQL_DIEGO_LOCKET_PASSWORD: ~
-
-  # The password for access to MySQL by diego.
-  MYSQL_DIEGO_PASSWORD: ~
-
-  # Password used to authenticate to the MySQL Galera healthcheck endpoint.
-  MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD: ~
-
-  # Database password for storing broker state for the Persi NFS Broker
-  MYSQL_PERSI_NFS_PASSWORD: ~
-
-  # The password for Basic Auth used to secure the MySQL proxy API.
-  MYSQL_PROXY_ADMIN_PASSWORD: ~
-
-  # The password for access to MySQL by the routing-api
-  MYSQL_ROUTING_API_PASSWORD: ~
-
-  # The password for access to NATS.
-  NATS_PASSWORD: ~
 
   # Sets the maximum allowed size of the client request body, specified in the
   # “Content-Length” request header field, in megabytes. If the size in a
@@ -303,9 +146,6 @@ env:
   # Example:
   # uid,gid,allow_root,allow_other,nfs_uid,nfs_gid,auto_cache,fsname,username,password
   PERSI_NFS_ALLOWED_OPTIONS: "uid,gid,auto_cache,username,password"
-
-  # Basic auth password to verify on incoming Service Broker requests
-  PERSI_NFS_BROKER_PASSWORD: ~
 
   # Comma separated list of default values for nfs mount options. If a default
   # is specified with an option not included in PERSI_NFS_ALLOWED_OPTIONS, then
@@ -349,9 +189,6 @@ env:
   # LDAP server host name or ip address (required for LDAP integration only)
   PERSI_NFS_DRIVER_LDAP_HOST: ""
 
-  # LDAP service account password (required for LDAP integration only)
-  PERSI_NFS_DRIVER_LDAP_PASSWORD: "-"
-
   # LDAP server port (required for LDAP integration only)
   PERSI_NFS_DRIVER_LDAP_PORT: "389"
 
@@ -366,15 +203,6 @@ env:
   # Example: cn=Users,dc=corp,dc=test,dc=com
   PERSI_NFS_DRIVER_LDAP_USER_FQDN: ""
 
-  # PEM-encoded server certificate
-  REP_SERVER_CERT: ~
-
-  # PEM-encoded server key
-  REP_SERVER_KEY: ~
-
-  # Modifying this value will break TCP port forwarding.
-  RESERVABLE_PORTS: "20000-20008"
-
   # Certficates to add to the rootfs trust store. Multiple certs are possible by
   # concatenating their definitions into one big block of text.
   ROOTFS_TRUSTED_CERTS: ""
@@ -382,19 +210,6 @@ env:
   # The algorithm used by the router to distribute requests for a route across
   # backends. Supported values are round-robin and least-connection.
   ROUTER_BALANCING_ALGORITHM: "round-robin"
-
-  # Support for route services is disabled when no value is configured. A robust
-  # passphrase is recommended.
-  ROUTER_SERVICES_SECRET: ~
-
-  # The public ssl cert for ssl termination.
-  ROUTER_SSL_CERT: ~
-
-  # The private ssl key for ssl termination.
-  ROUTER_SSL_KEY: ~
-
-  # Password for HTTP basic auth to the varz/status endpoint.
-  ROUTER_STATUS_PASSWORD: ~
 
   # The log destination to talk to. This has to point to a syslog server.
   SCF_LOG_HOST: ~
@@ -416,99 +231,15 @@ env:
   # Timeout for staging an app, in seconds.
   STAGING_TIMEOUT: "900"
 
-  # The password for access to the uploader of staged droplets.
-  STAGING_UPLOAD_PASSWORD: ~
-
   # Support contact information for the cluster
   SUPPORT_ADDRESS: "support@example.com"
-
-  # PEM-encoded certificate
-  SYSLOG_ADAPT_CERT: ~
-
-  # PEM-encoded key.
-  SYSLOG_ADAPT_KEY: ~
-
-  # PEM-encoded certificate
-  SYSLOG_RLP_CERT: ~
-
-  # PEM-encoded key.
-  SYSLOG_RLP_KEY: ~
-
-  # PEM-encoded certificate
-  SYSLOG_SCHED_CERT: ~
-
-  # PEM-encoded key.
-  SYSLOG_SCHED_KEY: ~
 
   # TCP routing domain of the SCF cluster; only used for testing;
   # Example: tcp.my-scf-cluster.com
   TCP_DOMAIN: ~
 
-  # PEM-encoded client certificate for internal communication between the cloud
-  # controller and TPS.
-  TPS_CC_CLIENT_CRT: ~
-
-  # PEM-encoded client key for internal communication between the cloud
-  # controller and TPS.
-  TPS_CC_CLIENT_KEY: ~
-
-  # PEM-encoded certificate for communication with the traffic controller of the
-  # log infra structure.
-  TRAFFICCONTROLLER_CERT: ~
-
-  # PEM-encoded key for communication with the traffic controller of the log
-  # infra structure.
-  TRAFFICCONTROLLER_KEY: ~
-
   # Concatenation of trusted CA certificates to be made available on the cell.
   TRUSTED_CERTS: ~
-
-  # The password of the admin client - a client named admin with uaa.admin as an
-  # authority.
-  UAA_ADMIN_CLIENT_SECRET: ~
-
-  # The CA certificate for UAA
-  UAA_CA_CERT: ~
-
-  # The password for UAA access by the Cloud Controller.
-  UAA_CC_CLIENT_SECRET: ~
-
-  # The password for UAA access by the Routing API.
-  UAA_CLIENTS_CC_ROUTING_SECRET: ~
-
-  # Used for third party service dashboard SSO.
-  UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET: ~
-
-  # Used for fetching service key values from CredHub.
-  UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET: ~
-
-  # The password for UAA access by the Universal Service Broker.
-  UAA_CLIENTS_CF_USB_SECRET: ~
-
-  # The password for UAA access by the Cloud Controller for fetching usernames.
-  UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET: ~
-
-  # The password for UAA access by the SSH proxy.
-  UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET: ~
-
-  # The password for UAA access by doppler.
-  UAA_CLIENTS_DOPPLER_SECRET: ~
-
-  # The password for UAA access by the gorouter.
-  UAA_CLIENTS_GOROUTER_SECRET: ~
-
-  # The password for UAA access by the login client.
-  UAA_CLIENTS_LOGIN_SECRET: ~
-
-  # The password for UAA access by the task creating the cluster administrator
-  # user
-  UAA_CLIENTS_SCF_AUTO_CONFIG_SECRET: ~
-
-  # The password for UAA access by the TCP emitter.
-  UAA_CLIENTS_TCP_EMITTER_SECRET: ~
-
-  # The password for UAA access by the TCP router.
-  UAA_CLIENTS_TCP_ROUTER_SECRET: ~
 
   # The host name of the UAA server (root zone)
   UAA_HOST: ~
@@ -525,6 +256,7 @@ env:
   USE_STAGER_PRIVILEGED_CONTAINERS: "false"
 
 sizing:
+  # Flag to activate high-availability mode
   HA: false
 
   # The api role contains the following jobs:
@@ -549,11 +281,22 @@ sizing:
   # nodejs-buildpack, ruby-buildpack, php-buildpack, python-buildpack,
   # staticfile-buildpack, java-buildpack, dotnet-core-buildpack
   api:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The api role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 2560
-    vcpu_count: 4
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 2421
+      limit: ~
 
   # The blobstore role contains the following jobs:
   #
@@ -564,12 +307,24 @@ sizing:
   #
   # Also: blobstore, metron_agent
   blobstore:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The blobstore role cannot be scaled.
     count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
     disk_sizes:
       blobstore_data: 50
-    memory: 1536
-    vcpu_count: 2
+
+    # Unit [MiB]
+    memory:
+      request: 420
+      limit: ~
 
   # The cc-clock role contains the following jobs:
   #
@@ -584,10 +339,21 @@ sizing:
   #
   # Also: metron_agent, statsd_injector
   cc_clock:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The cc-clock role cannot be scaled.
     count: 1
-    memory: 512
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 789
+      limit: ~
 
   # The cc-uploader role contains the following jobs:
   #
@@ -598,11 +364,22 @@ sizing:
   #
   # Also: tps, cc_uploader, metron_agent
   cc_uploader:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The cc-uploader role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
-    vcpu_count: 4
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 129
+      limit: ~
 
   # The cc-worker role contains the following jobs:
   #
@@ -616,11 +393,22 @@ sizing:
   #
   # Also: metron_agent
   cc_worker:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The cc-worker role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 753
+      limit: ~
 
   # The cf-usb role contains the following jobs:
   #
@@ -633,11 +421,30 @@ sizing:
   #
   # Also: cf-usb
   cf_usb:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The cf-usb role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 117
+      limit: ~
+
+  # Global CPU configuration
+  cpu:
+    # Flag to activate cpu requests
+    requests: false
+
+    # Flag to activate cpu limits
+    limits: false
 
   # The diego-access role contains the following jobs:
   #
@@ -648,11 +455,22 @@ sizing:
   #
   # Also: ssh_proxy, metron_agent, file_server
   diego_access:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The diego-access role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 123
+      limit: ~
 
   # The diego-api role contains the following jobs:
   #
@@ -663,12 +481,23 @@ sizing:
   #
   # Also: bbs, metron_agent
   diego_api:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The diego-api role can scale between 1 and 3 instances.
     # The instance count must be an odd number (not divisible by 2).
     # For high availability it needs at least 3 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 138
+      limit: ~
 
   # The diego-brain role contains the following jobs:
   #
@@ -679,11 +508,22 @@ sizing:
   #
   # Also: auctioneer, metron_agent
   diego_brain:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The diego-brain role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 4
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 99
+      limit: ~
 
   # The diego-cell role contains the following jobs:
   #
@@ -695,15 +535,27 @@ sizing:
   # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
   #
   # Also: rep, route_emitter, garden, cflinuxfs2-rootfs-setup,
-  # opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, grootfs, nfsv3driver
+  # opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, nfsv3driver
   diego_cell:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The diego-cell role can scale between 1 and 254 instances.
     # For high availability it needs at least 3 instances.
     count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
     disk_sizes:
       grootfs_data: 50
-    memory: 4096
-    vcpu_count: 4
+
+    # Unit [MiB]
+    memory:
+      request: 4677
+      limit: ~
 
   # The diego-locket role contains the following jobs:
   #
@@ -714,11 +566,22 @@ sizing:
   #
   # Also: locket, metron_agent
   diego_locket:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The diego-locket role can scale between 1 and 3 instances.
     # For high availability it needs at least 3 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 90
+      limit: ~
 
   # The doppler role contains the following jobs:
   #
@@ -727,11 +590,22 @@ sizing:
   #
   # Also: doppler, metron_agent
   doppler:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The doppler role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 390
+      limit: ~
 
   # The loggregator role contains the following jobs:
   #
@@ -744,11 +618,30 @@ sizing:
   #
   # Also: loggregator_trafficcontroller, metron_agent
   loggregator:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The loggregator role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 153
+      limit: ~
+
+  # Global memory configuration
+  memory:
+    # Flag to activate memory requests
+    requests: false
+
+    # Flag to activate memory limits
+    limits: false
 
   # The mysql role contains the following jobs:
   #
@@ -760,13 +653,25 @@ sizing:
   #
   # Also: mysql
   mysql:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The mysql role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
     disk_sizes:
       mysql_data: 20
-    memory: 3072
-    vcpu_count: 2
+
+    # Unit [MiB]
+    memory:
+      request: 2841
+      limit: ~
 
   # The mysql-proxy role contains the following jobs:
   #
@@ -778,10 +683,22 @@ sizing:
   #
   # Also: proxy
   mysql_proxy:
-    # The mysql-proxy role cannot be scaled.
+    # Node affinity rules can be specified here
+    affinity: {}
+
+    # The mysql-proxy role can scale between 1 and 3 instances.
+    # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 63
+      limit: ~
 
   # The nats role contains the following jobs:
   #
@@ -793,11 +710,22 @@ sizing:
   #
   # Also: metron_agent
   nats:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The nats role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 60
+      limit: ~
 
   # The nfs-broker role contains the following jobs:
   #
@@ -808,10 +736,21 @@ sizing:
   #
   # Also: metron_agent, nfsbroker
   nfs_broker:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The nfs-broker role can scale between 1 and 3 instances.
     count: 1
-    memory: 128
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 63
+      limit: ~
 
   # The post-deployment-setup role contains the following jobs:
   #
@@ -825,10 +764,21 @@ sizing:
   # - configure-scf: Uses the cf CLI to configure SCF once it's online (things
   #   like proxy settings, service brokers, etc.)
   post_deployment_setup:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The post-deployment-setup role cannot be scaled.
     count: 1
-    memory: 256
-    vcpu_count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 1000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 256
+      limit: ~
 
   # The router role contains the following jobs:
   #
@@ -845,11 +795,22 @@ sizing:
   #
   # Also: metron_agent
   router:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The router role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 4
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 135
+      limit: ~
 
   # The routing-api role contains the following jobs:
   #
@@ -860,20 +821,42 @@ sizing:
   #
   # Also: metron_agent, routing-api
   routing_api:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The routing-api role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 512
-    vcpu_count: 4
+
+    # Unit [millicore]
+    cpu:
+      request: 4000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 114
+      limit: ~
 
   # The secret-generation role contains the following jobs:
   #
   # - generate-secrets: This job will generate the secrets for the cluster
   secret_generation:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The secret-generation role cannot be scaled.
     count: 1
-    memory: 256
-    vcpu_count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 1000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 256
+      limit: ~
 
   # The syslog-adapter role contains the following jobs:
   #
@@ -882,11 +865,22 @@ sizing:
   #
   # Also: adapter, metron_agent
   syslog_adapter:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The syslog-adapter role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 78
+      limit: ~
 
   # The syslog-rlp role contains the following jobs:
   #
@@ -895,11 +889,22 @@ sizing:
   #
   # Also: metron_agent, reverse_log_proxy
   syslog_rlp:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The syslog-rlp role can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 93
+      limit: ~
 
   # The syslog-scheduler role contains the following jobs:
   #
@@ -908,10 +913,21 @@ sizing:
   #
   # Also: scheduler, metron_agent
   syslog_scheduler:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The syslog-scheduler role cannot be scaled.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 69
+      limit: ~
 
   # The tcp-router role contains the following jobs:
   #
@@ -924,16 +940,233 @@ sizing:
   #
   # Also: tcp_router, metron_agent
   tcp_router:
+    # Node affinity rules can be specified here
+    affinity: {}
+
     # The tcp-router role can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
-    memory: 256
-    vcpu_count: 2
+
+    # Unit [millicore]
+    cpu:
+      request: 2000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 99
+      limit: ~
+
+    ports:
+      tcp_route:
+        count: 9
+
+secrets:
+  # The password for the cluster administrator.
+  # This value is immutable and must not be changed once set.
+  CLUSTER_ADMIN_PASSWORD: ~
+
+  # LDAP service account password (required for LDAP integration only)
+  # This value is immutable and must not be changed once set.
+  PERSI_NFS_DRIVER_LDAP_PASSWORD: "-"
+
+  # The password of the admin client - a client named admin with uaa.admin as an
+  # authority.
+  # This value is immutable and must not be changed once set.
+  UAA_ADMIN_CLIENT_SECRET: ~
+
+  # The CA certificate for UAA
+  UAA_CA_CERT: ~
+
+  # PEM encoded RSA private key used to identify host.
+  # This value uses a generated default.
+  APP_SSH_KEY: ~
+
+  # MD5 fingerprint of the host key of the SSH proxy that brokers connections to
+  # application instances.
+  # This value uses a generated default.
+  APP_SSH_KEY_FINGERPRINT: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  AUCTIONEER_REP_CERT: ~
+
+  # PEM-encoded key
+  # This value uses a generated default.
+  AUCTIONEER_REP_KEY: ~
+
+  # PEM-encoded server certificate
+  # This value uses a generated default.
+  AUCTIONEER_SERVER_CERT: ~
+
+  # PEM-encoded server key
+  # This value uses a generated default.
+  AUCTIONEER_SERVER_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  BBS_AUCTIONEER_CERT: ~
+
+  # PEM-encoded key
+  # This value uses a generated default.
+  BBS_AUCTIONEER_KEY: ~
+
+  # PEM-encoded client certificate.
+  # This value uses a generated default.
+  BBS_CLIENT_CRT: ~
+
+  # PEM-encoded client key.
+  # This value uses a generated default.
+  BBS_CLIENT_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  BBS_REP_CERT: ~
+
+  # PEM-encoded key
+  # This value uses a generated default.
+  BBS_REP_KEY: ~
+
+  # PEM-encoded client certificate.
+  # This value uses a generated default.
+  BBS_SERVER_CRT: ~
+
+  # PEM-encoded client key.
+  # This value uses a generated default.
+  BBS_SERVER_KEY: ~
+
+  # The PEM-encoded certificate (optionally as a certificate chain) for serving
+  # blobs over TLS/SSL.
+  # This value uses a generated default.
+  BLOBSTORE_TLS_CERT: ~
+
+  # The PEM-encoded private key for signing TLS/SSL traffic.
+  # This value uses a generated default.
+  BLOBSTORE_TLS_KEY: ~
+
+  # The PEM-encoded certificate for internal cloud controller traffic.
+  # This value uses a generated default.
+  CC_SERVER_CRT: ~
+
+  # The PEM-encoded private key for internal cloud controller traffic.
+  # This value uses a generated default.
+  CC_SERVER_KEY: ~
+
+  # The PEM-encoded certificate for internal cloud controller uploader traffic.
+  # This value uses a generated default.
+  CC_UPLOADER_CRT: ~
+
+  # The PEM-encoded private key for internal cloud controller uploader traffic.
+  # This value uses a generated default.
+  CC_UPLOADER_KEY: ~
+
+  # PEM-encoded broker server certificate.
+  # This value uses a generated default.
+  CF_USB_BROKER_SERVER_CERT: ~
+
+  # PEM-encoded broker server key.
+  # This value uses a generated default.
+  CF_USB_BROKER_SERVER_KEY: ~
+
+  # PEM-encoded client certificate
+  # This value uses a generated default.
+  DIEGO_CLIENT_CERT: ~
+
+  # PEM-encoded client key
+  # This value uses a generated default.
+  DIEGO_CLIENT_KEY: ~
+
+  # PEM-encoded certificate.
+  # This value uses a generated default.
+  DOPPLER_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  DOPPLER_KEY: ~
+
+  # PEM-encoded CA certificate used to sign the TLS certificate used by all
+  # components to secure their communications.
+  # This value uses a generated default.
+  INTERNAL_CA_CERT: ~
+
+  # PEM-encoded CA key.
+  # This value uses a generated default.
+  INTERNAL_CA_KEY: ~
+
+  # PEM-encoded certificate.
+  # This value uses a generated default.
+  METRON_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  METRON_KEY: ~
+
+  # PEM-encoded server certificate
+  # This value uses a generated default.
+  REP_SERVER_CERT: ~
+
+  # PEM-encoded server key
+  # This value uses a generated default.
+  REP_SERVER_KEY: ~
+
+  # The public ssl cert for ssl termination.
+  # This value uses a generated default.
+  ROUTER_SSL_CERT: ~
+
+  # The private ssl key for ssl termination.
+  # This value uses a generated default.
+  ROUTER_SSL_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  SYSLOG_ADAPT_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  SYSLOG_ADAPT_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  SYSLOG_RLP_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  SYSLOG_RLP_KEY: ~
+
+  # PEM-encoded certificate
+  # This value uses a generated default.
+  SYSLOG_SCHED_CERT: ~
+
+  # PEM-encoded key.
+  # This value uses a generated default.
+  SYSLOG_SCHED_KEY: ~
+
+  # PEM-encoded client certificate for internal communication between the cloud
+  # controller and TPS.
+  # This value uses a generated default.
+  TPS_CC_CLIENT_CRT: ~
+
+  # PEM-encoded client key for internal communication between the cloud
+  # controller and TPS.
+  # This value uses a generated default.
+  TPS_CC_CLIENT_KEY: ~
+
+  # PEM-encoded certificate for communication with the traffic controller of the
+  # log infra structure.
+  # This value uses a generated default.
+  TRAFFICCONTROLLER_CERT: ~
+
+  # PEM-encoded key for communication with the traffic controller of the log
+  # infra structure.
+  # This value uses a generated default.
+  TRAFFICCONTROLLER_KEY: ~
 
 services:
   loadbalanced: false
 kube:
-  external_ip: "192.168.77.77"
+  external_ips: []
+  # Increment this counter to rotate all generated secrets
+  secrets_generation_counter: 1
   storage_class:
     persistent: "persistent"
     shared: "shared"

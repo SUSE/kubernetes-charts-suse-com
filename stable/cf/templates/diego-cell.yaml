@@ -9,7 +9,7 @@
 # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
 #
 # Also: rep, route_emitter, garden, cflinuxfs2-rootfs-setup,
-# opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, grootfs, nfsv3driver
+# opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, nfsv3driver
 
 {{- if gt (int .Values.sizing.diego_cell.count) 254 }}
 _maxReplicas: {{ fail "diego_cell cannot have more than 254 instances" }}
@@ -34,15 +34,16 @@ spec:
   serviceName: "diego-cell-set"
   template:
     metadata:
-      annotations:
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-cell\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100},{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"router\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
+      name: "diego-cell"
       labels:
         skiff-role-name: "diego-cell"
-      name: "diego-cell"
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
+        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-cell\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100},{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"router\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
+        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6)) }}
+      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -64,19 +65,44 @@ spec:
                   - "router"
               topologyKey: "beta.kubernetes.io/os"
             weight: 100
+        {{- if .Values.sizing.diego_cell.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.diego_cell.affinity.nodeAffinity }}
+        {{- end }}
       {{- end }}
       containers:
       - env:
+        {{- if not .Values.secrets.BBS_CLIENT_CRT }}
         - name: "BBS_CLIENT_CRT"
           valueFrom:
             secretKeyRef:
               key: "bbs-client-crt"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_CLIENT_CRT }}
+        - name: "BBS_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-client-crt"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.BBS_CLIENT_KEY }}
         - name: "BBS_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "bbs-client-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_CLIENT_KEY }}
+        - name: "BBS_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-client-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
         - name: "DIEGO_CELL_DISK_CAPACITY_MB"
@@ -87,16 +113,39 @@ spec:
           value: {{ required "DIEGO_CELL_NETWORK_MTU configuration missing" .Values.env.DIEGO_CELL_NETWORK_MTU | quote }}
         - name: "DIEGO_CELL_SUBNET"
           value: {{ required "DIEGO_CELL_SUBNET configuration missing" .Values.env.DIEGO_CELL_SUBNET | quote }}
+
+        {{- if not .Values.secrets.DIEGO_CLIENT_CERT }}
         - name: "DIEGO_CLIENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "diego-client-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.DIEGO_CLIENT_CERT }}
+        - name: "DIEGO_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.DIEGO_CLIENT_KEY }}
         - name: "DIEGO_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "diego-client-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.DIEGO_CLIENT_KEY }}
+        - name: "DIEGO_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "GARDEN_DOCKER_REGISTRY"
           value: {{ required "GARDEN_DOCKER_REGISTRY configuration missing" .Values.env.GARDEN_DOCKER_REGISTRY | quote }}
         - name: "GARDEN_INSECURE_DOCKER_REGISTRIES"
@@ -109,16 +158,39 @@ spec:
           value: {{ .Values.env.HTTPS_PROXY | quote }}
         - name: "HTTP_PROXY"
           value: {{ .Values.env.HTTP_PROXY | quote }}
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_KEY }}
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -131,26 +203,49 @@ spec:
           value: {{ .Values.sizing.nats.count | quote }}
         - name: "LOG_LEVEL"
           value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
+
+        {{- if not .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRON_CERT }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.METRON_KEY }}
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRON_KEY }}
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "NO_PROXY"
           value: {{ .Values.env.NO_PROXY | quote }}
         - name: "PERSI_NFS_DRIVER_ALLOWED_IN_MOUNT"
@@ -169,7 +264,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "persi-nfs-driver-ldap-password"
-              name: "secret"
+              name: "secrets"
         - name: "PERSI_NFS_DRIVER_LDAP_PORT"
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_PORT | quote }}
         - name: "PERSI_NFS_DRIVER_LDAP_PROTOCOL"
@@ -178,18 +273,39 @@ spec:
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_USER | quote }}
         - name: "PERSI_NFS_DRIVER_LDAP_USER_FQDN"
           value: {{ .Values.env.PERSI_NFS_DRIVER_LDAP_USER_FQDN | quote }}
-        - name: "RELEASE_REVISION"
-          value: {{ .Release.Revision | quote }}
+
+        {{- if not .Values.secrets.REP_SERVER_CERT }}
         - name: "REP_SERVER_CERT"
           valueFrom:
             secretKeyRef:
               key: "rep-server-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.REP_SERVER_CERT }}
+        - name: "REP_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "rep-server-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.REP_SERVER_KEY }}
         - name: "REP_SERVER_KEY"
           valueFrom:
             secretKeyRef:
               key: "rep-server-key"
-              name: "secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.REP_SERVER_KEY }}
+        - name: "REP_SERVER_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "rep-server-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "ROOTFS_TRUSTED_CERTS"
           value: {{ .Values.env.ROOTFS_TRUSTED_CERTS | quote }}
         - name: "SCF_LOG_HOST"
@@ -208,17 +324,22 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secrets"
         - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-tcp-emitter-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:7975b012c381415ee8987e3155ed5d18dad8f5c6"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:3ea7162adec29c32b5e5f6d51d3c51a3391fdcfe"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "diego-cell"
         ports:
@@ -241,7 +362,25 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          requests:
+            {{- if and .Values.sizing.memory.requests .Values.sizing.diego_cell.memory.request }}
+            memory: "{{ int .Values.sizing.diego_cell.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.requests .Values.sizing.diego_cell.cpu.request }}
+            cpu: "{{ int .Values.sizing.diego_cell.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.sizing.memory.limits .Values.sizing.diego_cell.memory.limit }}
+            memory: "{{ int .Values.sizing.diego_cell.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.limits .Values.sizing.diego_cell.cpu.limit }}
+            cpu: "{{ int .Values.sizing.diego_cell.cpu.limit }}m"
+            {{- end }}
+
         securityContext:
           privileged: true
         volumeMounts:
@@ -252,7 +391,8 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
-  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
+      terminationGracePeriodSeconds: 600
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}

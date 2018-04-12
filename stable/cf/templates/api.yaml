@@ -44,15 +44,16 @@ spec:
   serviceName: "api-set"
   template:
     metadata:
-      annotations:
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"api\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
+      name: "api"
       labels:
         skiff-role-name: "api"
-      name: "api"
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
+        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"api\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
+        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 6)) }}
+      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -65,6 +66,9 @@ spec:
                   - "api"
               topologyKey: "beta.kubernetes.io/os"
             weight: 100
+        {{- if .Values.sizing.api.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.api.affinity.nodeAffinity }}
+        {{- end }}
       {{- end }}
       containers:
       - env:
@@ -72,35 +76,70 @@ spec:
           value: {{ required "ALLOWED_CORS_DOMAINS configuration missing" .Values.env.ALLOWED_CORS_DOMAINS | quote }}
         - name: "ALLOW_APP_SSH_ACCESS"
           value: {{ required "ALLOW_APP_SSH_ACCESS configuration missing" .Values.env.ALLOW_APP_SSH_ACCESS | quote }}
+
+        {{- if .Values.secrets.APP_SSH_KEY_FINGERPRINT }}
         - name: "APP_SSH_KEY_FINGERPRINT"
           valueFrom:
             secretKeyRef:
               key: "app-ssh-key-fingerprint"
-              name: "secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.APP_SSH_KEY_FINGERPRINT }}
+        - name: "APP_SSH_KEY_FINGERPRINT"
+          valueFrom:
+            secretKeyRef:
+              key: "app-ssh-key-fingerprint"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "APP_TOKEN_UPLOAD_GRACE_PERIOD"
           value: {{ required "APP_TOKEN_UPLOAD_GRACE_PERIOD configuration missing" .Values.env.APP_TOKEN_UPLOAD_GRACE_PERIOD | quote }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "BULK_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "bulk-api-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
+
+        {{- if .Values.secrets.CC_SERVER_CRT }}
         - name: "CC_SERVER_CRT"
           valueFrom:
             secretKeyRef:
               key: "cc-server-crt"
-              name: "secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.CC_SERVER_CRT }}
+        - name: "CC_SERVER_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.CC_SERVER_KEY }}
         - name: "CC_SERVER_KEY"
           valueFrom:
             secretKeyRef:
               key: "cc-server-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.CC_SERVER_KEY }}
+        - name: "CC_SERVER_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "CDN_URI"
           value: {{ .Values.env.CDN_URI | quote }}
         - name: "CLUSTER_BUILD"
@@ -115,7 +154,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "db-encryption-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "DEFAULT_APP_DISK_IN_MB"
           value: {{ required "DEFAULT_APP_DISK_IN_MB configuration missing" .Values.env.DEFAULT_APP_DISK_IN_MB | quote }}
         - name: "DEFAULT_APP_MEMORY"
@@ -134,17 +173,40 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-api-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
         - name: "INTERNAL_CA_KEY"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_KEY }}
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -161,40 +223,61 @@ spec:
           value: {{ required "MAX_APP_DISK_IN_MB configuration missing" .Values.env.MAX_APP_DISK_IN_MB | quote }}
         - name: "MAX_HEALTH_CHECK_TIMEOUT"
           value: {{ required "MAX_HEALTH_CHECK_TIMEOUT configuration missing" .Values.env.MAX_HEALTH_CHECK_TIMEOUT | quote }}
+
+        {{- if not .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRON_CERT }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.METRON_KEY }}
         - name: "METRON_KEY"
           valueFrom:
             secretKeyRef:
               key: "metron-key"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRON_KEY }}
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "NGINX_MAX_REQUEST_BODY_SIZE"
           value: {{ required "NGINX_MAX_REQUEST_BODY_SIZE configuration missing" .Values.env.NGINX_MAX_REQUEST_BODY_SIZE | quote }}
-        - name: "RELEASE_REVISION"
-          value: {{ .Release.Revision | quote }}
         - name: "ROUTER_SERVICES_SECRET"
           valueFrom:
             secretKeyRef:
               key: "router-services-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -209,7 +292,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "staging-upload-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "SUPPORT_ADDRESS"
           value: {{ required "SUPPORT_ADDRESS configuration missing" .Values.env.SUPPORT_ADDRESS | quote }}
         - name: "SUSE_STACK"
@@ -220,27 +303,27 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
-              name: "secret"
+              name: "secrets"
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-routing-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-service-dashboards-client-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-service-key-client-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cloud-controller-username-lookup-secret"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
@@ -249,7 +332,12 @@ spec:
           value: {{ required "USE_DIEGO_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote }}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{ required "USE_STAGER_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-api:e3328367d89ead72fd966eb27c8ea30afba18fa8"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-api:cd68164a5002828f10fd27355cbe765604ba50ba"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "api"
         ports:
@@ -272,14 +360,33 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          requests:
+            {{- if and .Values.sizing.memory.requests .Values.sizing.api.memory.request }}
+            memory: "{{ int .Values.sizing.api.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.requests .Values.sizing.api.cpu.request }}
+            cpu: "{{ int .Values.sizing.api.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.sizing.memory.limits .Values.sizing.api.memory.limit }}
+            memory: "{{ int .Values.sizing.api.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.limits .Values.sizing.api.cpu.limit }}
+            cpu: "{{ int .Values.sizing.api.cpu.limit }}m"
+            {{- end }}
+
         securityContext: ~
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
-  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
+      terminationGracePeriodSeconds: 600
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}

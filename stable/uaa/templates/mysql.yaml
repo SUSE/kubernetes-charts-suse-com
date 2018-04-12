@@ -31,6 +31,8 @@ spec:
       name: "mysql"
       labels:
         skiff-role-name: "mysql"
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
       containers:
       - env:
@@ -44,30 +46,39 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "MYSQL_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-admin-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cluster-health-password"
-              name: "secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-galera-healthcheck-endpoint-password"
-              name: "secret"
-        - name: "RELEASE_REVISION"
-          value: {{ .Release.Revision | quote }}
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        - name: "SCF_LOG_HOST"
+          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+        - name: "SCF_LOG_PORT"
+          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "UAADB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "uaadb-password"
-              name: "secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:8362990b11d7ab7d81c1b494003ceef5cef466ac"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:6b9f76518a6d3d556818728e68f378a1dc50ca9e"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "mysql"
         ports:
@@ -99,7 +110,25 @@ spec:
           periodSeconds: 0
           successThreshold: 0
           timeoutSeconds: 0
-        resources: ~
+        resources:
+          requests:
+            {{- if and .Values.sizing.memory.requests .Values.sizing.mysql.memory.request }}
+            memory: "{{ int .Values.sizing.mysql.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.requests .Values.sizing.mysql.cpu.request }}
+            cpu: "{{ int .Values.sizing.mysql.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.sizing.memory.limits .Values.sizing.mysql.memory.limit }}
+            memory: "{{ int .Values.sizing.mysql.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.sizing.cpu.limits .Values.sizing.mysql.cpu.limit }}
+            cpu: "{{ int .Values.sizing.mysql.cpu.limit }}m"
+            {{- end }}
+
         securityContext: ~
         volumeMounts:
         - mountPath: "/var/vcap/store"
@@ -109,7 +138,8 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
-  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (int .Capabilities.KubeVersion.Minor) 7)) }}
+      terminationGracePeriodSeconds: 600
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
