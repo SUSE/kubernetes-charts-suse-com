@@ -1,5 +1,5 @@
 # Tag for images
-consoleVersion: cap-1.0.2-g0f880b9
+consoleVersion: cap-1.1.0-g627eb29
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
@@ -61,9 +61,9 @@ uaa:
   skipSSLValidation: false
  # SCF values compatability 
 env:
+  DOMAIN:
   UAA_HOST: 
-  UAA_ADMIN_CLIENT_SECRET: 
-  UAA_PORT:
+  UAA_PORT: 2793
 kube:
   external_console_https_port: 8443
   storage_class:
