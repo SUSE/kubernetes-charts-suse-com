@@ -1,0 +1,55 @@
+---
+apiVersion: "batch/v1"
+kind: "Job"
+metadata:
+  name: "cf-usb-sidecar-mysql-setup"
+spec:
+  template:
+    metadata:
+      name: "cf-usb-sidecar-mysql-setup"
+      labels:
+        skiff-role-name: "cf-usb-sidecar-mysql-setup"
+    spec:
+      containers:
+      - env:
+        - name: "CF_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "cf-admin-password"
+              name: "cf-usb-sidecar-mysql-secret"
+        - name: "CF_ADMIN_USER"
+          value: {{ required "CF_ADMIN_USER configuration missing" .Values.env.CF_ADMIN_USER | quote }}
+        - name: "CF_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "cf-ca-cert"
+              name: "cf-usb-sidecar-mysql-secret"
+        - name: "CF_DOMAIN"
+          value: {{ required "CF_DOMAIN configuration missing" .Values.env.CF_DOMAIN | quote }}
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "SERVICE_LOCATION"
+          value: {{ required "SERVICE_LOCATION configuration missing" .Values.env.SERVICE_LOCATION | quote }}
+        - name: "SERVICE_TYPE"
+          value: {{ .Values.env.SERVICE_TYPE | quote }}
+        - name: "SIDECAR_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "sidecar-api-key"
+              name: "cf-usb-sidecar-mysql-secret"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "cf-usb-sidecar-mysql-secret"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-mysql-setup:0.0.0-pre.34-develop"
+        name: "cf-usb-sidecar-mysql-setup"
+        resources:
+          requests:
+            memory: 100M
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "OnFailure"
