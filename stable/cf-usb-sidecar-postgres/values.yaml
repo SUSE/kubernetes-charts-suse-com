@@ -1,0 +1,26 @@
+---
+env:
+  CF_ADMIN_PASSWORD: ~
+  CF_ADMIN_USER: ~
+  CF_CA_CERT: ~
+  CF_DOMAIN: ~
+  SERVICE_LOCATION: ~
+  SERVICE_POSTGRESQL_HOST: ~
+  SERVICE_POSTGRESQL_PASS: cf-usb-sidecar-postgres-admin-password
+  SERVICE_POSTGRESQL_PORT: 5432
+  SERVICE_POSTGRESQL_SSLMODE: require
+  SERVICE_POSTGRESQL_USER: postgres
+  SERVICE_TYPE: postgres
+  SIDECAR_LOG_LEVEL: info
+  UAA_CA_CERT: ~
+
+kube:
+  external_ip: "192.168.77.77"
+  storage_class:
+    persistent: persistent
+    shared: shared
+  registry:
+    hostname: staging.registry.howdoi.website
+    username: ""
+    password: ""
+  organization: splatform
