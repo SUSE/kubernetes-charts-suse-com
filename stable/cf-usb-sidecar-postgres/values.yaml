@@ -20,7 +20,7 @@ kube:
     persistent: persistent
     shared: shared
   registry:
-    hostname: staging.registry.howdoi.website
+    hostname: registry.suse.de
     username: ""
     password: ""
-  organization: splatform
+  organization: cap
