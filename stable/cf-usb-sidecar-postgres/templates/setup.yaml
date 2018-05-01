@@ -44,7 +44,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "cf-usb-sidecar-postgres-secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-postgres-setup:0.0.0-pre.23-develop"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-postgres-setup:0.0.0-366-gcf3d373"
         name: "cf-usb-sidecar-postgres-setup"
         resources:
           requests:

@@ -16,7 +16,7 @@ spec:
       name: "cf-usb-sidecar-postgres"
     spec:
       containers:
-      - image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-postgres:0.0.0-pre.23-develop"
+      - image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-postgres:0.0.0-366-gcf3d373"
         name: "cf-usb-sidecar-postgres"
         env:
         - name: "KUBERNETES_NAMESPACE"
