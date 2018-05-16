@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart for SUSE Universal Service Broker Sidecar for access to MySql
 name: cf-usb-sidecar-mysql
-version: 0.0.0-366-gcf3d373
+version: 1.0.1
