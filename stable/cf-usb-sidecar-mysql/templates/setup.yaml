@@ -44,7 +44,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "cf-usb-sidecar-mysql-secret"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-mysql-setup:0.0.0-366-gcf3d373"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/cf-usb-sidecar-mysql-setup:1.0.0-0-ga9ef5f7"
         name: "cf-usb-sidecar-mysql-setup"
         resources:
           requests:
