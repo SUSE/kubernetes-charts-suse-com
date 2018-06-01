@@ -1,16 +1,20 @@
 ---
 # The mysql role contains the following jobs:
 #
-# - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure SCF / fissile
+# - global-uaa-properties: Dummy BOSH job used to host global parameters that
+#   are required to configure SCF / fissile
 #
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   patches for upstream bugs
+#   SCF patches for upstream bugs
 #
 # Also: mysql
 
-{{- if gt (int .Values.sizing.mysql.count) 1 }}
-_maxReplicas: {{ fail "mysql cannot have more than 1 instances" }}
+{{- if gt (int .Values.sizing.mysql.count) 3 }}
+_maxReplicas: {{ fail "mysql cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.mysql.count) 1) (lt (int .Values.sizing.mysql.count) 2)) }}
+_minHAReplicas: {{ fail "mysql must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.mysql.count) 1 }}
@@ -24,7 +28,7 @@ metadata:
   labels:
     skiff-role-name: "mysql"
 spec:
-  replicas: {{ .Values.sizing.mysql.count }}
+  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.mysql.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.mysql.count }} {{- end }}
   serviceName: "mysql-set"
   template:
     metadata:
@@ -42,38 +46,95 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_ADMIN_PASSWORD }}
         - name: "MYSQL_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_ADMIN_PASSWORD }}
+        - name: "MYSQL_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-admin-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
         - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cluster-health-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
+        - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-cluster-health-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
+        - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-galera-healthcheck-endpoint-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-galera-healthcheck-endpoint-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+
+        {{- if not .Values.secrets.UAADB_PASSWORD }}
         - name: "UAADB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "uaadb-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:6b9f76518a6d3d556818728e68f378a1dc50ca9e"
+        {{- end }}
+
+        {{- if .Values.secrets.UAADB_PASSWORD }}
+        - name: "UAADB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "uaadb-password"
+              name: "secrets"
+        {{- end }}
+
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:398a0125dc6dd8afeafa76272460021a16b32e6e"
         lifecycle:
           preStop:
             exec:
@@ -129,7 +190,19 @@ spec:
             cpu: "{{ int .Values.sizing.mysql.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.mysql.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.mysql.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.mysql.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts:
         - mountPath: "/var/vcap/store"
           name: "mysql-data"
@@ -139,6 +212,7 @@ spec:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
@@ -190,39 +264,6 @@ items:
       port: 4444
       protocol: "TCP"
       targetPort: 0
-    selector:
-      skiff-role-name: "mysql"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "mysql"
-  spec:
-    ports:
-    - name: "mysql"
-      port: 3306
-      protocol: "TCP"
-      targetPort: "mysql"
-    - name: "galera-tcp"
-      port: 4567
-      protocol: "TCP"
-      targetPort: "galera-tcp"
-    - name: "galera-udp"
-      port: 4567
-      protocol: "UDP"
-      targetPort: "galera-udp"
-    - name: "galera-ist"
-      port: 4568
-      protocol: "TCP"
-      targetPort: "galera-ist"
-    - name: "healthcheck"
-      port: 9200
-      protocol: "TCP"
-      targetPort: "healthcheck"
-    - name: "xtrabackup"
-      port: 4444
-      protocol: "TCP"
-      targetPort: "xtrabackup"
     selector:
       skiff-role-name: "mysql"
     type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}

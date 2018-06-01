@@ -37,11 +37,7 @@ spec:
         skiff-role-name: "mysql"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"mysql\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -57,7 +53,6 @@ spec:
         {{- if .Values.sizing.mysql.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.mysql.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -101,63 +96,174 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_ADMIN_PASSWORD }}
         - name: "MYSQL_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_ADMIN_PASSWORD }}
+        - name: "MYSQL_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-admin-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CF_USB_PASSWORD }}
         - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cf-usb-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
+        - name: "MYSQL_CF_USB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-cf-usb-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
         - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cluster-health-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
+        - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-cluster-health-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-locket-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
+        - name: "MYSQL_DIEGO_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_DIEGO_PASSWORD }}
         - name: "MYSQL_DIEGO_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
+        - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-galera-healthcheck-endpoint-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-galera-healthcheck-endpoint-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
         - name: "MYSQL_PERSI_NFS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-persi-nfs-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
+        - name: "MYSQL_PERSI_NFS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-persi-nfs-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
         - name: "MYSQL_ROUTING_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-routing-api-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
+        - name: "MYSQL_ROUTING_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-routing-api-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:8b871defe2417a8181f6c893683e5be8e59e9521"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:1b6bf365fd8c5f153fff557fe74ca906a268f50d"
         lifecycle:
           preStop:
             exec:
@@ -213,7 +319,19 @@ spec:
             cpu: "{{ int .Values.sizing.mysql.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.mysql.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.mysql.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.mysql.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts:
         - mountPath: "/var/vcap/store"
           name: "mysql-data"
@@ -223,6 +341,7 @@ spec:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"
