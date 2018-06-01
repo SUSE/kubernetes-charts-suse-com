@@ -1,16 +1,20 @@
 ---
 # The mysql-proxy role contains the following jobs:
 #
-# - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure SCF / fissile
+# - global-uaa-properties: Dummy BOSH job used to host global parameters that
+#   are required to configure SCF / fissile
 #
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   patches for upstream bugs
+#   SCF patches for upstream bugs
 #
 # Also: proxy
 
 {{- if gt (int .Values.sizing.mysql_proxy.count) 3 }}
 _maxReplicas: {{ fail "mysql_proxy cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.mysql_proxy.count) 1) (lt (int .Values.sizing.mysql_proxy.count) 2)) }}
+_minHAReplicas: {{ fail "mysql_proxy must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.mysql_proxy.count) 1 }}
@@ -24,7 +28,7 @@ metadata:
   labels:
     skiff-role-name: "mysql-proxy"
 spec:
-  replicas: {{ .Values.sizing.mysql_proxy.count }}
+  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.mysql_proxy.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.mysql_proxy.count }} {{- end }}
   selector:
     matchLabels:
       skiff-role-name: "mysql-proxy"
@@ -44,23 +48,46 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
         - name: "MYSQL_PROXY_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-proxy-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql-proxy:ec0c88d694f88ed38feccaf077f0d81ec51c824a"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql-proxy:eeb473559cdfa758c7abbe88635117c4336d1f9c"
         lifecycle:
           preStop:
             exec:
@@ -107,13 +134,26 @@ spec:
             cpu: "{{ int .Values.sizing.mysql_proxy.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.mysql_proxy.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.mysql_proxy.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.mysql_proxy.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

@@ -37,6 +37,21 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "skiff-role-name"
+                  operator: "In"
+                  values:
+                  - "syslog-adapter"
+              topologyKey: "beta.kubernetes.io/os"
+            weight: 100
+        {{- if .Values.sizing.syslog_adapter.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.syslog_adapter.affinity.nodeAffinity }}
+        {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -115,11 +130,22 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -159,7 +185,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:52fcc62757732e131174ab45c958a52896b9d7ad"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-adapter:552026e32438d66c6545c5a0da720e4cf1f3e442"
         lifecycle:
           preStop:
             exec:
@@ -203,13 +229,26 @@ spec:
             cpu: "{{ int .Values.sizing.syslog_adapter.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.syslog_adapter.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.syslog_adapter.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.syslog_adapter.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

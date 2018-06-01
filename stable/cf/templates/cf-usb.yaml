@@ -40,11 +40,7 @@ spec:
         skiff-role-name: "cf-usb"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"cf-usb\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -60,7 +56,6 @@ spec:
         {{- if .Values.sizing.cf_usb.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.cf_usb.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -98,11 +93,22 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.CF_USB_PASSWORD }}
         - name: "CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "cf-usb-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.CF_USB_PASSWORD }}
+        - name: "CF_USB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "cf-usb-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
 
@@ -146,21 +152,55 @@ spec:
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
+        - name: "MYSQL_CF_USB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-cf-usb-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CF_USB_PASSWORD }}
         - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-cf-usb-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -172,16 +212,28 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
         - name: "UAA_CLIENTS_CF_USB_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cf-usb-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
+        - name: "UAA_CLIENTS_CF_USB_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cf-usb-secret"
+              name: "secrets"
+        {{- end }}
+
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:97a46eea6a456233dde3242acf19707e22bf4981"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:8be601226398532477dd9a1b29d5b29de5ebb564"
         lifecycle:
           preStop:
             exec:
@@ -218,13 +270,26 @@ spec:
             cpu: "{{ int .Values.sizing.cf_usb.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.cf_usb.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.cf_usb.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.cf_usb.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

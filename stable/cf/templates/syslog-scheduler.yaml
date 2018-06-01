@@ -33,6 +33,21 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "skiff-role-name"
+                  operator: "In"
+                  values:
+                  - "syslog-scheduler"
+              topologyKey: "beta.kubernetes.io/os"
+            weight: 100
+        {{- if .Values.sizing.syslog_scheduler.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.syslog_scheduler.affinity.nodeAffinity }}
+        {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -111,11 +126,22 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -155,7 +181,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:25066d087686f5d34dc25df771c6d1516c5f273c"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:d7524c9fe127c0f51fc42ffc74d558e84c7d98eb"
         lifecycle:
           preStop:
             exec:
@@ -196,13 +222,26 @@ spec:
             cpu: "{{ int .Values.sizing.syslog_scheduler.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.syslog_scheduler.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.syslog_scheduler.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.syslog_scheduler.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

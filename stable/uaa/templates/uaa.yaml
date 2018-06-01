@@ -1,8 +1,8 @@
 ---
 # The uaa role contains the following jobs:
 #
-# - global-properties: Dummy BOSH job used to host global parameters that are
-#   required to configure SCF / fissile
+# - global-uaa-properties: Dummy BOSH job used to host global parameters that
+#   are required to configure SCF / fissile
 #
 # - uaa: The UAA is the identity management service for Cloud Foundry. It's
 #   primary role is as an OAuth2 provider, issuing tokens for client
@@ -116,11 +116,22 @@ spec:
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "LOG_LEVEL"
           value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
 
         {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
         - name: "SAML_SERVICEPROVIDER_CERT"
@@ -160,11 +171,23 @@ spec:
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+
+        {{- if not .Values.secrets.UAADB_PASSWORD }}
         - name: "UAADB_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "uaadb-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAADB_PASSWORD }}
+        - name: "UAADB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "uaadb-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "UAA_ADMIN_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
@@ -203,7 +226,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:9d1859928fcda5fa73ca0e68a182e1784595c2c6"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:d468b424a88a5edf88eb25e3f76e69b7801f96a9"
         lifecycle:
           preStop:
             exec:
@@ -252,13 +275,26 @@ spec:
             cpu: "{{ int .Values.sizing.uaa.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.uaa.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.uaa.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.uaa.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

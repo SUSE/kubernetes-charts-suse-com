@@ -38,11 +38,7 @@ spec:
         skiff-role-name: "cc-uploader"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"cc-uploader\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -58,7 +54,6 @@ spec:
         {{- if .Values.sizing.cc_uploader.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.cc_uploader.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         {{- if not .Values.secrets.BBS_CLIENT_CRT }}
@@ -235,11 +230,22 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -284,7 +290,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:a308a9dacf2a166ddc5b2ddc9ace0c79586b8fec"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:1c9a3248c8dddd54d23e31a925691e2cc90969cd"
         lifecycle:
           preStop:
             exec:
@@ -321,13 +327,26 @@ spec:
             cpu: "{{ int .Values.sizing.cc_uploader.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.cc_uploader.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.cc_uploader.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.cc_uploader.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

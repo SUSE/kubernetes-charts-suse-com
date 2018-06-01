@@ -6,7 +6,10 @@
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# Also: auctioneer, metron_agent
+# - patch-properties: Dummy BOSH job used to host parameters that are used in
+#   SCF patches for upstream bugs
+#
+# Also: auctioneer, cfdot, metron_agent
 
 {{- if gt (int .Values.sizing.diego_brain.count) 3 }}
 _maxReplicas: {{ fail "diego_brain cannot have more than 3 instances" }}
@@ -38,11 +41,7 @@ spec:
         skiff-role-name: "diego-brain"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-brain\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -58,7 +57,6 @@ spec:
         {{- if .Values.sizing.diego_brain.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.diego_brain.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         {{- if .Values.secrets.AUCTIONEER_REP_CERT }}
@@ -77,14 +75,6 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.AUCTIONEER_REP_KEY }}
-        - name: "AUCTIONEER_REP_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "auctioneer-rep-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUCTIONEER_REP_KEY }}
         - name: "AUCTIONEER_REP_KEY"
           valueFrom:
@@ -93,12 +83,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.AUCTIONEER_SERVER_CERT }}
-        - name: "AUCTIONEER_SERVER_CERT"
+        {{- if .Values.secrets.AUCTIONEER_REP_KEY }}
+        - name: "AUCTIONEER_REP_KEY"
           valueFrom:
             secretKeyRef:
-              key: "auctioneer-server-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "auctioneer-rep-key"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.AUCTIONEER_SERVER_CERT }}
@@ -107,6 +97,14 @@ spec:
             secretKeyRef:
               key: "auctioneer-server-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUCTIONEER_SERVER_CERT }}
+        - name: "AUCTIONEER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "auctioneer-server-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.AUCTIONEER_SERVER_KEY }}
@@ -125,6 +123,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.BBS_CLIENT_CRT }}
+        - name: "BBS_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-client-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         {{- if .Values.secrets.BBS_CLIENT_CRT }}
         - name: "BBS_CLIENT_CRT"
           valueFrom:
@@ -133,12 +139,12 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.BBS_CLIENT_CRT }}
-        - name: "BBS_CLIENT_CRT"
+        {{- if .Values.secrets.BBS_CLIENT_KEY }}
+        - name: "BBS_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "bbs-client-crt"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "bbs-client-key"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_CLIENT_KEY }}
@@ -149,11 +155,35 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_CLIENT_KEY }}
-        - name: "BBS_CLIENT_KEY"
+        {{- if not .Values.secrets.BBS_REP_CERT }}
+        - name: "BBS_REP_CERT"
           valueFrom:
             secretKeyRef:
-              key: "bbs-client-key"
+              key: "bbs-rep-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_REP_CERT }}
+        - name: "BBS_REP_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-rep-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.BBS_REP_KEY }}
+        - name: "BBS_REP_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-rep-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_REP_KEY }}
+        - name: "BBS_REP_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-rep-key"
               name: "secrets"
         {{- end }}
 
@@ -200,6 +230,39 @@ spec:
           value: "z1"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
+        - name: "LOGGREGATOR_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
+        - name: "LOGGREGATOR_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
+        - name: "LOGGREGATOR_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
+        - name: "LOGGREGATOR_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "LOG_LEVEL"
           value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
 
@@ -219,14 +282,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.METRON_KEY }}
         - name: "METRON_KEY"
           valueFrom:
@@ -235,11 +290,30 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.METRON_KEY }}
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -251,7 +325,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:db5bcd976c900e7936fb04231b3c54366569a84d"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:2940109d0336a513da02ca31b4293ae777c19070"
         lifecycle:
           preStop:
             exec:
@@ -285,13 +359,26 @@ spec:
             cpu: "{{ int .Values.sizing.diego_brain.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.diego_brain.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.diego_brain.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.diego_brain.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

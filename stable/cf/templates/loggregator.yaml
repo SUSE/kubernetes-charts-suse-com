@@ -40,11 +40,7 @@ spec:
         skiff-role-name: "loggregator"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"loggregator\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -60,7 +56,6 @@ spec:
         {{- if .Values.sizing.loggregator.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.loggregator.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -111,20 +106,20 @@ spec:
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
 
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
           valueFrom:
             secretKeyRef:
               key: "metron-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.METRON_CERT }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.METRON_KEY }}
@@ -143,16 +138,38 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -176,14 +193,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.TRAFFICCONTROLLER_KEY }}
-        - name: "TRAFFICCONTROLLER_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "trafficcontroller-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.TRAFFICCONTROLLER_KEY }}
         - name: "TRAFFICCONTROLLER_KEY"
           valueFrom:
@@ -192,21 +201,41 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.TRAFFICCONTROLLER_KEY }}
+        - name: "TRAFFICCONTROLLER_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "trafficcontroller-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
+
+        {{- if not .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
         - name: "UAA_CLIENTS_DOPPLER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-doppler-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
+        - name: "UAA_CLIENTS_DOPPLER_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-doppler-secret"
+              name: "secrets"
+        {{- end }}
+
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
           value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:fff5d581ca8465cf42544c14802958ba3b9144bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator:9fa3562254deca56f5a948c42729300b2a6f0320"
         lifecycle:
           preStop:
             exec:
@@ -250,13 +279,26 @@ spec:
             cpu: "{{ int .Values.sizing.loggregator.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.loggregator.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.loggregator.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.loggregator.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

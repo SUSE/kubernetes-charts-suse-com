@@ -38,11 +38,7 @@ spec:
         skiff-role-name: "diego-locket"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"diego-locket\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -58,7 +54,6 @@ spec:
         {{- if .Values.sizing.diego_locket.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.diego_locket.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -136,16 +131,41 @@ spec:
           value: "z1"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
-        - name: "LOG_LEVEL"
-          value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
 
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
+        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
+        - name: "LOGGREGATOR_CLIENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "metron-cert"
+              key: "loggregator-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
+        - name: "LOGGREGATOR_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-cert"
               name: "secrets"
         {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
+        - name: "LOGGREGATOR_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
+        - name: "LOGGREGATOR_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-key"
+              name: "secrets"
+        {{- end }}
+
+        - name: "LOG_LEVEL"
+          value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
 
         {{- if not .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
@@ -153,6 +173,14 @@ spec:
             secretKeyRef:
               key: "metron-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRON_CERT }}
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.METRON_KEY }}
@@ -171,16 +199,38 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-locket-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -192,7 +242,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-locket:211570bd2dec52e019ea1911db48740ea3950c35"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-locket:47ee770cc1157e49b0e647904f54632356540078"
         lifecycle:
           preStop:
             exec:
@@ -226,13 +276,26 @@ spec:
             cpu: "{{ int .Values.sizing.diego_locket.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.diego_locket.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.diego_locket.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.diego_locket.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

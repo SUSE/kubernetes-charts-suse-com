@@ -37,6 +37,21 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "skiff-role-name"
+                  operator: "In"
+                  values:
+                  - "syslog-rlp"
+              topologyKey: "beta.kubernetes.io/os"
+            weight: 100
+        {{- if .Values.sizing.syslog_rlp.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.syslog_rlp.affinity.nodeAffinity }}
+        {{- end }}
       containers:
       - env:
         - name: "CATS_SUITES"
@@ -115,11 +130,22 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -159,7 +185,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:675f3c2f6456a3faf550806c9e6a045bb9f43bfc"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:7256fc28125c1d86623e745c5aa07f479a27d208"
         lifecycle:
           preStop:
             exec:
@@ -193,13 +219,26 @@ spec:
             cpu: "{{ int .Values.sizing.syslog_rlp.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.syslog_rlp.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.syslog_rlp.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.syslog_rlp.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:

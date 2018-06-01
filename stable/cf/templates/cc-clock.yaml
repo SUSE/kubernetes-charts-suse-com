@@ -38,11 +38,7 @@ spec:
         skiff-role-name: "cc-clock"
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
-        {{- if not (or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6))) }}
-        scheduler.alpha.kubernetes.io/affinity: "{\"podAntiAffinity\":{\"preferredDuringSchedulingIgnoredDuringExecution\":[{\"podAffinityTerm\":{\"labelSelector\":{\"matchExpressions\":[{\"key\":\"skiff-role-name\",\"operator\":\"In\",\"values\":[\"cc-clock\"]}]},\"topologyKey\":\"beta.kubernetes.io/os\"},\"weight\":100}]}}"
-        {{- end }}
     spec:
-      {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 6)) }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -58,16 +54,27 @@ spec:
         {{- if .Values.sizing.cc_clock.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.cc_clock.affinity.nodeAffinity }}
         {{- end }}
-      {{- end }}
       containers:
       - env:
         - name: "ALLOW_APP_SSH_ACCESS"
           value: {{ required "ALLOW_APP_SSH_ACCESS configuration missing" .Values.env.ALLOW_APP_SSH_ACCESS | quote }}
+
+        {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BLOBSTORE_PASSWORD }}
+        - name: "BLOBSTORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "CATS_SUITES"
           value: {{ .Values.env.CATS_SUITES | quote }}
 
@@ -120,11 +127,22 @@ spec:
           value: {{ .Values.env.DEFAULT_STACK | quote }}
         - name: "DOMAIN"
           value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
+
+        {{- if not .Values.secrets.INTERNAL_API_PASSWORD }}
         - name: "INTERNAL_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "internal-api-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_API_PASSWORD }}
+        - name: "INTERNAL_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-api-password"
+              name: "secrets"
+        {{- end }}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -187,14 +205,6 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.METRON_KEY }}
         - name: "METRON_KEY"
           valueFrom:
@@ -203,16 +213,46 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.METRON_KEY }}
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
@@ -221,11 +261,23 @@ spec:
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
         - name: "STAGING_TIMEOUT"
           value: {{ required "STAGING_TIMEOUT configuration missing" .Values.env.STAGING_TIMEOUT | quote }}
+
+        {{- if not .Values.secrets.STAGING_UPLOAD_PASSWORD }}
         - name: "STAGING_UPLOAD_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "staging-upload-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.STAGING_UPLOAD_PASSWORD }}
+        - name: "STAGING_UPLOAD_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "staging-upload-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SUSE_STACK"
           value: "sle12"
         - name: "SUSE_STACK_DESCRIPTION"
@@ -235,16 +287,39 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-routing-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
+        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-routing-secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-service-dashboards-client-secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
         - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-service-dashboards-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "UAA_HOST"
           value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
         - name: "UAA_PORT"
@@ -253,7 +328,7 @@ spec:
           value: {{ required "USE_DIEGO_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote }}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{ required "USE_STAGER_PRIVILEGED_CONTAINERS configuration missing" .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:5cdaa7dbed1f7eaddf3e345a0fea963379e2e5e1"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:ba2bcd838ee8a6bab2b70418615175f93b5b626b"
         lifecycle:
           preStop:
             exec:
@@ -282,10 +357,23 @@ spec:
             cpu: "{{ int .Values.sizing.cc_clock.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.cc_clock.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.cc_clock.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.cc_clock.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~

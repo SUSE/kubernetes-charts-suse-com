@@ -39,16 +39,38 @@ spec:
           value: {{ required "BLOBSTORE_ACCESS_RULES configuration missing" .Values.env.BLOBSTORE_ACCESS_RULES | quote }}
         - name: "BLOBSTORE_MAX_UPLOAD_SIZE"
           value: {{ required "BLOBSTORE_MAX_UPLOAD_SIZE configuration missing" .Values.env.BLOBSTORE_MAX_UPLOAD_SIZE | quote }}
+
+        {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BLOBSTORE_PASSWORD }}
+        - name: "BLOBSTORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.BLOBSTORE_SECURE_LINK }}
         - name: "BLOBSTORE_SECURE_LINK"
           valueFrom:
             secretKeyRef:
               key: "blobstore-secure-link"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BLOBSTORE_SECURE_LINK }}
+        - name: "BLOBSTORE_SECURE_LINK"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-secure-link"
+              name: "secrets"
+        {{- end }}
 
         {{- if not .Values.secrets.BLOBSTORE_TLS_CERT }}
         - name: "BLOBSTORE_TLS_CERT"
@@ -66,20 +88,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BLOBSTORE_TLS_KEY }}
-        - name: "BLOBSTORE_TLS_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "blobstore-tls-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BLOBSTORE_TLS_KEY }}
         - name: "BLOBSTORE_TLS_KEY"
           valueFrom:
             secretKeyRef:
               key: "blobstore-tls-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BLOBSTORE_TLS_KEY }}
+        - name: "BLOBSTORE_TLS_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-tls-key"
+              name: "secrets"
         {{- end }}
 
         - name: "CATS_SUITES"
@@ -162,23 +184,45 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:b01d7e01a625f8d8f2a6c1c8138fbe18ada1099e"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:12904a983a633372cf268b6472a86b3ae9bbf415"
         lifecycle:
           preStop:
             exec:
@@ -215,7 +259,19 @@ spec:
             cpu: "{{ int .Values.sizing.blobstore.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.blobstore.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.blobstore.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.blobstore.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts:
         - mountPath: "/var/vcap/store"
           name: "blobstore-data"
@@ -225,6 +281,7 @@ spec:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
   {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
   updateStrategy:
     type: "RollingUpdate"

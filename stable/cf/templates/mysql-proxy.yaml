@@ -83,23 +83,48 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
           value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
         - name: "MYSQL_PROXY_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-proxy-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        - name: "MYSQL_PROXY_HEALTHCHECK_TIMEOUT"
+          value: {{ required "MYSQL_PROXY_HEALTHCHECK_TIMEOUT configuration missing" .Values.env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT | quote }}
         - name: "SCF_LOG_HOST"
           value: {{ .Values.env.SCF_LOG_HOST | quote }}
         - name: "SCF_LOG_PORT"
           value: {{ .Values.env.SCF_LOG_PORT | quote }}
         - name: "SCF_LOG_PROTOCOL"
           value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:ed9952ba8e2f8d06e4dbc5f646f461f1d61954c0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:4783731de92848bd1ce27fed53d133c91d12711d"
         lifecycle:
           preStop:
             exec:
@@ -146,13 +171,26 @@ spec:
             cpu: "{{ int .Values.sizing.mysql_proxy.cpu.limit }}m"
             {{- end }}
 
-        securityContext: ~
+        securityContext:
+          {{- if has "ALL" .Values.sizing.mysql_proxy.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.mysql_proxy.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.mysql_proxy.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
         volumeMounts: ~
       dnsPolicy: "ClusterFirst"
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
+      volumes: ~
 ---
 apiVersion: "v1"
 items:
