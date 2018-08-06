@@ -10,7 +10,7 @@
 _maxReplicas: {{ fail "syslog_rlp cannot have more than 65535 instances" }}
 {{- end }}
 
-{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.syslog_rlp.count) 1) (lt (int .Values.sizing.syslog_rlp.count) 2)) }}
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.syslog_rlp.count) 1) (lt (int .Values.sizing.syslog_rlp.count) 2)) }}
 _minHAReplicas: {{ fail "syslog_rlp must have at least 2 instances for HA" }}
 {{- end }}
 
@@ -18,17 +18,36 @@ _minHAReplicas: {{ fail "syslog_rlp must have at least 2 instances for HA" }}
 _minReplicas: {{ fail "syslog_rlp must have at least 1 instances" }}
 {{- end }}
 
-apiVersion: "extensions/v1beta1"
-kind: "Deployment"
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
 metadata:
   name: "syslog-rlp"
   labels:
     skiff-role-name: "syslog-rlp"
 spec:
-  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.syslog_rlp.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.syslog_rlp.count }} {{- end }}
-  selector:
-    matchLabels:
-      skiff-role-name: "syslog-rlp"
+  podManagementPolicy: "Parallel"
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.syslog_rlp.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.syslog_rlp.count }} {{- end }}
+  serviceName: "syslog-rlp-set"
   template:
     metadata:
       name: "syslog-rlp"
@@ -55,7 +74,7 @@ spec:
       containers:
       - env:
         - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -89,14 +108,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
 
         {{- if not .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
@@ -147,11 +166,11 @@ spec:
         {{- end }}
 
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
 
         {{- if not .Values.secrets.SYSLOG_RLP_CERT }}
         - name: "SYSLOG_RLP_CERT"
@@ -185,7 +204,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:7256fc28125c1d86623e745c5aa07f479a27d208"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-rlp:381958deab5d108aa89792b0024ae8863e6e861f"
         lifecycle:
           preStop:
             exec:
@@ -198,24 +217,25 @@ spec:
           name: "rlp"
           protocol: "TCP"
         readinessProbe:
-          tcpSocket:
-            port: 8082
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.syslog_rlp.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.syslog_rlp.memory.request }}
             memory: "{{ int .Values.sizing.syslog_rlp.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.syslog_rlp.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.syslog_rlp.cpu.request }}
             cpu: "{{ int .Values.sizing.syslog_rlp.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.syslog_rlp.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.syslog_rlp.memory.limit }}
             memory: "{{ int .Values.sizing.syslog_rlp.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.syslog_rlp.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.syslog_rlp.cpu.limit }}
             cpu: "{{ int .Values.sizing.syslog_rlp.cpu.limit }}m"
             {{- end }}
 
@@ -239,9 +259,26 @@ spec:
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
       volumes: ~
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
 ---
 apiVersion: "v1"
 items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "syslog-rlp-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "rlp"
+      port: 8082
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "syslog-rlp"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -254,5 +291,4 @@ items:
       targetPort: "rlp"
     selector:
       skiff-role-name: "syslog-rlp"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

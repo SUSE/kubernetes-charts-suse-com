@@ -16,6 +16,26 @@ _maxReplicas: {{ fail "blobstore cannot have more than 1 instances" }}
 _minReplicas: {{ fail "blobstore must have at least 1 instances" }}
 {{- end }}
 
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
@@ -23,6 +43,7 @@ metadata:
   labels:
     skiff-role-name: "blobstore"
 spec:
+  podManagementPolicy: "Parallel"
   replicas: {{ .Values.sizing.blobstore.count }}
   serviceName: "blobstore-set"
   template:
@@ -36,9 +57,9 @@ spec:
       containers:
       - env:
         - name: "BLOBSTORE_ACCESS_RULES"
-          value: {{ required "BLOBSTORE_ACCESS_RULES configuration missing" .Values.env.BLOBSTORE_ACCESS_RULES | quote }}
+          value: {{if ne (typeOf .Values.env.BLOBSTORE_ACCESS_RULES) "<nil>"}}{{if has (kindOf .Values.env.BLOBSTORE_ACCESS_RULES) (list "map" "slice")}}{{.Values.env.BLOBSTORE_ACCESS_RULES | toJson | quote}}{{else}}{{.Values.env.BLOBSTORE_ACCESS_RULES | quote}}{{end}}{{else}}{{fail "env.BLOBSTORE_ACCESS_RULES has not been set"}}{{end}}
         - name: "BLOBSTORE_MAX_UPLOAD_SIZE"
-          value: {{ required "BLOBSTORE_MAX_UPLOAD_SIZE configuration missing" .Values.env.BLOBSTORE_MAX_UPLOAD_SIZE | quote }}
+          value: {{if ne (typeOf .Values.env.BLOBSTORE_MAX_UPLOAD_SIZE) "<nil>"}}{{if has (kindOf .Values.env.BLOBSTORE_MAX_UPLOAD_SIZE) (list "map" "slice")}}{{.Values.env.BLOBSTORE_MAX_UPLOAD_SIZE | toJson | quote}}{{else}}{{.Values.env.BLOBSTORE_MAX_UPLOAD_SIZE | quote}}{{end}}{{else}}{{fail "env.BLOBSTORE_MAX_UPLOAD_SIZE has not been set"}}{{end}}
 
         {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
@@ -105,9 +126,9 @@ spec:
         {{- end }}
 
         - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
         - name: "DOMAIN"
-          value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
+          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -141,14 +162,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
 
@@ -217,12 +238,12 @@ spec:
         {{- end }}
 
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:12904a983a633372cf268b6472a86b3ae9bbf415"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-blobstore:7e1d48fb78f5e70d1b6f36e304520a25a7df2a52"
         lifecycle:
           preStop:
             exec:
@@ -238,24 +259,25 @@ spec:
           name: "blobstore"
           protocol: "TCP"
         readinessProbe:
-          tcpSocket:
-            port: 8080
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.blobstore.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.blobstore.memory.request }}
             memory: "{{ int .Values.sizing.blobstore.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.blobstore.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.blobstore.cpu.request }}
             cpu: "{{ int .Values.sizing.blobstore.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.blobstore.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.blobstore.memory.limit }}
             memory: "{{ int .Values.sizing.blobstore.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.blobstore.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.blobstore.cpu.limit }}
             cpu: "{{ int .Values.sizing.blobstore.cpu.limit }}m"
             {{- end }}
 
@@ -305,9 +327,7 @@ items:
   metadata:
     name: "blobstore-set"
   spec:
-    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
-    {{- end }}
     ports:
     - name: "blobstore-ext"
       port: 8080
@@ -319,7 +339,6 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "blobstore"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -336,5 +355,4 @@ items:
       targetPort: "blobstore"
     selector:
       skiff-role-name: "blobstore"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

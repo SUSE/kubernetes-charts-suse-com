@@ -12,12 +12,32 @@
 _maxReplicas: {{ fail "postgres cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.postgres.count) 1) (lt (int .Values.sizing.postgres.count) 2)) }}
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.postgres.count) 1) (lt (int .Values.sizing.postgres.count) 2)) }}
 _minHAReplicas: {{ fail "postgres must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.postgres.count) 1 }}
 _minReplicas: {{ fail "postgres must have at least 1 instances" }}
+{{- end }}
+
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
 apiVersion: "apps/v1beta1"
@@ -27,7 +47,8 @@ metadata:
   labels:
     skiff-role-name: "postgres"
 spec:
-  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.postgres.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.postgres.count }} {{- end }}
+  podManagementPolicy: "OrderedReady"
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.postgres.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.postgres.count }} {{- end }}
   serviceName: "postgres-set"
   template:
     metadata:
@@ -55,7 +76,7 @@ spec:
       containers:
       - env:
         - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -89,12 +110,12 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
 
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -118,12 +139,12 @@ spec:
               key: "postgres-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-postgres:e6625d124aa695902da99a16544c215216694112"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-postgres:8f1bc482fd7c296d49cd6a8dd1870822f2f1853e"
         lifecycle:
           preStop:
             exec:
@@ -136,24 +157,25 @@ spec:
           name: "postgres"
           protocol: "TCP"
         readinessProbe:
-          tcpSocket:
-            port: 5524
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.postgres.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.postgres.memory.request }}
             memory: "{{ int .Values.sizing.postgres.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.postgres.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.postgres.cpu.request }}
             cpu: "{{ int .Values.sizing.postgres.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.postgres.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.postgres.memory.limit }}
             memory: "{{ int .Values.sizing.postgres.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.postgres.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.postgres.cpu.limit }}
             cpu: "{{ int .Values.sizing.postgres.cpu.limit }}m"
             {{- end }}
 
@@ -203,9 +225,7 @@ items:
   metadata:
     name: "postgres-set"
   spec:
-    {{- if not .Values.services.loadbalanced }}
     clusterIP: "None"
-    {{- end }}
     ports:
     - name: "postgres"
       port: 5524
@@ -213,5 +233,4 @@ items:
       targetPort: 0
     selector:
       skiff-role-name: "postgres"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 kind: "List"

@@ -26,18 +26,18 @@ spec:
       containers:
       - env:
         - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
         - name: "CLUSTER_ADMIN_AUTHORITIES"
-          value: {{ required "CLUSTER_ADMIN_AUTHORITIES configuration missing" .Values.env.CLUSTER_ADMIN_AUTHORITIES | quote }}
+          value: {{if ne (typeOf .Values.env.CLUSTER_ADMIN_AUTHORITIES) "<nil>"}}{{if has (kindOf .Values.env.CLUSTER_ADMIN_AUTHORITIES) (list "map" "slice")}}{{.Values.env.CLUSTER_ADMIN_AUTHORITIES | toJson | quote}}{{else}}{{.Values.env.CLUSTER_ADMIN_AUTHORITIES | quote}}{{end}}{{else}}{{fail "env.CLUSTER_ADMIN_AUTHORITIES has not been set"}}{{end}}
         - name: "CLUSTER_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "cluster-admin-password"
               name: "secrets"
         - name: "HTTPS_PROXY"
-          value: {{ .Values.env.HTTPS_PROXY | quote }}
+          value: {{if ne (typeOf .Values.env.HTTPS_PROXY) "<nil>"}}{{if has (kindOf .Values.env.HTTPS_PROXY) (list "map" "slice")}}{{.Values.env.HTTPS_PROXY | toJson | quote}}{{else}}{{.Values.env.HTTPS_PROXY | quote}}{{end}}{{else}}""{{end}}
         - name: "HTTP_PROXY"
-          value: {{ .Values.env.HTTP_PROXY | quote }}
+          value: {{if ne (typeOf .Values.env.HTTP_PROXY) "<nil>"}}{{if has (kindOf .Values.env.HTTP_PROXY) (list "map" "slice")}}{{.Values.env.HTTP_PROXY | toJson | quote}}{{else}}{{.Values.env.HTTP_PROXY | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -71,12 +71,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -95,7 +95,7 @@ spec:
         {{- end }}
 
         - name: "NO_PROXY"
-          value: {{ .Values.env.NO_PROXY | quote }}
+          value: {{if ne (typeOf .Values.env.NO_PROXY) "<nil>"}}{{if has (kindOf .Values.env.NO_PROXY) (list "map" "slice")}}{{.Values.env.NO_PROXY | toJson | quote}}{{else}}{{.Values.env.NO_PROXY | quote}}{{end}}{{else}}""{{end}}
 
         {{- if .Values.secrets.PERSI_NFS_BROKER_PASSWORD }}
         - name: "PERSI_NFS_BROKER_PASSWORD"
@@ -114,11 +114,11 @@ spec:
         {{- end }}
 
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
         - name: "UAA_ADMIN_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
@@ -339,10 +339,10 @@ spec:
         {{- end }}
 
         - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:14c5a6c76de409fcd9b3162fca895cba198d4301"
+          value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:e915eb93caf8d4803a6af5b4f9088edfcbeeccb7"
         lifecycle:
           preStop:
             exec:
@@ -354,20 +354,20 @@ spec:
         readinessProbe: ~
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.post_deployment_setup.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.post_deployment_setup.memory.request }}
             memory: "{{ int .Values.sizing.post_deployment_setup.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.post_deployment_setup.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.post_deployment_setup.cpu.request }}
             cpu: "{{ int .Values.sizing.post_deployment_setup.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.post_deployment_setup.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.post_deployment_setup.memory.limit }}
             memory: "{{ int .Values.sizing.post_deployment_setup.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.post_deployment_setup.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.post_deployment_setup.cpu.limit }}
             cpu: "{{ int .Values.sizing.post_deployment_setup.cpu.limit }}m"
             {{- end }}
 

@@ -14,7 +14,7 @@
 _maxReplicas: {{ fail "tcp_router cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.sizing.HA (and (ne (int .Values.sizing.tcp_router.count) 1) (lt (int .Values.sizing.tcp_router.count) 2)) }}
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.tcp_router.count) 1) (lt (int .Values.sizing.tcp_router.count) 2)) }}
 _minHAReplicas: {{ fail "tcp_router must have at least 2 instances for HA" }}
 {{- end }}
 
@@ -22,17 +22,36 @@ _minHAReplicas: {{ fail "tcp_router must have at least 2 instances for HA" }}
 _minReplicas: {{ fail "tcp_router must have at least 1 instances" }}
 {{- end }}
 
-apiVersion: "extensions/v1beta1"
-kind: "Deployment"
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
 metadata:
   name: "tcp-router"
   labels:
     skiff-role-name: "tcp-router"
 spec:
-  replicas: {{ if and .Values.sizing.HA (eq (int .Values.sizing.tcp_router.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.tcp_router.count }} {{- end }}
-  selector:
-    matchLabels:
-      skiff-role-name: "tcp-router"
+  podManagementPolicy: "Parallel"
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.tcp_router.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.tcp_router.count }} {{- end }}
+  serviceName: "tcp-router-set"
   template:
     metadata:
       name: "tcp-router"
@@ -59,9 +78,9 @@ spec:
       containers:
       - env:
         - name: "CATS_SUITES"
-          value: {{ .Values.env.CATS_SUITES | quote }}
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
         - name: "DNS_HEALTH_CHECK_HOST"
-          value: {{ required "DNS_HEALTH_CHECK_HOST configuration missing" .Values.env.DNS_HEALTH_CHECK_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.DNS_HEALTH_CHECK_HOST) "<nil>"}}{{if has (kindOf .Values.env.DNS_HEALTH_CHECK_HOST) (list "map" "slice")}}{{.Values.env.DNS_HEALTH_CHECK_HOST | toJson | quote}}{{else}}{{.Values.env.DNS_HEALTH_CHECK_HOST | quote}}{{end}}{{else}}{{fail "env.DNS_HEALTH_CHECK_HOST has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -95,16 +114,16 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "LOG_LEVEL"
-          value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
+          value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
 
         {{- if not .Values.secrets.METRON_CERT }}
         - name: "METRON_CERT"
@@ -155,11 +174,11 @@ spec:
         {{- end }}
 
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
         - name: "UAA_CA_CERT"
           valueFrom:
             secretKeyRef:
@@ -183,10 +202,10 @@ spec:
         {{- end }}
 
         - name: "UAA_HOST"
-          value: {{ required "UAA_HOST configuration missing" .Values.env.UAA_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
-          value: {{ .Values.env.UAA_PORT | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:c18cc4362ef7026ceb09248cfd5886e84f9fd189"
+          value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:fc908ecc48f1f3c4c1ae2424417e0343906ca017"
         lifecycle:
           preStop:
             exec:
@@ -214,31 +233,26 @@ spec:
         {{- end }}
 
         readinessProbe:
-          failureThreshold: 0
-          httpGet:
-            path: "/health"
-            port: 80
-            scheme: "HTTP"
-          initialDelaySeconds: 0
-          periodSeconds: 0
-          successThreshold: 0
-          timeoutSeconds: 0
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+            - "curl --silent --fail http://${HOSTNAME}/health"
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.tcp_router.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.tcp_router.memory.request }}
             memory: "{{ int .Values.sizing.tcp_router.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.tcp_router.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.tcp_router.cpu.request }}
             cpu: "{{ int .Values.sizing.tcp_router.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.tcp_router.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.tcp_router.memory.limit }}
             memory: "{{ int .Values.sizing.tcp_router.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.tcp_router.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.tcp_router.cpu.limit }}
             cpu: "{{ int .Values.sizing.tcp_router.cpu.limit }}m"
             {{- end }}
 
@@ -262,9 +276,32 @@ spec:
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
       volumes: ~
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
 ---
 apiVersion: "v1"
 items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "tcp-router-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "healthcheck"
+      port: 2341
+      protocol: "TCP"
+      targetPort: 0
+    {{- range $port := until (int .Values.sizing.tcp_router.ports.tcp_route.count) }}
+    - name: "tcp-route-{{ $port }}"
+      port: {{ add 20000 $port }}
+      protocol: "TCP"
+      targetPort: 0
+    {{- end }}
+    selector:
+      skiff-role-name: "tcp-router"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -283,18 +320,16 @@ items:
     {{- end }}
     selector:
       skiff-role-name: "tcp-router"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
     name: "tcp-router-public"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     externalIPs: {{ .Values.kube.external_ips | toJson }}
+    {{- end }}
+
     ports:
-    - name: "healthcheck"
-      port: 2341
-      protocol: "TCP"
-      targetPort: "healthcheck"
     {{- range $port := until (int .Values.sizing.tcp_router.ports.tcp_route.count) }}
     - name: "tcp-route-{{ $port }}"
       port: {{ add 20000 $port }}
@@ -303,5 +338,9 @@ items:
     {{- end }}
     selector:
       skiff-role-name: "tcp-router"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
+
+    {{- if .Values.services.loadbalanced }}
+    type: "LoadBalancer"
+    {{- end }}
+
 kind: "List"
