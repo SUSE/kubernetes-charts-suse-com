@@ -4,6 +4,12 @@
 # - global-uaa-properties: Dummy BOSH job used to host global parameters that
 #   are required to configure SCF / fissile
 #
+# - wait-for-database: This is a pre-start job to delay starting the rest of the
+#   role until a database connection is ready. Currently it only checks that a
+#   response can be obtained from the server, and not that it responds
+#   intelligently.
+#
+#
 # - uaa: The UAA is the identity management service for Cloud Foundry. It's
 #   primary role is as an OAuth2 provider, issuing tokens for client
 #   applications to use when they act on behalf of Cloud Foundry users. It can
@@ -16,21 +22,44 @@
 _maxReplicas: {{ fail "uaa cannot have more than 65535 instances" }}
 {{- end }}
 
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.uaa.count) 1) (lt (int .Values.sizing.uaa.count) 2)) }}
+_minHAReplicas: {{ fail "uaa must have at least 2 instances for HA" }}
+{{- end }}
+
 {{- if lt (int .Values.sizing.uaa.count) 1 }}
 _minReplicas: {{ fail "uaa must have at least 1 instances" }}
 {{- end }}
 
-apiVersion: "extensions/v1beta1"
-kind: "Deployment"
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
 metadata:
   name: "uaa"
   labels:
     skiff-role-name: "uaa"
 spec:
-  replicas: {{ .Values.sizing.uaa.count }}
-  selector:
-    matchLabels:
-      skiff-role-name: "uaa"
+  podManagementPolicy: "OrderedReady"
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.uaa.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.uaa.count }} {{- end }}
+  serviceName: "uaa-set"
   template:
     metadata:
       name: "uaa"
@@ -41,8 +70,13 @@ spec:
     spec:
       containers:
       - env:
+        - name: "AEK_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "aek-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         - name: "DOMAIN"
-          value: {{ required "DOMAIN configuration missing" .Values.env.DOMAIN | quote }}
+          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -108,14 +142,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SERVICE_DOMAIN_SUFFIX"
-          value: {{ .Values.env.KUBE_SERVICE_DOMAIN_SUFFIX | quote }}
         - name: "LOG_LEVEL"
-          value: {{ required "LOG_LEVEL configuration missing" .Values.env.LOG_LEVEL | quote }}
+          value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -133,20 +167,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
-        - name: "SAML_SERVICEPROVIDER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "saml-serviceprovider-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
         - name: "SAML_SERVICEPROVIDER_CERT"
           valueFrom:
             secretKeyRef:
               key: "saml-serviceprovider-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
+        - name: "SAML_SERVICEPROVIDER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "saml-serviceprovider-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.SAML_SERVICEPROVIDER_KEY }}
@@ -166,11 +200,11 @@ spec:
         {{- end }}
 
         - name: "SCF_LOG_HOST"
-          value: {{ .Values.env.SCF_LOG_HOST | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PORT"
-          value: {{ .Values.env.SCF_LOG_PORT | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
-          value: {{ required "SCF_LOG_PROTOCOL configuration missing" .Values.env.SCF_LOG_PROTOCOL | quote }}
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
 
         {{- if not .Values.secrets.UAADB_PASSWORD }}
         - name: "UAADB_PASSWORD"
@@ -226,7 +260,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:d468b424a88a5edf88eb25e3f76e69b7801f96a9"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:44757b334551f0db4de92fdca5e72320267d258b"
         lifecycle:
           preStop:
             exec:
@@ -242,36 +276,26 @@ spec:
           name: "uaa-ssl"
           protocol: "TCP"
         readinessProbe:
-          failureThreshold: 0
-          httpGet:
-            httpHeaders:
-            - name: "Host"
-              value: "uaa"
-            - name: "Accept"
-              value: "application/json"
-            path: "/info"
-            port: 8443
-            scheme: "HTTPS"
-          initialDelaySeconds: 0
-          periodSeconds: 0
-          successThreshold: 0
-          timeoutSeconds: 0
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+            - "curl --resolve uaa:8443:$(getent hosts ${HOSTNAME} | awk '{ print $1 }') --fail -H 'Host: uaa' -H 'Accept: application/json' https://uaa:8443/info"
         resources:
           requests:
-            {{- if and .Values.sizing.memory.requests .Values.sizing.uaa.memory.request }}
+            {{- if and .Values.config.memory.requests .Values.sizing.uaa.memory.request }}
             memory: "{{ int .Values.sizing.uaa.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.requests .Values.sizing.uaa.cpu.request }}
+            {{- if and .Values.config.cpu.requests .Values.sizing.uaa.cpu.request }}
             cpu: "{{ int .Values.sizing.uaa.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.sizing.memory.limits .Values.sizing.uaa.memory.limit }}
+            {{- if and .Values.config.memory.limits .Values.sizing.uaa.memory.limit }}
             memory: "{{ int .Values.sizing.uaa.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.sizing.cpu.limits .Values.sizing.uaa.cpu.limit }}
+            {{- if and .Values.config.cpu.limits .Values.sizing.uaa.cpu.limit }}
             cpu: "{{ int .Values.sizing.uaa.cpu.limit }}m"
             {{- end }}
 
@@ -295,9 +319,30 @@ spec:
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 600
       volumes: ~
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
 ---
 apiVersion: "v1"
 items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "uaa-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "uaa"
+      port: 8080
+      protocol: "TCP"
+      targetPort: 0
+    - name: "uaa-ssl"
+      port: 2793
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "uaa"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
@@ -314,13 +359,15 @@ items:
       targetPort: "uaa-ssl"
     selector:
       skiff-role-name: "uaa"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
 - apiVersion: "v1"
   kind: "Service"
   metadata:
     name: "uaa-public"
   spec:
+    {{- if not .Values.services.loadbalanced }}
     externalIPs: {{ .Values.kube.external_ips | toJson }}
+    {{- end }}
+
     ports:
     - name: "uaa-ssl"
       port: 2793
@@ -328,5 +375,9 @@ items:
       targetPort: "uaa-ssl"
     selector:
       skiff-role-name: "uaa"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
+
+    {{- if .Values.services.loadbalanced }}
+    type: "LoadBalancer"
+    {{- end }}
+
 kind: "List"

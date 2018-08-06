@@ -1,4 +1,4 @@
-apiVersion: 2.10.1+cf1.15.0.0.g647b2273
+apiVersion: 2.11.0+cf1.36.0.0.g4c9e9ae1
 description: A Helm chart for SUSE UAA
 name: uaa
-version: 2.10.1
+version: 2.11.0
