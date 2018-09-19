@@ -1,5 +1,5 @@
 # Tag for images
-consoleVersion: 2.0.0-cap
+consoleVersion: 2.1.0-837d731-cap
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
@@ -10,12 +10,15 @@ dbProvider: mysql
 #noProxy: localhost
 #ftpProxy: proxy.corp.net
 #socksProxy: sock-proxy.corp.net
+imagePullPolicy: IfNotPresent
 useLb: false
 console:
   port: 443
   cookieDomain:
 # externalIP: 127.0.0.1
   backendLogLevel: info
+  ssoLogin: false
+  ssoOptions:
 images:
   console: stratos-console
   proxy: stratos-jetstream
@@ -78,3 +81,5 @@ kube:
     email: default
 services:
   loadbalanced: false
+metrics:
+  enabled: false
