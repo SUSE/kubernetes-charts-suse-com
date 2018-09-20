@@ -1,5 +1,5 @@
 ---
-# The diego-api role contains the following jobs:
+# The diego-api instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -9,14 +9,14 @@
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: bbs, cfdot, metron_agent
+# Also: bbs, cfdot, loggregator_agent, locket
 
 {{- if gt (int .Values.sizing.diego_api.count) 3 }}
 _maxReplicas: {{ fail "diego_api cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.diego_api.count) 1) (lt (int .Values.sizing.diego_api.count) 3)) }}
-_minHAReplicas: {{ fail "diego_api must have at least 3 instances for HA" }}
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.diego_api.count) 1) (lt (int .Values.sizing.diego_api.count) 2)) }}
+_minHAReplicas: {{ fail "diego_api must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.diego_api.count) 1 }}
@@ -43,10 +43,6 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-{{- if eq (mod (int .Values.sizing.diego_api.count) 2) 0 }}
-_oddReplicas: {{ fail "diego_api must have an odd instance count" }}
-{{- end }}
-
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
@@ -55,7 +51,7 @@ metadata:
     skiff-role-name: "diego-api"
 spec:
   podManagementPolicy: "OrderedReady"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.diego_api.count) 1) -}} 3 {{- else -}} {{ .Values.sizing.diego_api.count }} {{- end }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.diego_api.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.diego_api.count }} {{- end }}
   serviceName: "diego-api-set"
   template:
     metadata:
@@ -104,14 +100,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_AUCTIONEER_KEY }}
-        - name: "BBS_AUCTIONEER_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-auctioneer-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_AUCTIONEER_KEY }}
         - name: "BBS_AUCTIONEER_KEY"
           valueFrom:
@@ -120,11 +108,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_REP_CERT }}
-        - name: "BBS_REP_CERT"
+        {{- if .Values.secrets.BBS_AUCTIONEER_KEY }}
+        - name: "BBS_AUCTIONEER_KEY"
           valueFrom:
             secretKeyRef:
-              key: "bbs-rep-cert"
+              key: "bbs-auctioneer-key"
               name: "secrets"
         {{- end }}
 
@@ -134,6 +122,14 @@ spec:
             secretKeyRef:
               key: "bbs-rep-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_REP_CERT }}
+        - name: "BBS_REP_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-rep-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_REP_KEY }}
@@ -152,20 +148,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_SERVER_CRT }}
-        - name: "BBS_SERVER_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-server-crt"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_SERVER_CRT }}
         - name: "BBS_SERVER_CRT"
           valueFrom:
             secretKeyRef:
               key: "bbs-server-crt"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_SERVER_CRT }}
+        - name: "BBS_SERVER_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-server-crt"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_SERVER_KEY }}
@@ -187,6 +183,41 @@ spec:
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
 
+        {{- if not .Values.secrets.DIEGO_CLIENT_CERT }}
+        - name: "DIEGO_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.DIEGO_CLIENT_CERT }}
+        - name: "DIEGO_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.DIEGO_CLIENT_KEY }}
+        - name: "DIEGO_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.DIEGO_CLIENT_KEY }}
+        - name: "DIEGO_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "diego-client-key"
+              name: "secrets"
+        {{- end }}
+
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
+
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
@@ -203,22 +234,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -228,11 +243,35 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
-        - name: "LOGGREGATOR_CLIENT_CERT"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-client-cert"
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
               name: "secrets"
         {{- end }}
 
@@ -244,11 +283,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
-        - name: "LOGGREGATOR_CLIENT_KEY"
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
+        - name: "LOGGREGATOR_CLIENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-client-key"
+              key: "loggregator-client-cert"
               name: "secrets"
         {{- end }}
 
@@ -260,40 +299,16 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.LOGGREGATOR_CLIENT_KEY }}
+        - name: "LOGGREGATOR_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-client-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
 
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -311,12 +326,20 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
-        - name: "MYSQL_DIEGO_PASSWORD"
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-diego-password"
+              key: "mysql-diego-locket-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_DIEGO_PASSWORD }}
@@ -325,6 +348,14 @@ spec:
             secretKeyRef:
               key: "mysql-diego-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
+        - name: "MYSQL_DIEGO_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-password"
+              name: "secrets"
         {{- end }}
 
         - name: "SCF_LOG_HOST"
@@ -338,7 +369,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:8d416748980cd6b3e8c7efb2d07a819a2e28a605"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:9a7fc6a191a2b7e4c1aceb74eb62d4b26dbf0307"
         lifecycle:
           preStop:
             exec:
@@ -353,12 +384,16 @@ spec:
         - containerPort: 17017
           name: "cell-bbs-dbg"
           protocol: "TCP"
+        - containerPort: 8891
+          name: "locket"
+          protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/usr/bin/env"
             - "FISSILE_ACTIVE_PASSIVE_PROBE=/var/vcap/jobs/global-properties/bin/readiness/diego-api"
             - "/opt/fissile/readiness-probe.sh"
+            - "head -c0 </dev/tcp/${HOSTNAME}/8891"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.diego_api.memory.request }}
@@ -420,6 +455,10 @@ items:
       port: 17017
       protocol: "TCP"
       targetPort: 0
+    - name: "locket"
+      port: 8891
+      protocol: "TCP"
+      targetPort: 0
     selector:
       skiff-role-name: "diego-api"
       skiff-role-active: "true"
@@ -432,11 +471,15 @@ items:
     - name: "cell-bbs-api"
       port: 8889
       protocol: "TCP"
-      targetPort: "cell-bbs-api"
+      targetPort: 8889
     - name: "cell-bbs-dbg"
       port: 17017
       protocol: "TCP"
-      targetPort: "cell-bbs-dbg"
+      targetPort: 17017
+    - name: "locket"
+      port: 8891
+      protocol: "TCP"
+      targetPort: 8891
     selector:
       skiff-role-name: "diego-api"
       skiff-role-active: "true"

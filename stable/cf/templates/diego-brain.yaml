@@ -1,5 +1,5 @@
 ---
-# The diego-brain role contains the following jobs:
+# The diego-brain instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -9,7 +9,7 @@
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: auctioneer, cfdot, metron_agent
+# Also: auctioneer, cfdot, loggregator_agent
 
 {{- if gt (int .Values.sizing.diego_brain.count) 3 }}
 _maxReplicas: {{ fail "diego_brain cannot have more than 3 instances" }}
@@ -78,20 +78,20 @@ spec:
         {{- end }}
       containers:
       - env:
-        {{- if .Values.secrets.AUCTIONEER_REP_CERT }}
-        - name: "AUCTIONEER_REP_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "auctioneer-rep-cert"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUCTIONEER_REP_CERT }}
         - name: "AUCTIONEER_REP_CERT"
           valueFrom:
             secretKeyRef:
               key: "auctioneer-rep-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUCTIONEER_REP_CERT }}
+        - name: "AUCTIONEER_REP_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "auctioneer-rep-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.AUCTIONEER_REP_KEY }}
@@ -110,20 +110,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.AUCTIONEER_SERVER_CERT }}
-        - name: "AUCTIONEER_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "auctioneer-server-cert"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUCTIONEER_SERVER_CERT }}
         - name: "AUCTIONEER_SERVER_CERT"
           valueFrom:
             secretKeyRef:
               key: "auctioneer-server-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUCTIONEER_SERVER_CERT }}
+        - name: "AUCTIONEER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "auctioneer-server-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.AUCTIONEER_SERVER_KEY }}
@@ -158,20 +158,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_CLIENT_KEY }}
-        - name: "BBS_CLIENT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_CLIENT_KEY }}
         - name: "BBS_CLIENT_KEY"
           valueFrom:
             secretKeyRef:
               key: "bbs-client-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_CLIENT_KEY }}
+        - name: "BBS_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-client-key"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_REP_CERT }}
@@ -208,6 +208,8 @@ spec:
 
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -225,22 +227,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -249,6 +235,38 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets"
+        {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
         - name: "LOGGREGATOR_CLIENT_CERT"
@@ -285,38 +303,6 @@ spec:
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
 
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -344,7 +330,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:15d1a7aec87fff0d27d361784e32eb6f6664b00f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-brain:79467b936aa8e5e420530cba6f84bddfcb53e99a"
         lifecycle:
           preStop:
             exec:
@@ -431,7 +417,7 @@ items:
     - name: "diego-auction"
       port: 9016
       protocol: "TCP"
-      targetPort: "diego-auction"
+      targetPort: 9016
     selector:
       skiff-role-name: "diego-brain"
       skiff-role-active: "true"

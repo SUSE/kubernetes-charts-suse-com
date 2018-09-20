@@ -1,5 +1,5 @@
 ---
-# The uaa role contains the following jobs:
+# The uaa instance group contains the following jobs:
 #
 # - global-uaa-properties: Dummy BOSH job used to host global parameters that
 #   are required to configure SCF / fissile
@@ -260,7 +260,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:44757b334551f0db4de92fdca5e72320267d258b"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:c5330c2a048866a57ad25b131c34223c0ec04aec"
         lifecycle:
           preStop:
             exec:
@@ -352,11 +352,11 @@ items:
     - name: "uaa"
       port: 8080
       protocol: "TCP"
-      targetPort: "uaa"
+      targetPort: 8080
     - name: "uaa-ssl"
       port: 2793
       protocol: "TCP"
-      targetPort: "uaa-ssl"
+      targetPort: 8443
     selector:
       skiff-role-name: "uaa"
 - apiVersion: "v1"
@@ -372,7 +372,7 @@ items:
     - name: "uaa-ssl"
       port: 2793
       protocol: "TCP"
-      targetPort: "uaa-ssl"
+      targetPort: 8443
     selector:
       skiff-role-name: "uaa"
 

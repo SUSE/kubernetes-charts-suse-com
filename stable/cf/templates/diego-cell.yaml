@@ -1,5 +1,5 @@
 ---
-# The diego-cell role contains the following jobs:
+# The diego-cell instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -11,8 +11,8 @@
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: rep, cfdot, route_emitter, garden, cflinuxfs2-rootfs-setup,
-# opensuse42-rootfs-setup, cf-sle12-setup, metron_agent, nfsv3driver
+# Also: rep, cfdot, route_emitter, garden, groot-btrfs, cflinuxfs2-rootfs-setup,
+# opensuse42-rootfs-setup, cf-sle12-setup, loggregator_agent, nfsv3driver
 
 {{- if gt (int .Values.sizing.diego_cell.count) 254 }}
 _maxReplicas: {{ fail "diego_cell cannot have more than 254 instances" }}
@@ -90,14 +90,6 @@ spec:
         {{- end }}
       containers:
       - env:
-        {{- if .Values.secrets.BBS_CLIENT_CRT }}
-        - name: "BBS_CLIENT_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-client-crt"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_CLIENT_CRT }}
         - name: "BBS_CLIENT_CRT"
           valueFrom:
@@ -106,11 +98,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_CLIENT_KEY }}
-        - name: "BBS_CLIENT_KEY"
+        {{- if .Values.secrets.BBS_CLIENT_CRT }}
+        - name: "BBS_CLIENT_CRT"
           valueFrom:
             secretKeyRef:
-              key: "bbs-client-key"
+              key: "bbs-client-crt"
               name: "secrets"
         {{- end }}
 
@@ -120,6 +112,14 @@ spec:
             secretKeyRef:
               key: "bbs-client-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_CLIENT_KEY }}
+        - name: "BBS_CLIENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-client-key"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_REP_CERT }}
@@ -168,8 +168,6 @@ spec:
           value: {{if ne (typeOf .Values.env.GARDEN_APPARMOR_PROFILE) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_APPARMOR_PROFILE) (list "map" "slice")}}{{.Values.env.GARDEN_APPARMOR_PROFILE | toJson | quote}}{{else}}{{.Values.env.GARDEN_APPARMOR_PROFILE | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_DOCKER_REGISTRY"
           value: {{if ne (typeOf .Values.env.GARDEN_DOCKER_REGISTRY) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_DOCKER_REGISTRY) (list "map" "slice")}}{{.Values.env.GARDEN_DOCKER_REGISTRY | toJson | quote}}{{else}}{{.Values.env.GARDEN_DOCKER_REGISTRY | quote}}{{end}}{{else}}{{fail "env.GARDEN_DOCKER_REGISTRY has not been set"}}{{end}}
-        - name: "GARDEN_INSECURE_DOCKER_REGISTRIES"
-          value: {{if ne (typeOf .Values.env.GARDEN_INSECURE_DOCKER_REGISTRIES) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_INSECURE_DOCKER_REGISTRIES) (list "map" "slice")}}{{.Values.env.GARDEN_INSECURE_DOCKER_REGISTRIES | toJson | quote}}{{else}}{{.Values.env.GARDEN_INSECURE_DOCKER_REGISTRIES | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_LINUX_DNS_SERVER"
           value: {{if ne (typeOf .Values.env.GARDEN_LINUX_DNS_SERVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_LINUX_DNS_SERVER) (list "map" "slice")}}{{.Values.env.GARDEN_LINUX_DNS_SERVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_LINUX_DNS_SERVER | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -178,6 +176,8 @@ spec:
           value: {{if ne (typeOf .Values.env.HTTPS_PROXY) "<nil>"}}{{if has (kindOf .Values.env.HTTPS_PROXY) (list "map" "slice")}}{{.Values.env.HTTPS_PROXY | toJson | quote}}{{else}}{{.Values.env.HTTPS_PROXY | quote}}{{end}}{{else}}""{{end}}
         - name: "HTTP_PROXY"
           value: {{if ne (typeOf .Values.env.HTTP_PROXY) "<nil>"}}{{if has (kindOf .Values.env.HTTP_PROXY) (list "map" "slice")}}{{.Values.env.HTTP_PROXY | toJson | quote}}{{else}}{{.Values.env.HTTP_PROXY | quote}}{{end}}{{else}}""{{end}}
+        - name: "INSECURE_DOCKER_REGISTRIES"
+          value: {{if ne (typeOf .Values.env.INSECURE_DOCKER_REGISTRIES) "<nil>"}}{{if has (kindOf .Values.env.INSECURE_DOCKER_REGISTRIES) (list "map" "slice")}}{{.Values.env.INSECURE_DOCKER_REGISTRIES | toJson | quote}}{{else}}{{.Values.env.INSECURE_DOCKER_REGISTRIES | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -195,22 +195,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -221,6 +205,38 @@ spec:
           value: "z1"
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
         - name: "LOGGREGATOR_CLIENT_CERT"
@@ -256,38 +272,6 @@ spec:
 
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -421,7 +405,7 @@ spec:
           value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
           value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:594cb4096aa716b33b8c47871f62c33a7e6164c7"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:3f27be1d566f44264bd8e3d9830d491499518aee"
         lifecycle:
           preStop:
             exec:

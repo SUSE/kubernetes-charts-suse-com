@@ -128,11 +128,11 @@ env:
   # values are tcp, and udp. The default is tcp.
   SCF_LOG_PROTOCOL: "tcp"
 
-# The sizing section contains configuration to change each individual role. Due
-# to limitations on the allowable names, any dashes ("-") in the role names are
-# replaced with underscores ("_").
+# The sizing section contains configuration to change each individual instance
+# group. Due to limitations on the allowable names, any dashes ("-") in the
+# instance group names are replaced with underscores ("_").
 sizing:
-  # The mysql role contains the following jobs:
+  # The mysql instance group contains the following jobs:
   #
   # - global-uaa-properties: Dummy BOSH job used to host global parameters that
   #   are required to configure SCF / fissile
@@ -140,7 +140,7 @@ sizing:
   # - patch-properties: Dummy BOSH job used to host parameters that are used in
   #   SCF patches for upstream bugs
   #
-  # Also: mysql
+  # Also: mysql, proxy
   mysql:
     # Node affinity rules can be specified here
     affinity: {}
@@ -148,7 +148,7 @@ sizing:
     # Additional privileges can be specified here
     capabilities: []
 
-    # The mysql role can scale between 1 and 3 instances.
+    # The mysql instance group can scale between 1 and 3 instances.
     # For high availability it needs at least 2 instances.
     count: 1
 
@@ -162,39 +162,10 @@ sizing:
 
     # Unit [MiB]
     memory:
-      request: 1779
+      request: 1900
       limit: ~
 
-  # The mysql-proxy role contains the following jobs:
-  #
-  # - global-uaa-properties: Dummy BOSH job used to host global parameters that
-  #   are required to configure SCF / fissile
-  #
-  # - patch-properties: Dummy BOSH job used to host parameters that are used in
-  #   SCF patches for upstream bugs
-  #
-  # Also: proxy
-  mysql_proxy:
-    # Node affinity rules can be specified here
-    affinity: {}
-
-    # Additional privileges can be specified here
-    capabilities: []
-
-    # The mysql-proxy role cannot be scaled.
-    count: 1
-
-    # Unit [millicore]
-    cpu:
-      request: 2000
-      limit: ~
-
-    # Unit [MiB]
-    memory:
-      request: 63
-      limit: ~
-
-  # The secret-generation role contains the following jobs:
+  # The secret-generation instance group contains the following jobs:
   #
   # - generate-secrets: This job will generate the secrets for the cluster
   secret_generation:
@@ -204,7 +175,7 @@ sizing:
     # Additional privileges can be specified here
     capabilities: []
 
-    # The secret-generation role cannot be scaled.
+    # The secret-generation instance group cannot be scaled.
     count: 1
 
     # Unit [millicore]
@@ -217,7 +188,7 @@ sizing:
       request: 256
       limit: ~
 
-  # The uaa role contains the following jobs:
+  # The uaa instance group contains the following jobs:
   #
   # - global-uaa-properties: Dummy BOSH job used to host global parameters that
   #   are required to configure SCF / fissile
@@ -242,7 +213,7 @@ sizing:
     # Additional privileges can be specified here
     capabilities: []
 
-    # The uaa role can scale between 1 and 65535 instances.
+    # The uaa instance group can scale between 1 and 65535 instances.
     # For high availability it needs at least 2 instances.
     count: 1
 
