@@ -1,12 +1,12 @@
 ---
-# The cc-uploader role contains the following jobs:
+# The cc-uploader instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# Also: tps, cc_uploader, metron_agent
+# Also: tps, cc_uploader, loggregator_agent
 
 {{- if gt (int .Values.sizing.cc_uploader.count) 3 }}
 _maxReplicas: {{ fail "cc_uploader cannot have more than 3 instances" }}
@@ -174,6 +174,9 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
+
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
@@ -190,22 +193,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -214,40 +201,41 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -309,7 +297,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:2c9b6e8058234c07578fe6cfccb1981c67d60876"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-uploader:ea95dd97e2cbe8ad48feedcd83b08fe56df0a100"
         lifecycle:
           preStop:
             exec:
@@ -400,11 +388,11 @@ items:
     - name: "cc-up-listen"
       port: 9091
       protocol: "TCP"
-      targetPort: "cc-up-listen"
+      targetPort: 9091
     - name: "cc-up-dbg"
       port: 17018
       protocol: "TCP"
-      targetPort: "cc-up-dbg"
+      targetPort: 17018
     selector:
       skiff-role-name: "cc-uploader"
 kind: "List"

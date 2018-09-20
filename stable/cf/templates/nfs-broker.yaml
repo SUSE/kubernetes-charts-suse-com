@@ -1,15 +1,19 @@
 ---
-# The nfs-broker role contains the following jobs:
+# The nfs-broker instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# Also: metron_agent, nfsbroker
+# Also: loggregator_agent, nfsbroker
 
 {{- if gt (int .Values.sizing.nfs_broker.count) 3 }}
 _maxReplicas: {{ fail "nfs_broker cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.nfs_broker.count) 1) (lt (int .Values.sizing.nfs_broker.count) 2)) }}
+_minHAReplicas: {{ fail "nfs_broker must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.nfs_broker.count) 1 }}
@@ -44,7 +48,7 @@ metadata:
     skiff-role-name: "nfs-broker"
 spec:
   podManagementPolicy: "OrderedReady"
-  replicas: {{ .Values.sizing.nfs_broker.count }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.nfs_broker.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.nfs_broker.count }} {{- end }}
   serviceName: "nfs-broker-set"
   template:
     metadata:
@@ -73,6 +77,8 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -90,22 +96,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -115,35 +105,35 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "metron-cert"
+              key: "loggregator-agent-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "metron-cert"
+              key: "loggregator-agent-cert"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "metron-key"
+              key: "loggregator-agent-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "metron-key"
+              key: "loggregator-agent-key"
               name: "secrets"
         {{- end }}
 
@@ -211,7 +201,7 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:17f6e3ef163492051b0d9f067bf41a70df3d2f54"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:eefca3740001fa54527279bd4952e02bc4b30b28"
         lifecycle:
           preStop:
             exec:
@@ -284,7 +274,7 @@ items:
     - name: "nfsbroker"
       port: 8999
       protocol: "TCP"
-      targetPort: "nfsbroker"
+      targetPort: 8999
     selector:
       skiff-role-name: "nfs-broker"
 kind: "List"

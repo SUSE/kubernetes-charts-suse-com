@@ -1,13 +1,17 @@
 ---
-# The syslog-scheduler role contains the following jobs:
+# The syslog-scheduler instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# Also: scheduler, metron_agent
+# Also: scheduler, loggregator_agent
 
-{{- if gt (int .Values.sizing.syslog_scheduler.count) 1 }}
-_maxReplicas: {{ fail "syslog_scheduler cannot have more than 1 instances" }}
+{{- if gt (int .Values.sizing.syslog_scheduler.count) 3 }}
+_maxReplicas: {{ fail "syslog_scheduler cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.syslog_scheduler.count) 1) (lt (int .Values.sizing.syslog_scheduler.count) 2)) }}
+_minHAReplicas: {{ fail "syslog_scheduler must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.syslog_scheduler.count) 1 }}
@@ -42,7 +46,7 @@ metadata:
     skiff-role-name: "syslog-scheduler"
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ .Values.sizing.syslog_scheduler.count }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.syslog_scheduler.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.syslog_scheduler.count }} {{- end }}
   serviceName: "syslog-scheduler-set"
   template:
     metadata:
@@ -71,6 +75,8 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -88,22 +94,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -113,35 +103,35 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "metron-cert"
+              key: "loggregator-agent-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
-              key: "metron-cert"
+              key: "loggregator-agent-cert"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "metron-key"
+              key: "loggregator-agent-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "metron-key"
+              key: "loggregator-agent-key"
               name: "secrets"
         {{- end }}
 
@@ -200,7 +190,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:1a4a30647fadac37528f59bf0b631ce1485666ca"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-syslog-scheduler:d0caf59d5e35127b5f4c774d8c03203bdd63e03b"
         lifecycle:
           preStop:
             exec:
@@ -216,7 +206,7 @@ spec:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
-            - "curl --silent --fail http://${HOSTNAME}:8080/health"
+            - "curl --silent --fail --head http://${HOSTNAME}:8080/health"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.syslog_scheduler.memory.request }}

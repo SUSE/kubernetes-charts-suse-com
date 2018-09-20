@@ -1,5 +1,5 @@
 ---
-# The mysql role contains the following jobs:
+# The mysql instance group contains the following jobs:
 #
 # - global-uaa-properties: Dummy BOSH job used to host global parameters that
 #   are required to configure SCF / fissile
@@ -7,7 +7,7 @@
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: mysql
+# Also: mysql, proxy
 
 {{- if gt (int .Values.sizing.mysql.count) 3 }}
 _maxReplicas: {{ fail "mysql cannot have more than 3 instances" }}
@@ -116,6 +116,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
+        - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-galera-healthcheck-endpoint-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         {{- if .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
         - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
           valueFrom:
@@ -124,11 +132,19 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD }}
-        - name: "MYSQL_GALERA_HEALTHCHECK_ENDPOINT_PASSWORD"
+        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-galera-healthcheck-endpoint-password"
+              key: "mysql-proxy-admin-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -155,7 +171,7 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:f9bcf803e6f846e511bb7d81c9b570f96193f59f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:79543d052c8a83ca41e85ba33231732a8d9cee64"
         lifecycle:
           preStop:
             exec:
@@ -164,7 +180,7 @@ spec:
         livenessProbe: ~
         name: "mysql"
         ports:
-        - containerPort: 3306
+        - containerPort: 13306
           name: "mysql"
           protocol: "TCP"
         - containerPort: 4567
@@ -182,11 +198,21 @@ spec:
         - containerPort: 4444
           name: "xtrabackup"
           protocol: "TCP"
+        - containerPort: 3306
+          name: "mysql-proxy"
+          protocol: "TCP"
+        - containerPort: 80
+          name: "api"
+          protocol: "TCP"
+        - containerPort: 1936
+          name: "healthck-proxy"
+          protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
             - "curl --silent --fail http://${HOSTNAME}:9200/"
+            - "curl --silent --fail http://${HOSTNAME}:1936/"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.mysql.memory.request }}
@@ -255,7 +281,7 @@ items:
     clusterIP: "None"
     ports:
     - name: "mysql"
-      port: 3306
+      port: 13306
       protocol: "TCP"
       targetPort: 0
     - name: "galera-tcp"
@@ -276,6 +302,18 @@ items:
       targetPort: 0
     - name: "xtrabackup"
       port: 4444
+      protocol: "TCP"
+      targetPort: 0
+    - name: "mysql-proxy"
+      port: 3306
+      protocol: "TCP"
+      targetPort: 0
+    - name: "api"
+      port: 80
+      protocol: "TCP"
+      targetPort: 0
+    - name: "healthck-proxy"
+      port: 1936
       protocol: "TCP"
       targetPort: 0
     selector:

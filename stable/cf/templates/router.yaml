@@ -1,5 +1,5 @@
 ---
-# The router role contains the following jobs:
+# The router instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -12,7 +12,7 @@
 #   most closely matches the host header of the request and load balances across
 #   the associated backends.
 #
-# Also: metron_agent
+# Also: loggregator_agent
 
 {{- if gt (int .Values.sizing.router.count) 65535 }}
 _maxReplicas: {{ fail "router cannot have more than 65535 instances" }}
@@ -96,6 +96,8 @@ spec:
           value: {{if ne (typeOf .Values.env.DNS_HEALTH_CHECK_HOST) "<nil>"}}{{if has (kindOf .Values.env.DNS_HEALTH_CHECK_HOST) (list "map" "slice")}}{{.Values.env.DNS_HEALTH_CHECK_HOST | toJson | quote}}{{else}}{{.Values.env.DNS_HEALTH_CHECK_HOST | quote}}{{end}}{{else}}{{fail "env.DNS_HEALTH_CHECK_HOST has not been set"}}{{end}}
         - name: "FORCE_FORWARDED_PROTO_AS_HTTPS"
           value: {{if ne (typeOf .Values.env.FORCE_FORWARDED_PROTO_AS_HTTPS) "<nil>"}}{{if has (kindOf .Values.env.FORCE_FORWARDED_PROTO_AS_HTTPS) (list "map" "slice")}}{{.Values.env.FORCE_FORWARDED_PROTO_AS_HTTPS | toJson | quote}}{{else}}{{.Values.env.FORCE_FORWARDED_PROTO_AS_HTTPS | quote}}{{end}}{{else}}{{fail "env.FORCE_FORWARDED_PROTO_AS_HTTPS has not been set"}}{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -113,22 +115,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -139,40 +125,41 @@ spec:
           value: "z1"
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
+        - name: "LOGGREGATOR_AGENT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -314,7 +301,7 @@ spec:
           value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
           value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:205021e0eafc8fa9b70531578132cb322c9de62a"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:5f048882b8fbb4b6886df93b5b4c2aca1c19f327"
         lifecycle:
           preStop:
             exec:
@@ -323,20 +310,20 @@ spec:
         livenessProbe: ~
         name: "router"
         ports:
-        - containerPort: 80
+        - containerPort: 8000
           name: "router"
           protocol: "TCP"
         - containerPort: 443
-          name: "router2"
+          name: "router-ssl"
           protocol: "TCP"
         - containerPort: 443
-          name: "router3"
+          name: "doppler-ssl"
           protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
-            - "curl --silent --fail http://${HOSTNAME}:8080/health"
+            - "curl --silent --fail --head http://${HOSTNAME}:8080/health"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.router.memory.request }}
@@ -394,11 +381,11 @@ items:
       port: 80
       protocol: "TCP"
       targetPort: 0
-    - name: "router2"
+    - name: "router-ssl"
       port: 443
       protocol: "TCP"
       targetPort: 0
-    - name: "router3"
+    - name: "doppler-ssl"
       port: 4443
       protocol: "TCP"
       targetPort: 0
@@ -417,15 +404,15 @@ items:
     - name: "router"
       port: 80
       protocol: "TCP"
-      targetPort: "router"
-    - name: "router2"
+      targetPort: 8000
+    - name: "router-ssl"
       port: 443
       protocol: "TCP"
-      targetPort: "router2"
-    - name: "router3"
+      targetPort: 443
+    - name: "doppler-ssl"
       port: 4443
       protocol: "TCP"
-      targetPort: "router3"
+      targetPort: 443
     selector:
       skiff-role-name: "router"
 

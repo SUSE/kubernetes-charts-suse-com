@@ -1,5 +1,5 @@
 ---
-# The mysql role contains the following jobs:
+# The mysql instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -7,7 +7,7 @@
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: mysql
+# Also: mysql, proxy
 
 {{- if gt (int .Values.sizing.mysql.count) 3 }}
 _maxReplicas: {{ fail "mysql cannot have more than 3 instances" }}
@@ -78,6 +78,8 @@ spec:
       - env:
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -92,22 +94,6 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
               name: "secrets"
         {{- end }}
 
@@ -198,20 +184,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-locket-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
@@ -246,6 +232,14 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
+        - name: "MYSQL_PERSI_NFS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-persi-nfs-password"
+              name: "secrets"
+        {{- end }}
+
         {{- if not .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
         - name: "MYSQL_PERSI_NFS_PASSWORD"
           valueFrom:
@@ -254,13 +248,24 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
-        - name: "MYSQL_PERSI_NFS_PASSWORD"
+        {{- if not .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-persi-nfs-password"
+              key: "mysql-proxy-admin-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
               name: "secrets"
         {{- end }}
+
+        - name: "MYSQL_PROXY_HEALTHCHECK_TIMEOUT"
+          value: {{if ne (typeOf .Values.env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT) "<nil>"}}{{if has (kindOf .Values.env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT) (list "map" "slice")}}{{.Values.env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT | toJson | quote}}{{else}}{{.Values.env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT | quote}}{{end}}{{else}}{{fail "env.MYSQL_PROXY_HEALTHCHECK_TIMEOUT has not been set"}}{{end}}
 
         {{- if not .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
         - name: "MYSQL_ROUTING_API_PASSWORD"
@@ -284,7 +289,7 @@ spec:
           value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
           value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:26508070eb260c2b11e91b32712379bcbda91d05"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:eadb7caa834316b438af6e2d2109364deba51343"
         lifecycle:
           preStop:
             exec:
@@ -293,7 +298,7 @@ spec:
         livenessProbe: ~
         name: "mysql"
         ports:
-        - containerPort: 3306
+        - containerPort: 13306
           name: "mysql"
           protocol: "TCP"
         - containerPort: 4567
@@ -311,11 +316,21 @@ spec:
         - containerPort: 4444
           name: "xtrabackup"
           protocol: "TCP"
+        - containerPort: 3306
+          name: "mysql-proxy"
+          protocol: "TCP"
+        - containerPort: 8080
+          name: "api-proxy"
+          protocol: "TCP"
+        - containerPort: 1936
+          name: "healthck-proxy"
+          protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
-            - "curl --silent --fail http://${HOSTNAME}:9200/"
+            - "curl --silent --fail --head http://${HOSTNAME}:9200/"
+            - "curl --silent --fail --head http://${HOSTNAME}:1936/"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.mysql.memory.request }}
@@ -384,7 +399,7 @@ items:
     clusterIP: "None"
     ports:
     - name: "mysql"
-      port: 3306
+      port: 13306
       protocol: "TCP"
       targetPort: 0
     - name: "galera-tcp"
@@ -405,6 +420,18 @@ items:
       targetPort: 0
     - name: "xtrabackup"
       port: 4444
+      protocol: "TCP"
+      targetPort: 0
+    - name: "mysql-proxy"
+      port: 3306
+      protocol: "TCP"
+      targetPort: 0
+    - name: "api-proxy"
+      port: 8080
+      protocol: "TCP"
+      targetPort: 0
+    - name: "healthck-proxy"
+      port: 1936
       protocol: "TCP"
       targetPort: 0
     selector:

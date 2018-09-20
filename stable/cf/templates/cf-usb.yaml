@@ -1,5 +1,5 @@
 ---
-# The cf-usb role contains the following jobs:
+# The cf-usb instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -130,6 +130,8 @@ spec:
 
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -147,22 +149,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -172,20 +158,20 @@ spec:
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ .Values.sizing.nats.count | quote }}
 
-        {{- if .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
@@ -252,7 +238,7 @@ spec:
           value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
           value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:e6e688f508d9414253d16ebe607421cbfb033965"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb:7f0b1247acfa943b0367fae8f109e505c45e3a31"
         lifecycle:
           preStop:
             exec:
@@ -343,11 +329,11 @@ items:
     - name: "usb"
       port: 24054
       protocol: "TCP"
-      targetPort: "usb"
+      targetPort: 24054
     - name: "usb2"
       port: 24053
       protocol: "TCP"
-      targetPort: "usb2"
+      targetPort: 24053
     selector:
       skiff-role-name: "cf-usb"
 kind: "List"
