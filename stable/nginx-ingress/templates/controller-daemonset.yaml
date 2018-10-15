@@ -78,7 +78,7 @@ spec:
             - --{{ $key }}
             {{- end }}
           {{- end }}
-          {{- if (semverCompare ">=0.16.0" .Values.controller.image.tag) }}
+          {{- if (semverCompare ">=0.15.1" .Values.controller.image.tag) }}
           securityContext:
             capabilities:
                 drop:
