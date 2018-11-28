@@ -1,0 +1,13 @@
+dependencies:
+  - name: prometheus
+    version: 7.4.0
+    condition: prometheus.enabled,global.prometheus.enabled
+    tags:
+      - front-end
+      - prometheus
+  - name: grafana
+    version: 1.17.4
+    condition: grafana.enabled,global.grafana.enabled
+    tags:
+      - back-end
+      - grafana

@@ -1,0 +1,6 @@
+prometheus:
+  enabled: true
+tags:
+  front-end: false
+  back-end: true
+
