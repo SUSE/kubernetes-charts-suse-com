@@ -125,13 +125,13 @@ prometheus:
   nodeExporter:    
     enabled: false
     image:
-      repository: registry.suse.com/cap/splatform/stratos-metrics-node-exporter
+      repository: registry.suse.com/cap/stratos-metrics-node-exporter
       tag: 1.0.0-e913e7f-cap
   server:
     name: prometheus
     configMapOverrideName: stratos-metrics-config
     image:
-      repository: registry.suse.com/cap/splatform/stratos-metrics-prometheus
+      repository: registry.suse.com/cap/stratos-metrics-prometheus
       tag: 1.0.0-e913e7f-cap
     replicaCount: 1
     service:
