@@ -1,23 +1,16 @@
 ---
-# The routing-api instance group contains the following jobs:
+# The credhub-user instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# - authorize-internal-ca: Install both internal and UAA CA certificates
+# - route_registrar: Used for registering routes
 #
-# Also: loggregator_agent, routing-api
+# Also: credhub
+{{- if gt (int .Values.sizing.credhub_user.count) 0 }}
 
-{{- if gt (int .Values.sizing.routing_api.count) 3 }}
-_maxReplicas: {{ fail "routing_api cannot have more than 3 instances" }}
-{{- end }}
-
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.routing_api.count) 1) (lt (int .Values.sizing.routing_api.count) 2)) }}
-_minHAReplicas: {{ fail "routing_api must have at least 2 instances for HA" }}
-{{- end }}
-
-{{- if lt (int .Values.sizing.routing_api.count) 1 }}
-_minReplicas: {{ fail "routing_api must have at least 1 instances" }}
+{{- if gt (int .Values.sizing.credhub_user.count) 1 }}
+_maxReplicas: {{ fail "credhub_user cannot have more than 1 instances" }}
 {{- end }}
 
 {{- if .Values.sizing.HA }}
@@ -43,28 +36,28 @@ _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
-  name: "routing-api"
+  name: "credhub-user"
   labels:
-    app.kubernetes.io/component: "routing-api"
-    skiff-role-name: "routing-api"
+    app.kubernetes.io/component: "credhub-user"
+    skiff-role-name: "credhub-user"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
     app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 spec:
-  podManagementPolicy: "OrderedReady"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.routing_api.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.routing_api.count }} {{- end }}
+  podManagementPolicy: "Parallel"
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.credhub_user.count) 0) -}} 1 {{- else -}} {{ .Values.sizing.credhub_user.count }} {{- end }}
   selector:
     matchLabels:
-      skiff-role-name: "routing-api"
-  serviceName: "routing-api-set"
+      skiff-role-name: "credhub-user"
+  serviceName: "credhub-user-set"
   template:
     metadata:
-      name: "routing-api"
+      name: "credhub-user"
       labels:
-        app.kubernetes.io/component: "routing-api"
-        skiff-role-name: "routing-api"
+        app.kubernetes.io/component: "credhub-user"
+        skiff-role-name: "credhub-user"
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
         app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
         app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -74,19 +67,8 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: "app.kubernetes.io/component"
-                  operator: "In"
-                  values:
-                  - "routing-api"
-              topologyKey: "beta.kubernetes.io/os"
-            weight: 100
-        {{- if .Values.sizing.routing_api.affinity.nodeAffinity }}
-        nodeAffinity: {{ toJson .Values.sizing.routing_api.affinity.nodeAffinity }}
+        {{- if .Values.sizing.credhub_user.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.credhub_user.affinity.nodeAffinity }}
         {{- end }}
       containers:
       - env:
@@ -94,36 +76,41 @@ spec:
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
+        - name: "CREDHUB_ENCRYPT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "diego-client-cert"
+              key: "credhub-encrypt-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+
+        {{- if not .Values.secrets.CREDHUB_SERVER_CERT }}
+        - name: "CREDHUB_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "credhub-server-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
+        {{- if .Values.secrets.CREDHUB_SERVER_CERT }}
+        - name: "CREDHUB_SERVER_CERT"
           valueFrom:
             secretKeyRef:
-              key: "diego-client-cert"
+              key: "credhub-server-cert"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
+        {{- if not .Values.secrets.CREDHUB_SERVER_CERT_KEY }}
+        - name: "CREDHUB_SERVER_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "diego-client-cert-key"
+              key: "credhub-server-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
+        {{- if .Values.secrets.CREDHUB_SERVER_CERT_KEY }}
+        - name: "CREDHUB_SERVER_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "diego-client-cert-key"
+              key: "credhub-server-cert-key"
               name: "secrets"
         {{- end }}
 
@@ -154,55 +141,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_AZ"
-          value: "z1"
-        - name: "KUBE_SIZING_TCP_ROUTER_PORTS_TCP_ROUTE_MAX"
-          value: {{ add 20000 .Values.sizing.tcp_router.ports.tcp_route.count -1 | quote }}
-        - name: "KUBE_SIZING_TCP_ROUTER_PORTS_TCP_ROUTE_MIN"
-          value: "20000"
-
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOGGREGATOR_AGENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOGGREGATOR_AGENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
+        - name: "KUBE_SIZING_NATS_COUNT"
+          value: {{ .Values.sizing.nats.count | quote }}
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -212,20 +154,44 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
-        - name: "MYSQL_ROUTING_API_PASSWORD"
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-routing-api-password"
+              key: "monit-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CREDHUB_USER_PASSWORD }}
+        - name: "MYSQL_CREDHUB_USER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-credhub-user-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CREDHUB_USER_PASSWORD }}
+        - name: "MYSQL_CREDHUB_USER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-credhub-user-password"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
-        - name: "MYSQL_ROUTING_API_PASSWORD"
+        {{- if not .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-routing-api-password"
+              key: "nats-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets"
         {{- end }}
 
         - name: "SCF_LOG_HOST"
@@ -243,54 +209,52 @@ spec:
           value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
           value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:5f091e27556f96d7b6581ce8a592be10b3746d2f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-credhub-user:734e499f5bacea3a002c416470e435c2e84c1374"
         lifecycle:
           preStop:
             exec:
               command:
               - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
-        name: "routing-api"
+        name: "credhub-user"
         ports:
-        - containerPort: 3000
-          name: "routing-api"
+        - containerPort: 8844
+          name: "api"
           protocol: "TCP"
         readinessProbe:
           exec:
             command:
-            - "/usr/bin/env"
-            - "FISSILE_ACTIVE_PASSIVE_PROBE=head -c0 </dev/tcp/${HOSTNAME}/3000"
             - "/opt/fissile/readiness-probe.sh"
         resources:
           requests:
-            {{- if and .Values.config.memory.requests .Values.sizing.routing_api.memory.request }}
-            memory: "{{ int .Values.sizing.routing_api.memory.request }}Mi"
+            {{- if and .Values.config.memory.requests .Values.sizing.credhub_user.memory.request }}
+            memory: "{{ int .Values.sizing.credhub_user.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.requests .Values.sizing.routing_api.cpu.request }}
-            cpu: "{{ int .Values.sizing.routing_api.cpu.request }}m"
+            {{- if and .Values.config.cpu.requests .Values.sizing.credhub_user.cpu.request }}
+            cpu: "{{ int .Values.sizing.credhub_user.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.config.memory.limits .Values.sizing.routing_api.memory.limit }}
-            memory: "{{ int .Values.sizing.routing_api.memory.limit }}Mi"
+            {{- if and .Values.config.memory.limits .Values.sizing.credhub_user.memory.limit }}
+            memory: "{{ int .Values.sizing.credhub_user.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.limits .Values.sizing.routing_api.cpu.limit }}
-            cpu: "{{ int .Values.sizing.routing_api.cpu.limit }}m"
+            {{- if and .Values.config.cpu.limits .Values.sizing.credhub_user.cpu.limit }}
+            cpu: "{{ int .Values.sizing.credhub_user.cpu.limit }}m"
             {{- end }}
 
         securityContext:
           allowPrivilegeEscalation: false
 
-          {{- if has "ALL" .Values.sizing.routing_api.capabilities }}
+          {{- if has "ALL" .Values.sizing.credhub_user.capabilities }}
           privileged: true
           {{- end }}
 
-          {{- if not (has "ALL" .Values.sizing.routing_api.capabilities) }}
+          {{- if not (has "ALL" .Values.sizing.credhub_user.capabilities) }}
           capabilities:
             add:
-            {{- range .Values.sizing.routing_api.capabilities }}
+            {{- range .Values.sizing.credhub_user.capabilities }}
             - {{ . | upper }}
             {{- end }}
           {{- end }}
@@ -306,16 +270,18 @@ spec:
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+{{- end }}
 ---
+{{- if gt (int .Values.sizing.credhub_user.count) 0 }}
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "routing-api-set"
+    name: "credhub-user-set"
     labels:
-      app.kubernetes.io/component: "routing-api-set"
-      skiff-role-name: "routing-api-set"
+      app.kubernetes.io/component: "credhub-user-set"
+      skiff-role-name: "credhub-user-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -324,20 +290,19 @@ items:
   spec:
     clusterIP: "None"
     ports:
-    - name: "routing-api"
-      port: 3000
+    - name: "api"
+      port: 8844
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "routing-api"
-      skiff-role-active: "true"
+      app.kubernetes.io/component: "credhub-user"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "routing-api-routing-api-set"
+    name: "credhub-user-credhub-set"
     labels:
-      app.kubernetes.io/component: "routing-api-routing-api-set"
-      skiff-role-name: "routing-api-routing-api-set"
+      app.kubernetes.io/component: "credhub-user-credhub-set"
+      skiff-role-name: "credhub-user-credhub-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -346,20 +311,19 @@ items:
   spec:
     clusterIP: "None"
     ports:
-    - name: "routing-api"
-      port: 3000
+    - name: "api"
+      port: 8844
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "routing-api"
-      skiff-role-active: "true"
+      app.kubernetes.io/component: "credhub-user"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "routing-api-routing-api"
+    name: "credhub-user-credhub"
     labels:
-      app.kubernetes.io/component: "routing-api-routing-api"
-      skiff-role-name: "routing-api-routing-api"
+      app.kubernetes.io/component: "credhub-user-credhub"
+      skiff-role-name: "credhub-user-credhub"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -367,11 +331,11 @@ items:
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
   spec:
     ports:
-    - name: "routing-api"
-      port: 3000
+    - name: "api"
+      port: 8844
       protocol: "TCP"
-      targetPort: 3000
+      targetPort: 8844
     selector:
-      app.kubernetes.io/component: "routing-api"
-      skiff-role-active: "true"
+      app.kubernetes.io/component: "credhub-user"
 kind: "List"
+{{- end }}
