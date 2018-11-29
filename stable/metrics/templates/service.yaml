@@ -1,0 +1,66 @@
+{{- if .Values.firehoseExporter.enabled }}
+
+{{ $releaseName := .Release.Name }}
+{{ $firehoseExporter := .Values.firehoseExporter }}
+{{ $appVersion := .Chart.AppVersion }}
+{{ $cfName :=  .Values.cfName }}
+{{ $helmChartName :=  .Chart.Name }}
+{{ $helmChartVersion :=  .Chart.Version }}
+  {{- range int .Values.firehoseExporter.instances | until }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $releaseName }}-{{ $firehoseExporter.serviceName }}-{{ . }}
+  labels:
+    app.kubernetes.io/name: "stratos-metrics"
+    app.kubernetes.io/instance: "{{ $releaseName }}"
+    app.kubernetes.io/version: "{{ $appVersion }}"
+    app.kubernetes.io/component: "stratos-metrics-{{ $cfName }}-firehose-exporter-service"
+    helm.sh/chart: "{{ $helmChartName }}-{{ $helmChartVersion | replace "+" "_" }}"
+spec:
+  type: {{ $firehoseExporter.serviceType }}
+  ports:
+  - port: {{ $firehoseExporter.externalPort }}
+    targetPort: {{ $firehoseExporter.internalPort }}
+    protocol: TCP
+    name: {{ $firehoseExporter.serviceName }}
+  selector:
+    app.kubernetes.io/name: "stratos-metrics"
+    app.kubernetes.io/component: "stratos-metrics-{{ $cfName }}-firehose-exporters-{{ . }}"
+  {{- end }}
+{{- end }}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.nginx.serviceName }}
+  labels:
+    app.kubernetes.io/name: "stratos-metrics"
+    app.kubernetes.io/instance: "{{ .Release.Name }}"
+    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
+    app.kubernetes.io/component: "stratos-metrics-{{ .Values.cfName }}-nginx-service"
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+{{- if .Values.useLb }}
+  type: LoadBalancer
+{{- else }}
+  type: {{ .Values.nginx.serviceType }}
+{{- end }}
+{{- if or .Values.kube.external_ip .Values.kube.external_ips .Values.metrics.externalIP  }}
+  externalIPs: {{ template "service.externalIPs" . }} 
+{{- end }}
+  ports:
+{{- if and .Values.kube.external_metrics_port (or .Values.kube.external_ip .Values.kube.external_ips) }}
+  - port: {{ .Values.kube.external_metrics_port }}
+{{- else }}
+  - port: {{ .Values.nginx.externalPort }}
+{{- end }}
+    targetPort: 443
+    protocol: TCP
+    name: nginx
+  selector:
+    app.kubernetes.io/name: "stratos-metrics"
+    app.kubernetes.io/component: "stratos-metrics-{{ .Values.cfName }}-nginx"
