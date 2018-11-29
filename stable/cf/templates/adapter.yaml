@@ -43,16 +43,31 @@ kind: "StatefulSet"
 metadata:
   name: "adapter"
   labels:
+    app.kubernetes.io/component: "adapter"
     skiff-role-name: "adapter"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 spec:
   podManagementPolicy: "Parallel"
   replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.adapter.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.adapter.count }} {{- end }}
+  selector:
+    matchLabels:
+      skiff-role-name: "adapter"
   serviceName: "adapter-set"
   template:
     metadata:
       name: "adapter"
       labels:
+        app.kubernetes.io/component: "adapter"
         skiff-role-name: "adapter"
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+        app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
@@ -62,7 +77,7 @@ spec:
           - podAffinityTerm:
               labelSelector:
                 matchExpressions:
-                - key: "skiff-role-name"
+                - key: "app.kubernetes.io/component"
                   operator: "In"
                   values:
                   - "adapter"
@@ -73,6 +88,8 @@ spec:
         {{- end }}
       containers:
       - env:
+        - name: "AZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -119,19 +136,19 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_KEY }}
-        - name: "LOGGREGATOR_AGENT_KEY"
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-agent-key"
+              key: "loggregator-agent-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.LOGGREGATOR_AGENT_KEY }}
-        - name: "LOGGREGATOR_AGENT_KEY"
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-agent-key"
+              key: "loggregator-agent-cert-key"
               name: "secrets"
         {{- end }}
 
@@ -174,23 +191,23 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.SYSLOG_ADAPT_KEY }}
-        - name: "SYSLOG_ADAPT_KEY"
+        {{- if not .Values.secrets.SYSLOG_ADAPT_CERT_KEY }}
+        - name: "SYSLOG_ADAPT_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "syslog-adapt-key"
+              key: "syslog-adapt-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.SYSLOG_ADAPT_KEY }}
-        - name: "SYSLOG_ADAPT_KEY"
+        {{- if .Values.secrets.SYSLOG_ADAPT_CERT_KEY }}
+        - name: "SYSLOG_ADAPT_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "syslog-adapt-key"
+              key: "syslog-adapt-cert-key"
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-adapter:88b4bc84cf9c77099a2415137f966c37f33aeaba"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-adapter:a05f1470229de60d6525965430a0c672c205c4ea"
         lifecycle:
           preStop:
             exec:
@@ -230,6 +247,8 @@ spec:
             {{- end }}
 
         securityContext:
+          allowPrivilegeEscalation: false
+
           {{- if has "ALL" .Values.sizing.adapter.capabilities }}
           privileged: true
           {{- end }}
@@ -260,6 +279,14 @@ items:
   kind: "Service"
   metadata:
     name: "adapter-set"
+    labels:
+      app.kubernetes.io/component: "adapter-set"
+      skiff-role-name: "adapter-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
   spec:
     clusterIP: "None"
     ports:
@@ -272,5 +299,54 @@ items:
       protocol: "TCP"
       targetPort: 0
     selector:
-      skiff-role-name: "adapter"
+      app.kubernetes.io/component: "adapter"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "adapter-adapter-set"
+    labels:
+      app.kubernetes.io/component: "adapter-adapter-set"
+      skiff-role-name: "adapter-adapter-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "adapter"
+      port: 4443
+      protocol: "TCP"
+      targetPort: 0
+    - name: "adapter-health"
+      port: 8080
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "adapter"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "adapter-adapter"
+    labels:
+      app.kubernetes.io/component: "adapter-adapter"
+      skiff-role-name: "adapter-adapter"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+  spec:
+    ports:
+    - name: "adapter"
+      port: 4443
+      protocol: "TCP"
+      targetPort: 4443
+    - name: "adapter-health"
+      port: 8080
+      protocol: "TCP"
+      targetPort: 8080
+    selector:
+      app.kubernetes.io/component: "adapter"
 kind: "List"

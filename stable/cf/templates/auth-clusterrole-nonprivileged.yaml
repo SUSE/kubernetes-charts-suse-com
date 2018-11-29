@@ -1,12 +1,12 @@
 ---
-{{- if eq (printf "%s" .Values.kube.auth) "rbac" }}
-apiVersion: "rbac.authorization.k8s.io/v1beta1"
-kind: "Role"
+{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") .Values.kube.psp.nonprivileged }}
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "ClusterRole"
 metadata:
-  name: "configgin-role"
+  name: "{{ .Release.Namespace }}-psp-role-nonprivileged"
   labels:
-    app.kubernetes.io/component: "configgin-role"
-    skiff-role-name: "configgin-role"
+    app.kubernetes.io/component: "{{ .Release.Namespace }}-psp-role-nonprivileged"
+    skiff-role-name: "{{ .Release.Namespace }}-psp-role-nonprivileged"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -14,23 +14,11 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 rules:
 - apiGroups:
-  - ""
+  - "extensions"
+  resourceNames:
+  - {{ .Values.kube.psp.nonprivileged | quote }}
   resources:
-  - "pods"
+  - "podsecuritypolicies"
   verbs:
-  - "get"
-  - "list"
-  - "patch"
-- apiGroups:
-  - ""
-  resources:
-  - "services"
-  verbs:
-  - "get"
-- apiGroups:
-  - "apps"
-  resources:
-  - "statefulsets"
-  verbs:
-  - "get"
+  - "use"
 {{- end }}
