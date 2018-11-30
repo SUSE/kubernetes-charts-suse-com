@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboards-caasp-cluster
-  namespace: monitoring
+  namespace: {{ .Release.Namespace }}
   labels:
      grafana_dashboard: "1"
 data:
