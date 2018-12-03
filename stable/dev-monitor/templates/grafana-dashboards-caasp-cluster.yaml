@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-caasp-cluster
+  namespace: {{ .Release.Namespace }}
+  labels:
+     grafana_dashboard: "1"
+data:
+  caasp-cluster.json: |-2
+{{.Files.Get "grafana-dashboards/grafana-dashboards-caasp-cluster.yaml"| indent 4}}
