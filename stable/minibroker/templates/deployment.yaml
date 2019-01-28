@@ -25,7 +25,7 @@ spec:
       serviceAccountName: minibroker
       containers:
       - name: minibroker
-        image: {{ .Values.image }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/{{ .Values.image }}:latest"
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         command:
         - minibroker
