@@ -1,5 +1,5 @@
 ---
-# The cc-clock role contains the following jobs:
+# The cc-clock instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
@@ -10,10 +10,14 @@
 #   Cloud Controller clean up tasks for app usage events, audit events, failed
 #   jobs, and more. Only single instance of this job is necessary.
 #
-# Also: metron_agent, statsd_injector
+# Also: loggregator_agent, statsd_injector
 
-{{- if gt (int .Values.sizing.cc_clock.count) 1 }}
-_maxReplicas: {{ fail "cc_clock cannot have more than 1 instances" }}
+{{- if gt (int .Values.sizing.cc_clock.count) 3 }}
+_maxReplicas: {{ fail "cc_clock cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.cc_clock.count) 1) (lt (int .Values.sizing.cc_clock.count) 2)) }}
+_minHAReplicas: {{ fail "cc_clock must have at least 2 instances for HA" }}
 {{- end }}
 
 {{- if lt (int .Values.sizing.cc_clock.count) 1 }}
@@ -45,16 +49,31 @@ kind: "StatefulSet"
 metadata:
   name: "cc-clock"
   labels:
+    app.kubernetes.io/component: "cc-clock"
     skiff-role-name: "cc-clock"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ .Values.sizing.cc_clock.count }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.cc_clock.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.cc_clock.count }} {{- end }}
+  selector:
+    matchLabels:
+      skiff-role-name: "cc-clock"
   serviceName: "cc-clock-set"
   template:
     metadata:
       name: "cc-clock"
       labels:
+        app.kubernetes.io/component: "cc-clock"
         skiff-role-name: "cc-clock"
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+        app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
@@ -64,7 +83,7 @@ spec:
           - podAffinityTerm:
               labelSelector:
                 matchExpressions:
-                - key: "skiff-role-name"
+                - key: "app.kubernetes.io/component"
                   operator: "In"
                   values:
                   - "cc-clock"
@@ -77,6 +96,8 @@ spec:
       - env:
         - name: "ALLOW_APP_SSH_ACCESS"
           value: {{if ne (typeOf .Values.env.ALLOW_APP_SSH_ACCESS) "<nil>"}}{{if has (kindOf .Values.env.ALLOW_APP_SSH_ACCESS) (list "map" "slice")}}{{.Values.env.ALLOW_APP_SSH_ACCESS | toJson | quote}}{{else}}{{.Values.env.ALLOW_APP_SSH_ACCESS | quote}}{{end}}{{else}}{{fail "env.ALLOW_APP_SSH_ACCESS has not been set"}}{{end}}
+        - name: "AZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
@@ -104,14 +125,6 @@ spec:
               key: "cc-db-encryption-keys"
               name: "secrets"
 
-        {{- if .Values.secrets.CC_SERVER_CRT }}
-        - name: "CC_SERVER_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "cc-server-crt"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.CC_SERVER_CRT }}
         - name: "CC_SERVER_CRT"
           valueFrom:
@@ -120,19 +133,27 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.CC_SERVER_KEY }}
-        - name: "CC_SERVER_KEY"
+        {{- if .Values.secrets.CC_SERVER_CRT }}
+        - name: "CC_SERVER_CRT"
           valueFrom:
             secretKeyRef:
-              key: "cc-server-key"
+              key: "cc-server-crt"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.CC_SERVER_CRT_KEY }}
+        - name: "CC_SERVER_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.CC_SERVER_KEY }}
-        - name: "CC_SERVER_KEY"
+        {{- if .Values.secrets.CC_SERVER_CRT_KEY }}
+        - name: "CC_SERVER_CRT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "cc-server-key"
+              key: "cc-server-crt-key"
               name: "secrets"
         {{- end }}
 
@@ -153,6 +174,8 @@ spec:
           value: {{if ne (typeOf .Values.env.DEFAULT_STACK) "<nil>"}}{{if has (kindOf .Values.env.DEFAULT_STACK) (list "map" "slice")}}{{.Values.env.DEFAULT_STACK | toJson | quote}}{{else}}{{.Values.env.DEFAULT_STACK | quote}}{{end}}{{else}}""{{end}}
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_API_PASSWORD }}
         - name: "INTERNAL_API_PASSWORD"
@@ -186,22 +209,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.INTERNAL_CA_KEY }}
-        - name: "INTERNAL_CA_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
         - name: "KUBERNETES_NAMESPACE"
@@ -210,42 +217,43 @@ spec:
               fieldPath: "metadata.namespace"
         - name: "KUBE_AZ"
           value: "z1"
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
         - name: "MAX_APP_DISK_IN_MB"
           value: {{if ne (typeOf .Values.env.MAX_APP_DISK_IN_MB) "<nil>"}}{{if has (kindOf .Values.env.MAX_APP_DISK_IN_MB) (list "map" "slice")}}{{.Values.env.MAX_APP_DISK_IN_MB | toJson | quote}}{{else}}{{.Values.env.MAX_APP_DISK_IN_MB | quote}}{{end}}{{else}}{{fail "env.MAX_APP_DISK_IN_MB has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_CERT }}
-        - name: "METRON_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.METRON_KEY }}
-        - name: "METRON_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "metron-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -354,7 +362,7 @@ spec:
           value: {{if ne (typeOf .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS) "<nil>"}}{{if has (kindOf .Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS) (list "map" "slice")}}{{.Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | toJson | quote}}{{else}}{{.Values.env.USE_DIEGO_PRIVILEGED_CONTAINERS | quote}}{{end}}{{else}}{{fail "env.USE_DIEGO_PRIVILEGED_CONTAINERS has not been set"}}{{end}}
         - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
           value: {{if ne (typeOf .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS) "<nil>"}}{{if has (kindOf .Values.env.USE_STAGER_PRIVILEGED_CONTAINERS) (list "map" "slice")}}{{.Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | toJson | quote}}{{else}}{{.Values.env.USE_STAGER_PRIVILEGED_CONTAINERS | quote}}{{end}}{{else}}{{fail "env.USE_STAGER_PRIVILEGED_CONTAINERS has not been set"}}{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:a8c54d8014a3f3696f308ee21485611ef575c281"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:33aa18acfe1f5b3b581adb30c4c568f6a5c5f872"
         lifecycle:
           preStop:
             exec:
@@ -387,6 +395,8 @@ spec:
             {{- end }}
 
         securityContext:
+          allowPrivilegeEscalation: false
+
           {{- if has "ALL" .Values.sizing.cc_clock.capabilities }}
           privileged: true
           {{- end }}
