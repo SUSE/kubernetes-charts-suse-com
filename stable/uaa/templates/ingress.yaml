@@ -1,0 +1,51 @@
+{{- if .Values.services.ingress }}
+---
+# The cert and the key cannot be filled automatically. If we could it
+# would roughly look like the lines below. As is it is the
+# responsibility of the operator to retrieve the values of these
+# secrets from the deployed UAA and update this secret with the actual
+# values. And the responsibility of the developer to supply the proper
+# instructions to the operator.
+##
+# tls.crt: {{ default "" .Values.secrets.UAA_SERVER_CERT     | b64enc | quote }}
+# tls.key: {{ default "" .Values.secrets.UAA_SERVER_CERT_KEY | b64enc | quote }}
+
+apiVersion: "v1"
+kind: "Secret"
+type: kubernetes.io/tls
+metadata:
+  name: "{{ .Release.Namespace }}-secrets-nic"
+data:
+  tls.crt: ""
+  tls.key: ""
+---
+apiVersion: "extensions/v1beta1"
+kind: "Ingress"
+metadata:
+  name: "ingress-uaa"
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    nginx.ingress.kubernetes.io/secure-backends: "true"
+    kubernetes.io/ingress.class: {{ .Values.services.ingress }}
+spec:
+  tls:
+  - secretName: "{{ .Release.Namespace }}-secrets-nic"
+    hosts:
+    - "*.uaa.{{ .Values.env.DOMAIN }}"
+    - "uaa.{{ .Values.env.DOMAIN }}"
+  rules:
+    - host: "*.uaa.{{ .Values.env.DOMAIN }}"
+      http:
+        paths:
+          - path: "/"
+            backend:
+              serviceName: "uaa-uaa"
+              servicePort: 2793
+    - host: "uaa.{{ .Values.env.DOMAIN }}"
+      http:
+        paths:
+          - path: "/"
+            backend:
+              serviceName: "uaa-uaa"
+              servicePort: 2793
+{{- end }}

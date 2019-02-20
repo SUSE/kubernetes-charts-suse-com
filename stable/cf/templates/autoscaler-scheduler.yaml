@@ -1,93 +1,93 @@
 ---
-{{- if gt (int .Values.sizing.autoscaler_postgres.count) 0 }}
+{{- if gt (int .Values.sizing.autoscaler_scheduler.count) 0 }}
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "autoscaler-postgres-set"
+    name: "autoscaler-scheduler-set"
     labels:
-      app.kubernetes.io/component: "autoscaler-postgres-set"
-      skiff-role-name: "autoscaler-postgres-set"
+      app.kubernetes.io/component: "autoscaler-scheduler-set"
+      skiff-role-name: "autoscaler-scheduler-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "autoscaler-postgres-set"
+      app: "autoscaler-scheduler-set"
       {{- end }}
   spec:
     clusterIP: "None"
     ports:
-    - name: "postgres"
-      port: 5432
+    - name: "scheduler"
+      port: 7102
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "autoscaler-postgres"
+      app.kubernetes.io/component: "autoscaler-scheduler"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "autoscaler-postgres-postgres-set"
+    name: "autoscaler-scheduler-scheduler-set"
     labels:
-      app.kubernetes.io/component: "autoscaler-postgres-postgres-set"
-      skiff-role-name: "autoscaler-postgres-postgres-set"
+      app.kubernetes.io/component: "autoscaler-scheduler-scheduler-set"
+      skiff-role-name: "autoscaler-scheduler-scheduler-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "autoscaler-postgres-postgres-set"
+      app: "autoscaler-scheduler-scheduler-set"
       {{- end }}
   spec:
     clusterIP: "None"
     ports:
-    - name: "postgres"
-      port: 5432
+    - name: "scheduler"
+      port: 7102
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "autoscaler-postgres"
+      app.kubernetes.io/component: "autoscaler-scheduler"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "autoscaler-postgres-postgres"
+    name: "autoscaler-scheduler-scheduler"
     labels:
-      app.kubernetes.io/component: "autoscaler-postgres-postgres"
-      skiff-role-name: "autoscaler-postgres-postgres"
+      app.kubernetes.io/component: "autoscaler-scheduler-scheduler"
+      skiff-role-name: "autoscaler-scheduler-scheduler"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "autoscaler-postgres-postgres"
+      app: "autoscaler-scheduler-scheduler"
       {{- end }}
   spec:
     ports:
-    - name: "postgres"
-      port: 5432
+    - name: "scheduler"
+      port: 7102
       protocol: "TCP"
-      targetPort: 5432
+      targetPort: 7102
     selector:
-      app.kubernetes.io/component: "autoscaler-postgres"
+      app.kubernetes.io/component: "autoscaler-scheduler"
 kind: "List"
 {{- end }}
 ---
-# The autoscaler-postgres instance group contains the following jobs:
+# The autoscaler-scheduler instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# - postgres: The Postgres server provides a single instance Postgres database
-#   that can be used with the Cloud Controller or the UAA. It does not provide
-#   highly-available configuration.
-{{- if gt (int .Values.sizing.autoscaler_postgres.count) 0 }}
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# Also: scheduler
+{{- if gt (int .Values.sizing.autoscaler_scheduler.count) 0 }}
 
-{{- if gt (int .Values.sizing.autoscaler_postgres.count) 3 }}
-_maxReplicas: {{ fail "autoscaler_postgres cannot have more than 3 instances" }}
+{{- if gt (int .Values.sizing.autoscaler_scheduler.count) 3 }}
+_maxReplicas: {{ fail "autoscaler_scheduler cannot have more than 3 instances" }}
 {{- end }}
 
 {{- if .Values.sizing.HA }}
@@ -113,10 +113,10 @@ _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
-  name: "autoscaler-postgres"
+  name: "autoscaler-scheduler"
   labels:
-    app.kubernetes.io/component: "autoscaler-postgres"
-    skiff-role-name: "autoscaler-postgres"
+    app.kubernetes.io/component: "autoscaler-scheduler"
+    skiff-role-name: "autoscaler-scheduler"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -124,7 +124,7 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 
     {{- if .Values.config.use_istio }}
-    app: "autoscaler-postgres"
+    app: "autoscaler-scheduler"
     {{- end }}
 
     {{- if .Values.config.use_istio }}
@@ -133,17 +133,17 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_postgres.count) 0) -}} 2 {{- else -}} {{ .Values.sizing.autoscaler_postgres.count }} {{- end }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_scheduler.count) 0) -}} 2 {{- else -}} {{ .Values.sizing.autoscaler_scheduler.count }} {{- end }}
   selector:
     matchLabels:
-      skiff-role-name: "autoscaler-postgres"
-  serviceName: "autoscaler-postgres-set"
+      skiff-role-name: "autoscaler-scheduler"
+  serviceName: "autoscaler-scheduler-set"
   template:
     metadata:
-      name: "autoscaler-postgres"
+      name: "autoscaler-scheduler"
       labels:
-        app.kubernetes.io/component: "autoscaler-postgres"
-        skiff-role-name: "autoscaler-postgres"
+        app.kubernetes.io/component: "autoscaler-scheduler"
+        skiff-role-name: "autoscaler-scheduler"
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
         app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
         app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -151,7 +151,7 @@ spec:
         helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 
         {{- if .Values.config.use_istio }}
-        app: "autoscaler-postgres"
+        app: "autoscaler-scheduler"
         {{- end }}
 
         {{- if .Values.config.use_istio }}
@@ -165,14 +165,11 @@ spec:
         {{- end }}
     spec:
       affinity:
-        {{- if .Values.sizing.autoscaler_postgres.affinity.nodeAffinity }}
-        nodeAffinity: {{ toJson .Values.sizing.autoscaler_postgres.affinity.nodeAffinity }}
+        {{- if .Values.sizing.autoscaler_scheduler.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.autoscaler_scheduler.affinity.nodeAffinity }}
         {{- end }}
       containers:
       - env:
-        - name: "AUTOSCALER_DATABASE_MAX_CONNECTIONS"
-          value: {{if ne (typeOf .Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS | quote}}{{end}}{{else}}""{{end}}
-
         {{- if not .Values.secrets.AUTOSCALER_DB_PASSWORD }}
         - name: "AUTOSCALER_DB_PASSWORD"
           valueFrom:
@@ -186,6 +183,77 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "autoscaler-db-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        - name: "AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_INTERVAL_MILISECOND"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_INTERVAL_MILISECOND) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_INTERVAL_MILISECOND) (list "map" "slice")}}{{.Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_INTERVAL_MILISECOND | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_INTERVAL_MILISECOND | quote}}{{end}}{{else}}""{{end}}
+        - name: "AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_MAXCOUNT"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_MAXCOUNT) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_MAXCOUNT) (list "map" "slice")}}{{.Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_MAXCOUNT | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_SCHEDULER_JOB_RESCHEDULE_MAXCOUNT | quote}}{{end}}{{else}}""{{end}}
+        - name: "AUTOSCALER_SCHEDULER_NOTIFICATION_RESCHEDULE_MAXCOUNT"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_SCHEDULER_NOTIFICATION_RESCHEDULE_MAXCOUNT) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_SCHEDULER_NOTIFICATION_RESCHEDULE_MAXCOUNT) (list "map" "slice")}}{{.Values.env.AUTOSCALER_SCHEDULER_NOTIFICATION_RESCHEDULE_MAXCOUNT | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_SCHEDULER_NOTIFICATION_RESCHEDULE_MAXCOUNT | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert-key"
               name: "secrets"
         {{- end }}
 
@@ -219,20 +287,20 @@ spec:
             fieldRef:
               fieldPath: "metadata.namespace"
 
-        {{- if .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -243,17 +311,22 @@ spec:
           value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
           value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-postgres:784872609486f93489bfb3d1570abcdb3000ce7d"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secrets"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-scheduler:9fe3b956677ffed0da86d876b5931cbd2e3924e6"
         lifecycle:
           preStop:
             exec:
               command:
               - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
-        name: "autoscaler-postgres"
+        name: "autoscaler-scheduler"
         ports:
-        - containerPort: 5432
-          name: "postgres"
+        - containerPort: 7102
+          name: "scheduler"
           protocol: "TCP"
         readinessProbe:
           exec:
@@ -261,41 +334,38 @@ spec:
             - "/opt/fissile/readiness-probe.sh"
         resources:
           requests:
-            {{- if and .Values.config.memory.requests .Values.sizing.autoscaler_postgres.memory.request }}
-            memory: "{{ int .Values.sizing.autoscaler_postgres.memory.request }}Mi"
+            {{- if and .Values.config.memory.requests .Values.sizing.autoscaler_scheduler.memory.request }}
+            memory: "{{ int .Values.sizing.autoscaler_scheduler.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.requests .Values.sizing.autoscaler_postgres.cpu.request }}
-            cpu: "{{ int .Values.sizing.autoscaler_postgres.cpu.request }}m"
+            {{- if and .Values.config.cpu.requests .Values.sizing.autoscaler_scheduler.cpu.request }}
+            cpu: "{{ int .Values.sizing.autoscaler_scheduler.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.config.memory.limits .Values.sizing.autoscaler_postgres.memory.limit }}
-            memory: "{{ int .Values.sizing.autoscaler_postgres.memory.limit }}Mi"
+            {{- if and .Values.config.memory.limits .Values.sizing.autoscaler_scheduler.memory.limit }}
+            memory: "{{ int .Values.sizing.autoscaler_scheduler.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.limits .Values.sizing.autoscaler_postgres.cpu.limit }}
-            cpu: "{{ int .Values.sizing.autoscaler_postgres.cpu.limit }}m"
+            {{- if and .Values.config.cpu.limits .Values.sizing.autoscaler_scheduler.cpu.limit }}
+            cpu: "{{ int .Values.sizing.autoscaler_scheduler.cpu.limit }}m"
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.autoscaler_postgres.capabilities }}
+          {{- if has "ALL" .Values.sizing.autoscaler_scheduler.capabilities }}
           privileged: true
           {{- end }}
 
-          {{- if not (has "ALL" .Values.sizing.autoscaler_postgres.capabilities) }}
+          {{- if not (has "ALL" .Values.sizing.autoscaler_scheduler.capabilities) }}
           capabilities:
             add:
-            {{- range .Values.sizing.autoscaler_postgres.capabilities }}
+            {{- range .Values.sizing.autoscaler_scheduler.capabilities }}
             - {{ . | upper }}
             {{- end }}
           {{- end }}
 
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.autoscaler_postgres.capabilities -}} true {{- else -}} false {{- end }}
+          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.autoscaler_scheduler.capabilities -}} true {{- else -}} false {{- end }}
         volumeMounts:
-        - mountPath: "/var/vcap/store"
-          name: "postgres-data"
-          readOnly: false
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
@@ -315,15 +385,4 @@ spec:
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
-  volumeClaimTemplates:
-  - metadata:
-      name: "postgres-data"
-      annotations:
-        volume.beta.kubernetes.io/storage-class: {{ .Values.kube.storage_class.persistent | quote }}
-    spec:
-      accessModes:
-      - "ReadWriteOnce"
-      resources:
-        requests:
-          storage: "{{ .Values.sizing.autoscaler_postgres.disk_sizes.postgres_data }}G"
 {{- end }}
