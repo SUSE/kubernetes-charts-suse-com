@@ -1,6 +1,18 @@
 ---
 kube:
+  auth: "rbac"
   external_ips: []
+
+  # Whether HostPath volume mounts are available
+  hostpath_available: false
+
+  organization: "cap"
+  psp:
+    nonprivileged: ~
+  registry:
+    hostname: "registry.suse.com"
+    username: ""
+    password: ""
 
   # Increment this counter to rotate all generated secrets
   secrets_generation_counter: 1
@@ -8,19 +20,6 @@ kube:
   storage_class:
     persistent: "persistent"
     shared: "shared"
-  psp:
-    nonprivileged: ~
-    privileged: ~
-
-  # Whether HostPath volume mounts are available
-  hostpath_available: false
-
-  registry:
-    hostname: "registry.suse.com"
-    username: ""
-    password: ""
-  organization: "cap"
-  auth: "rbac"
 config:
   # Flag to activate high-availability mode
   HA: false
@@ -41,8 +40,14 @@ config:
     # Flag to activate cpu limits
     limits: false
 
+  # Flag to specify whether to add Istio related annotations and labels
+  use_istio: false
+
+bosh:
+  instance_groups: []
 services:
   loadbalanced: false
+  ingress: ~
 secrets:
   # PEM-encoded CA certificate used to sign the TLS certificate used by all
   # components to secure their communications.
