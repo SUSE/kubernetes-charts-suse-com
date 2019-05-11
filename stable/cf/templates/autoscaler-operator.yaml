@@ -7,10 +7,18 @@
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
 # Also: operator
-{{- if gt (int .Values.sizing.autoscaler_operator.count) 0 }}
+{{- if .Values.enable.autoscaler }}
 
 {{- if gt (int .Values.sizing.autoscaler_operator.count) 3 }}
 _maxReplicas: {{ fail "autoscaler_operator cannot have more than 3 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.autoscaler_operator.count) 1) (lt (int .Values.sizing.autoscaler_operator.count) 2)) }}
+_minHAReplicas: {{ fail "autoscaler_operator must have at least 2 instances for HA" }}
+{{- end }}
+
+{{- if lt (int .Values.sizing.autoscaler_operator.count) 1 }}
+_minReplicas: {{ fail "autoscaler_operator must have at least 1 instances" }}
 {{- end }}
 
 {{- if .Values.sizing.HA }}
@@ -56,7 +64,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_operator.count) 0) -}} 2 {{- else -}} {{ .Values.sizing.autoscaler_operator.count }} {{- end }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_operator.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.autoscaler_operator.count }} {{- end }}
   selector:
     matchLabels:
       skiff-role-name: "autoscaler-operator"
@@ -99,8 +107,6 @@ spec:
           value: {{if ne (typeOf .Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_IDLE_CONNECTIONS) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_IDLE_CONNECTIONS) (list "map" "slice")}}{{.Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_IDLE_CONNECTIONS | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_IDLE_CONNECTIONS | quote}}{{end}}{{else}}""{{end}}
         - name: "AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_OPEN_CONNECTIONS"
           value: {{if ne (typeOf .Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_OPEN_CONNECTIONS) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_OPEN_CONNECTIONS) (list "map" "slice")}}{{.Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_OPEN_CONNECTIONS | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_APPMETRICS_DB_CONNECTION_CONFIG_MAX_OPEN_CONNECTIONS | quote}}{{end}}{{else}}""{{end}}
-        - name: "AUTOSCALER_CF_SKIP_SSL_VALIDATION"
-          value: {{if ne (typeOf .Values.env.AUTOSCALER_CF_SKIP_SSL_VALIDATION) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_CF_SKIP_SSL_VALIDATION) (list "map" "slice")}}{{.Values.env.AUTOSCALER_CF_SKIP_SSL_VALIDATION | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_CF_SKIP_SSL_VALIDATION | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.AUTOSCALER_DB_PASSWORD }}
         - name: "AUTOSCALER_DB_PASSWORD"
@@ -177,20 +183,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
-        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "autoscaler-scaling-engine-client-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
         - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
           valueFrom:
             secretKeyRef:
               key: "autoscaler-scaling-engine-client-cert-key"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "AUTOSCALER_SCALING_ENGINE_DB_CONNECTION_CONFIG_CONNECTION_MAX_LIFETIME"
@@ -252,8 +258,6 @@ spec:
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-        - name: "DOMAIN"
-          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -311,7 +315,11 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-operator:97a1fad8a57590aaafa10581290a5366bb4f3695"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-operator:da6e4bb50b0030f7121376071b2afcc5a65a6871"
         lifecycle:
           preStop:
             exec:

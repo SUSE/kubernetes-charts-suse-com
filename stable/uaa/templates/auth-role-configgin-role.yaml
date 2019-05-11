@@ -36,4 +36,5 @@ rules:
   - "statefulsets"
   verbs:
   - "get"
+  - "patch"
 {{- end }}

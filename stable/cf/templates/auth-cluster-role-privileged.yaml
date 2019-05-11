@@ -1,6 +1,7 @@
 ---
 # Cluster role "privileged" used by accounts:
 # - default-privileged
+# - eirini-privileged
 # - garden-runc
 # - privileged
 # - withsysresource-privileged

@@ -100,7 +100,7 @@ items:
       app: "uaa-uaa-public"
       {{- end }}
   spec:
-    {{- if not (or .Values.services.loadbalanced .Values.services.ingress) }}
+    {{- if not (or .Values.services.loadbalanced .Values.ingress.enabled) }}
     externalIPs: {{ .Values.kube.external_ips | toJson }}
     {{- end }}
 
@@ -116,8 +116,8 @@ items:
     type: "LoadBalancer"
     {{- end }}
 
-  {{- if and .Values.services.loadbalanced .Values.services.ingress }}
-  _incompatible: {{ fail "services.loadbalanced and services.ingress cannot both be set" }}
+  {{- if and .Values.services.loadbalanced .Values.ingress.enabled }}
+  _incompatible: {{ fail "services.loadbalanced and ingress.enabled cannot both be set" }}
   {{- end }}
 kind: "List"
 ---
@@ -313,20 +313,20 @@ spec:
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
 
-        {{- if .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
@@ -382,14 +382,6 @@ spec:
         - name: "SMTP_USER"
           value: {{if ne (typeOf .Values.env.SMTP_USER) "<nil>"}}{{if has (kindOf .Values.env.SMTP_USER) (list "map" "slice")}}{{.Values.env.SMTP_USER | toJson | quote}}{{else}}{{.Values.env.SMTP_USER | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if .Values.secrets.UAADB_PASSWORD }}
-        - name: "UAADB_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "uaadb-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.UAADB_PASSWORD }}
         - name: "UAADB_PASSWORD"
           valueFrom:
@@ -398,11 +390,21 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.UAADB_PASSWORD }}
+        - name: "UAADB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "uaadb-password"
+              name: "secrets"
+        {{- end }}
+
         - name: "UAA_ADMIN_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-admin-client-secret"
               name: "secrets"
+        - name: "UAA_PUBLIC_PORT"
+          value: {{if ne (typeOf .Values.env.UAA_PUBLIC_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PUBLIC_PORT) (list "map" "slice")}}{{.Values.env.UAA_PUBLIC_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PUBLIC_PORT | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.UAA_SERVER_CERT }}
         - name: "UAA_SERVER_CERT"
@@ -436,7 +438,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:298ab0e141103f82a4c6d8c916ed08023305a62a"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-uaa:378dee28c60e7a7ac892d79ad8fa043d63c2c7cf"
         lifecycle:
           preStop:
             exec:

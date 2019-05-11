@@ -217,7 +217,7 @@ kind: "List"
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: mysql, proxy
+# Also: mysql and proxy
 
 {{- if gt (int .Values.sizing.mysql.count) 3 }}
 _maxReplicas: {{ fail "mysql cannot have more than 3 instances" }}
@@ -318,14 +318,6 @@ spec:
             fieldRef:
               fieldPath: "metadata.namespace"
 
-        {{- if .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -334,12 +326,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_ADMIN_PASSWORD }}
-        - name: "MYSQL_ADMIN_PASSWORD"
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-admin-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "monit-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_ADMIN_PASSWORD }}
@@ -348,6 +340,14 @@ spec:
             secretKeyRef:
               key: "mysql-admin-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_ADMIN_PASSWORD }}
+        - name: "MYSQL_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-admin-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
@@ -421,7 +421,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:a2709f8c092ec8cc0df1c7cf0e875051dbf3a336"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/uaa-mysql:75d806182e493ff39c640269d598eef40a6fec3b"
         lifecycle:
           preStop:
             exec:
