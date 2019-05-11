@@ -1,4 +1,5 @@
 ---
+{{- if not .Values.enable.eirini }}
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
@@ -25,10 +26,6 @@ items:
       targetPort: 0
     - name: "cell-bbs-dbg"
       port: 17017
-      protocol: "TCP"
-      targetPort: 0
-    - name: "locket"
-      port: 8891
       protocol: "TCP"
       targetPort: 0
     selector:
@@ -91,56 +88,8 @@ items:
     selector:
       app.kubernetes.io/component: "diego-api"
       skiff-role-active: "true"
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "diego-api-locket-set"
-    labels:
-      app.kubernetes.io/component: "diego-api-locket-set"
-      skiff-role-name: "diego-api-locket-set"
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
-      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-      {{- if .Values.config.use_istio }}
-      app: "diego-api-locket-set"
-      {{- end }}
-  spec:
-    clusterIP: "None"
-    ports:
-    - name: "locket"
-      port: 8891
-      protocol: "TCP"
-      targetPort: 0
-    selector:
-      app.kubernetes.io/component: "diego-api"
-      skiff-role-active: "true"
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "diego-api-locket"
-    labels:
-      app.kubernetes.io/component: "diego-api-locket"
-      skiff-role-name: "diego-api-locket"
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
-      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-      {{- if .Values.config.use_istio }}
-      app: "diego-api-locket"
-      {{- end }}
-  spec:
-    ports:
-    - name: "locket"
-      port: 8891
-      protocol: "TCP"
-      targetPort: 8891
-    selector:
-      app.kubernetes.io/component: "diego-api"
-      skiff-role-active: "true"
 kind: "List"
+{{- end }}
 ---
 # The diego-api instance group contains the following jobs:
 #
@@ -152,7 +101,8 @@ kind: "List"
 # - patch-properties: Dummy BOSH job used to host parameters that are used in
 #   SCF patches for upstream bugs
 #
-# Also: bbs, cfdot, locket
+# Also: bbs and cfdot
+{{- if not .Values.enable.eirini }}
 
 {{- if gt (int .Values.sizing.diego_api.count) 3 }}
 _maxReplicas: {{ fail "diego_api cannot have more than 3 instances" }}
@@ -281,20 +231,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_AUCTIONEER_CERT_KEY }}
-        - name: "BBS_AUCTIONEER_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-auctioneer-cert-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_AUCTIONEER_CERT_KEY }}
         - name: "BBS_AUCTIONEER_CERT_KEY"
           valueFrom:
             secretKeyRef:
               key: "bbs-auctioneer-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_AUCTIONEER_CERT_KEY }}
+        - name: "BBS_AUCTIONEER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-auctioneer-cert-key"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_REP_CERT }}
@@ -329,20 +279,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BBS_SERVER_CRT }}
-        - name: "BBS_SERVER_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "bbs-server-crt"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BBS_SERVER_CRT }}
         - name: "BBS_SERVER_CRT"
           valueFrom:
             secretKeyRef:
               key: "bbs-server-crt"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BBS_SERVER_CRT }}
+        - name: "BBS_SERVER_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "bbs-server-crt"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.BBS_SERVER_CRT_KEY }}
@@ -363,49 +313,8 @@ spec:
 
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
-
-        {{- if .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets"
-        {{- end }}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -413,6 +322,14 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
         {{- end }}
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
@@ -473,20 +390,12 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+        {{- if not .Values.secrets.MYSQL_DIEGO_PASSWORD }}
+        - name: "MYSQL_DIEGO_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-diego-locket-password"
+              key: "mysql-diego-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
-              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
@@ -495,14 +404,6 @@ spec:
             secretKeyRef:
               key: "mysql-diego-password"
               name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.MYSQL_DIEGO_PASSWORD }}
-        - name: "MYSQL_DIEGO_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -518,7 +419,11 @@ spec:
             secretKeyRef:
               key: "uaa-ca-cert"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:b7d2c0bf0675edcaf499a71418a66918121b948c"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:2152f18cf3568a139ef9872414859bd6b6dc0671"
         lifecycle:
           preStop:
             exec:
@@ -533,16 +438,13 @@ spec:
         - containerPort: 17017
           name: "cell-bbs-dbg"
           protocol: "TCP"
-        - containerPort: 8891
-          name: "locket"
-          protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/usr/bin/env"
             - "FISSILE_ACTIVE_PASSIVE_PROBE=/var/vcap/jobs/global-properties/bin/readiness/diego-api"
             - "/opt/fissile/readiness-probe.sh"
-            - "head -c0 </dev/tcp/${HOSTNAME}/8891"
+            - "curl --fail http://$(jq -r .health_address /var/vcap/jobs/bbs/config/bbs.json)/ping"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.diego_api.memory.request }}
@@ -576,7 +478,7 @@ spec:
             {{- end }}
           {{- end }}
 
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.diego_api.capabilities -}} true {{- else -}} false {{- end }}
+          allowPrivilegeEscalation: true
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
@@ -630,6 +532,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
         - name: "LOGGREGATOR_AGENT_CERT_KEY"
           valueFrom:
@@ -638,11 +548,35 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-agent-cert-key"
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
+        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
+        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -670,7 +604,11 @@ spec:
           value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
           value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6c3e7dff097a17b664461549ec727297c99f9b0"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:39c7e06aaa613d8d7ae5ac05dc952c5d1cf1be17"
         lifecycle:
           preStop:
             exec:
@@ -700,19 +638,7 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.loggregator_agent.capabilities }}
           privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.loggregator_agent.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.loggregator_agent.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.loggregator_agent.capabilities -}} true {{- else -}} false {{- end }}
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
@@ -722,7 +648,7 @@ spec:
       - name: "registry-credentials"
       restartPolicy: "Always"
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-      serviceAccountName: "withsysresource"
+      serviceAccountName: "privileged"
       {{- end }}
       terminationGracePeriodSeconds: 600
       volumes:
@@ -736,3 +662,4 @@ spec:
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+{{- end }}

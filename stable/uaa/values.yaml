@@ -6,6 +6,10 @@ kube:
   # Whether HostPath volume mounts are available
   hostpath_available: false
 
+  limits:
+    nproc:
+      hard: ""
+      soft: ""
   organization: "cap"
   psp:
     nonprivileged: ~
@@ -47,7 +51,6 @@ bosh:
   instance_groups: []
 services:
   loadbalanced: false
-  ingress: ~
 secrets:
   # PEM-encoded CA certificate used to sign the TLS certificate used by all
   # components to secure their communications.
@@ -112,7 +115,7 @@ env:
   CERT_EXPIRATION: "10950"
 
   # Base domain name of the UAA endpoint; `uaa.${DOMAIN}` must be correctly
-  # configured to point to this UAA instance
+  # configured to point to this UAA instance.
   DOMAIN: ~
 
   KUBERNETES_CLUSTER_DOMAIN: ~
@@ -155,6 +158,9 @@ env:
   # SMTP server username, for password reset emails etc.
   SMTP_USER: ~
 
+  # The TCP port to report as the public port for the UAA server (root zone).
+  UAA_PUBLIC_PORT: "2793"
+
 # The sizing section contains configuration to change each individual instance
 # group. Due to limitations on the allowable names, any dashes ("-") in the
 # instance group names are replaced with underscores ("_").
@@ -167,7 +173,7 @@ sizing:
   # - patch-properties: Dummy BOSH job used to host parameters that are used in
   #   SCF patches for upstream bugs
   #
-  # Also: mysql, proxy
+  # Also: mysql and proxy
   mysql:
     # Node affinity rules can be specified here
     affinity: {}
@@ -202,7 +208,7 @@ sizing:
     # Additional privileges can be specified here
     capabilities: []
 
-    # The secret-generation instance group cannot be scaled.
+    # The secret_generation instance group cannot be scaled.
     count: 1
 
     # Unit [millicore]
@@ -253,3 +259,17 @@ sizing:
     memory:
       request: 2100
       limit: ~
+
+enable: {}
+ingress:
+  # ingress.annotations allows specifying custom ingress annotations that gets
+  # merged to the default annotations.
+  annotations: {}
+
+  # ingress.enabled enables ingress support - working ingress controller
+  # necessary.
+  enabled: false
+
+  # ingress.tls.crt and ingress.tls.key, when specified, are used by the TLS
+  # secret for the Ingress resource.
+  tls: {}

@@ -106,7 +106,7 @@ items:
       app: "tcp-router-tcp-router-public"
       {{- end }}
   spec:
-    {{- if not (or .Values.services.loadbalanced .Values.services.ingress) }}
+    {{- if not (or .Values.services.loadbalanced .Values.ingress.enabled) }}
     externalIPs: {{ .Values.kube.external_ips | toJson }}
     {{- end }}
 
@@ -124,8 +124,8 @@ items:
     type: "LoadBalancer"
     {{- end }}
 
-  {{- if and .Values.services.loadbalanced .Values.services.ingress }}
-  _incompatible: {{ fail "services.loadbalanced and services.ingress cannot both be set" }}
+  {{- if and .Values.services.loadbalanced .Values.ingress.enabled }}
+  _incompatible: {{ fail "services.loadbalanced and ingress.enabled cannot both be set" }}
   {{- end }}
 kind: "List"
 ---
@@ -138,7 +138,7 @@ kind: "List"
 #
 # - wait-for-uaa: Wait for UAA to be ready before starting any jobs
 #
-# Also: tcp_router
+# Also: tcp_router and bpm
 
 {{- if gt (int .Values.sizing.tcp_router.count) 3 }}
 _maxReplicas: {{ fail "tcp_router cannot have more than 3 instances" }}
@@ -325,7 +325,11 @@ spec:
           value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
         - name: "UAA_PORT"
           value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:e7b6077f358935445a23a3674821530c4b92f154"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:2fbe30e653625d102a98a2c9b338f8785497d2c7"
         lifecycle:
           preStop:
             exec:
@@ -377,19 +381,7 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.tcp_router.capabilities }}
           privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.tcp_router.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.tcp_router.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.tcp_router.capabilities -}} true {{- else -}} false {{- end }}
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
@@ -443,6 +435,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
+        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
         - name: "LOGGREGATOR_AGENT_CERT_KEY"
           valueFrom:
@@ -451,11 +451,35 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOGGREGATOR_AGENT_CERT_KEY"
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
-              key: "loggregator-agent-cert-key"
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
+        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
+        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -483,7 +507,11 @@ spec:
           value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_PROTOCOL"
           value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6c3e7dff097a17b664461549ec727297c99f9b0"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:39c7e06aaa613d8d7ae5ac05dc952c5d1cf1be17"
         lifecycle:
           preStop:
             exec:
@@ -513,19 +541,7 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.loggregator_agent.capabilities }}
           privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.loggregator_agent.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.loggregator_agent.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.loggregator_agent.capabilities -}} true {{- else -}} false {{- end }}
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
@@ -534,6 +550,9 @@ spec:
       imagePullSecrets:
       - name: "registry-credentials"
       restartPolicy: "Always"
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "default-privileged"
+      {{- end }}
       terminationGracePeriodSeconds: 600
       volumes:
       - name: "deployment-manifest"
