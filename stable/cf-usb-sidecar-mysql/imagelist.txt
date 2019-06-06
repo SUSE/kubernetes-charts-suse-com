@@ -1,0 +1,2 @@
+cf-usb-sidecar-mysql:1.0.1
+cf-usb-sidecar-mysql-setup:1.0.1

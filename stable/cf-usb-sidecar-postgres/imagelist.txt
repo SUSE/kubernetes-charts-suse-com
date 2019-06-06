@@ -1,0 +1,2 @@
+cf-usb-sidecar-postgres:1.0.1
+cf-usb-sidecar-postgres-setup:1.0.1
