@@ -1,0 +1,595 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "log-agent-rsyslog.fullname" . }}
+  labels:
+    helm.sh/chart: {{ include "log-agent-rsyslog.chart" . }}
+    app.kubernetes.io/name: {{ include "log-agent-rsyslog.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  rsyslog.conf: |-
+    #
+    # Global
+    #
+    global(
+        {{- if ( eq .Values.server.tls.enabled true ) }}
+        defaultNetstreamDriverCAFile="/etc/secrets/rootCA.pem"
+           {{- if (.Values.server.tls.clientKey) }}
+        defaultNetstreamDriverKeyFile="/etc/secrets/client-key.pem"
+           {{- end }}
+           {{- if (.Values.server.tls.clientCert) }}
+        defaultNetstreamDriverCertFile="/etc/secrets/client.pem"
+           {{- end }}
+        {{- end }}
+        workDirectory="/var/lib/rsyslog"
+    )
+
+    #
+    # Module
+    #
+    module(load="imfile" PollingInterval="10")
+    {{- if or ( eq .Values.logs.osSystem.enabled true ) ( eq .Values.logs.kubernetesSystem.enabled true ) }}
+    module(load="imjournal"
+           persistStateInterval={{ .Values.persistStateInterval | default "100" | quote }}
+           stateFile="/var/lib/rsyslog/imjournal.state")
+    {{- end }}
+    module(load="mmkubernetes"
+           {{- if ( eq .Values.kubernetesPodAnnotationsEnabled true ) }}
+           annotation_match=[".*"]
+           {{- end }}
+           tls.cacert="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+           tokenfile="/var/run/secrets/kubernetes.io/serviceaccount/token")
+
+    #
+    # Main Queue
+    #
+    {{- if and ( .Values.queue ) ( eq .Values.queue.enabled true ) }}
+    main_queue(queue.size="10000"
+               queue.spoolDirectory="/var/lib/rsyslog"
+               queue.filename="main-queue"
+               queue.maxFileSize="16777216"
+               queue.maxDiskSpace={{ mul (div .Values.queue.maxDiskSpace 10) 2 | int | default "2147483648" | quote }}
+               queue.saveOnShutdown="on"
+               queue.syncqueuefiles="on"
+               queue.highWatermark="10000")
+    {{- end }}
+
+    # 
+    # Config
+    #
+    $IncludeConfig /etc/rsyslog.d/*.template
+    $IncludeConfig /etc/rsyslog.d/*.ruleset
+
+    #
+    # Rule
+    #
+
+    ruleset(name="forward_host_audit_logs") {        
+        call setup_host_os_logforward
+
+        if ( $!do_forward_host_os_logs != "true" ) then { stop }
+
+        set $!custom_protocol_version = exec_template("protocol_version");
+
+        if $!custom_protocol_version == "0" then {
+            set $!custom_protocol_version = "1";
+        }
+
+        set $.nodename = getenv("NODENAME");
+
+        {{- if (eq .Values.server.protocol "tcp" ) }}
+        action(type="omfwd"
+               name="tcp_fwd_audit_logs"
+               template="host_audit_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="tcp"
+               {{- if ( eq .Values.server.tls.enabled true ) }}
+               streamDriver="gtls"
+               streamDriverMode="1"
+                  {{- if and (.Values.server.tls.rootCa) (.Values.server.tls.permittedPeer) }}
+               streamDriverAuthMode="x509/name"
+               streamDriverPermittedPeers={{ .Values.server.tls.permittedPeer | quote }}
+                  {{- else if (.Values.server.tls.rootCa) }}
+               streamDriverAuthMode="x509/certvalid"
+                  {{- else }}
+               streamDriverAuthMode="anon"
+                  {{- end }}
+               {{- else }}
+               streamDriverMode="0"
+               streamDriverAuthMode="anon"
+               {{- end }}
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- else }}
+        action(type="omfwd"
+               name="udp_fwd_audit_logs"
+               template="host_audit_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="udp"
+               action.ResumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.ResumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- end }}
+    }
+
+    ruleset(name="forward_host_zypper_logs") {
+        call setup_host_os_logforward
+
+        if ( $!do_forward_host_os_logs != "true" ) then { stop }
+
+        set $!custom_protocol_version = exec_template("protocol_version");
+
+        if $!custom_protocol_version == "0" then {
+            set $!custom_protocol_version = "1";
+        }
+
+        set $.nodename = getenv("NODENAME");
+
+        {{- if (eq .Values.server.protocol "tcp" ) }}
+        action(type="omfwd"
+               name="tcp_fwd_zypper_logs"
+               template="host_zypper_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="tcp"
+               {{- if (eq .Values.server.tls.enabled true) }}
+               streamDriver="gtls"
+               streamDriverMode="1"
+               {{- else }}
+               streamDriverMode="0"
+               {{- end}}
+               {{- if ( eq .Values.server.tls.enabled true ) }}
+                  {{- if and (.Values.server.tls.rootCa) (.Values.server.tls.permittedPeer) }}
+               streamDriverAuthMode="x509/name"
+               streamDriverPermittedPeers={{ .Values.server.tls.permittedPeer | quote }}
+                  {{- else if (.Values.server.tls.rootCa) }}
+               streamDriverAuthMode="x509/certvalid"
+                  {{- else }}
+               streamDriverAuthMode="anon"
+                  {{- end }}
+               {{- else }}
+               streamDriverAuthMode="anon"
+               {{- end }}
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- else }}
+        action(type="omfwd"
+               name="udp_fwd_zypper_logs"
+               template="host_zypper_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="udp"
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- end }}
+    }
+
+    ruleset(name="forward_k8s_container_logs") {
+        action(type="mmkubernetes"
+               name="fwd_k8s_meta")
+
+        call setup_k8s_logforward
+
+        set $!k8s_namespace_name = exec_template("get_k8s_namespace_name");
+
+        if ( $!do_forward_k8s_cp_logs != "true" ) and
+           ( $!do_forward_k8s_ns_logs != "true" ) then { 
+            stop 
+        } 
+
+        if ( $!do_forward_k8s_cp_logs == "true" ) and 
+           ( $!do_forward_k8s_ns_logs != "true" ) and
+           ( $!k8s_namespace_name != "kube-system" ) then {
+            stop
+        } 
+
+        if ( $!do_forward_k8s_cp_logs != "true" ) and 
+           ( $!do_forward_k8s_ns_logs == "true" ) and
+           ( $!k8s_namespace_name == "kube-system" ) then {
+            stop
+        }
+
+        if ( $!do_forward_k8s_ns_logs == "true" ) and 
+           ( $!k8s_namespace_name != "kube-system" ) and 
+           ( $!k8s_namespace_name == ["{{ .Values.logs.kubernetesUserNamespaces.exclude | join `", "` }}"] ) then {
+            stop
+        }
+
+        set $!custom_protocol_version = exec_template("protocol_version");
+
+        if ( $!custom_protocol_version == "0" ) then {
+            set $!custom_protocol_version = "1";
+        }
+
+        set $!custom_k8s_appname = exec_template("k8s_appname");
+
+        set $!custom_k8s_sd_id = "kube_meta";
+
+        set $!custom_k8s_sd = exec_template("k8s_sd");
+
+        {{- if (eq .Values.server.protocol "tcp" ) }}
+        action(type="omfwd"
+               name="tcp_fwd_container_logs"
+               template="k8s_container_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="tcp"
+               {{- if (eq .Values.server.tls.enabled true) }}
+               streamDriver="gtls"
+               streamDriverMode="1"
+               {{- else }}
+               streamDriverMode="0"
+               {{- end}}
+               {{- if ( eq .Values.server.tls.enabled true ) }}
+                  {{- if and (.Values.server.tls.rootCa) (.Values.server.tls.permittedPeer) }}
+               streamDriverAuthMode="x509/name"
+               streamDriverPermittedPeers={{ .Values.server.tls.permittedPeer | quote }}
+                  {{- else if (.Values.server.tls.rootCa) }}
+               streamDriverAuthMode="x509/certvalid"
+                  {{- else }}
+               streamDriverAuthMode="anon"
+                  {{- end }}
+               {{- else }}
+               streamDriverAuthMode="anon"
+               {{- end }}
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- else }}
+        action(type="omfwd"
+               name="udp_fwd_container_logs"
+               template="k8s_container_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="udp"
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- end }}
+    }
+
+    ruleset(name="forward_host_journal_logs") {
+        {{- if (eq .Values.server.protocol "tcp" ) }}
+        action(type="omfwd"
+               name="tcp_fwd_journal_logs"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="tcp"
+               template="host_journal_rfc5424"
+               {{- if (eq .Values.server.tls.enabled true) }}
+               streamDriver="gtls"
+               streamDriverMode="1"
+               {{- else }}
+               streamDriverMode="0"
+               {{- end}}
+               {{- if ( eq .Values.server.tls.enabled true ) }}
+                  {{- if and (.Values.server.tls.rootCa) (.Values.server.tls.permittedPeer) }}
+               streamDriverAuthMode="x509/name"
+               streamDriverPermittedPeers={{ .Values.server.tls.permittedPeer | quote }}
+                  {{- else if (.Values.server.tls.rootCa) }}
+               streamDriverAuthMode="x509/certvalid"
+                  {{- else }}
+               streamDriverAuthMode="anon"
+                  {{- end }}
+               {{- else }}
+               streamDriverAuthMode="anon"
+               {{- end }}
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }} 
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- else }}
+        action(type="omfwd"
+               name="udp_fwd_journal_logs"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="udp"
+               template="host_journal_rfc5424"
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               queue.type="Direct")
+        {{- end }}
+    }
+
+    ruleset(name="forward_logs"
+            {{- if and ( .Values.queue ) ( eq .Values.queue.enabled true ) }}
+            queue.type="FixedArray"
+            queue.size={{ int .Values.queue.size | default "100000" | quote }}
+            queue.spoolDirectory="/var/lib/rsyslog"
+            queue.filename="forward-logs"
+            queue.maxFileSize="16777216"
+            queue.maxDiskSpace={{ mul (div .Values.queue.maxDiskSpace 10) 8 | int | default "2147483648" | quote }}
+            queue.checkpointInterval="1000"
+            queue.saveOnShutdown="on"
+            queue.syncqueuefiles="on"
+            {{- end }}) {
+       if ( $syslogtag == "kubernetes" ) then {
+            call forward_k8s_container_logs
+            stop
+
+        } else if ( $syslogtag == "audit" ) then {
+            call forward_host_audit_logs
+            stop
+
+        } else if ( $syslogtag == "zypper" ) then {
+            call forward_host_zypper_logs
+            stop
+
+        } else if $INPUTNAME == "imjournal" then {
+            call setup_host_os_logforward
+            call setup_host_k8s_logforward
+    
+            if ( $!do_forward_host_os_logs != "true" ) and 
+               ( $!do_forward_host_k8s_logs != "true" ) then { stop } 
+    
+            set $.nodename = getenv("NODENAME");
+    
+            set $!custom_protocol_version = exec_template("protocol_version");
+            if $!custom_protocol_version == "0" then {
+                set $!custom_protocol_version = "1";
+            }
+        
+            set $!is_syslog_id = exec_template("get_syslog_identifier");
+            set $!is_systemd_unit = exec_template("get_systemd_unit");
+            set $!is_unit = exec_template("get_unit");
+            set $!service_type = "";
+    
+            if ( $!do_forward_host_k8s_logs == "true" ) and
+               ( $!is_syslog_id == ["kubelet", "crio"] ) then {
+                set $!journal_appname = $!is_syslog_id;
+                set $!service_type = "k8s";
+    
+            } else if ( $!do_forward_host_os_logs == "true" ) and
+                      ( $!is_syslog_id == ["kernel"] ) then {
+                set $!journal_appname = $!is_syslog_id;
+                set $!service_type = "os";
+    
+            } else if ( $!do_forward_host_os_logs == "true" ) and 
+                      ( $!is_syslog_id startswith ["wicked"] ) then {
+                set $!journal_appname = $!is_syslog_id;
+                set $!service_type = "os";
+    
+            } else if ( $!do_forward_host_os_logs == "true" ) and 
+                      ( $!is_systemd_unit startswith ["wicked"] ) then {
+                set $!journal_appname = $!is_systemd_unit;
+                set $!service_type = "os";
+    
+            } else if ( $!do_forward_host_os_logs == "true" ) and 
+                      ( $!is_unit startswith ["wicked"] ) then {
+                set $!journal_appname = $!is_unit;
+                set $!service_type = "os";
+    
+            } else {
+                stop
+            }
+    
+            if $!service_type == "k8s" then {
+                set $!journal_appname = 'k8s.system/' & $!journal_appname;
+    
+            } else if $!service_type == "os" then {
+                set $!journal_appname = 'os/' & $!journal_appname;
+    
+            } else {
+                stop
+            }
+    
+            if strlen($!journal_appname) > 0 then {
+                call forward_host_journal_logs
+                unset $!journal_appname;
+                unset $!service_type;
+                stop
+
+            } else {
+                stop
+            }
+
+        } else {
+            stop
+        }
+    }
+
+    #
+    # Action
+    #
+    {{- if or ( eq .Values.logs.osSystem.enabled true ) ( eq .Values.logs.kubernetesSystem.enabled true ) }}
+    if $INPUTNAME == "imjournal" then {
+        call forward_logs
+    }
+    {{- end }}
+
+    {{- if or ( eq .Values.logs.kubernetesControlPlane.enabled true ) ( eq .Values.logs.kubernetesUserNamespaces.enabled true ) }}
+    input(type="imfile" 
+          file="/var/log/containers/*.log"
+          tag="kubernetes"
+          addmetadata="on"
+          ruleset="forward_logs"
+    )
+    {{- end }}
+
+    {{- if ( eq .Values.logs.osSystem.enabled true ) }}
+    input(type="imfile"
+          file="/var/log/audit/audit.log"
+          tag="audit"
+          ruleset="forward_logs")
+    
+    input(type="imfile"
+          file="/var/log/zypper.log"
+          tag="zypper"
+          ruleset="forward_logs")
+    {{- end }}
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "log-agent-rsyslog.fullname" . }}-rsyslog.d
+  labels:
+    helm.sh/chart: {{ include "log-agent-rsyslog.chart" . }}
+    app.kubernetes.io/name: {{ include "log-agent-rsyslog.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  all.ruleset: |-
+    ruleset(name="setup_host_os_logforward") {
+        # Enable OS service log-forward.
+        set $!do_forward_host_os_logs = {{ .Values.logs.osSystem.enabled | quote }};
+    }
+
+    ruleset(name="setup_host_k8s_logforward") {
+        # Enable OS K8s serviec log-forward
+        set $!do_forward_host_k8s_logs = {{ .Values.logs.kubernetesSystem.enabled | quote }};
+    }
+
+    ruleset(name="setup_k8s_logforward") {
+        # Enable Kubernetes log-forward
+        set $!do_forward_k8s_cp_logs = {{ .Values.logs.kubernetesControlPlane.enabled | quote }};
+        set $!do_forward_k8s_ns_logs = {{ .Values.logs.kubernetesUserNamespaces.enabled | quote }};
+    }
+
+  all.template: |-
+    template(name="protocol_version" type="list") {
+        property(name="PROTOCOL-VERSION")
+    }
+
+  audit.template: |-
+    template(name="host_audit_rfc5424" type="list") {
+        constant(value="<")
+        property(name="PRI")
+        constant(value=">")
+        property(name="$!custom_protocol_version")
+        constant(value=" ")
+        property(name="TIMESTAMP" dateFormat="rfc3339" date.inUTC="on")
+        constant(value=" ")
+        property(name="$.nodename")
+        constant(value=" ")
+        constant(value="os/auditd")
+        constant(value=" ")
+        property(name="PROCID" position.from="1" position.to="255" caseConversion="lower")
+        constant(value=" ")
+        property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
+        constant(value=" ")
+        property(name="STRUCTURED-DATA")
+        constant(value=" ")
+        property(name="MSG" droplastlf="on")
+        constant(value="\n")
+    }
+
+  journal.template: |-
+    template(name="host_journal_rfc5424" type="list") {
+        constant(value="<")
+        property(name="PRI")
+        constant(value=">")
+        property(name="$!custom_protocol_version")
+        constant(value=" ")
+        property(name="TIMESTAMP" dateFormat="rfc3339" date.inUTC="on")
+        constant(value=" ")
+        property(name="$.nodename")
+        constant(value=" ")
+        property(name="$!journal_appname")
+        constant(value=" ")
+        property(name="PROCID" position.from="1" position.to="255" caseConversion="lower")
+        constant(value=" ")
+        property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
+        constant(value=" ")
+        property(name="STRUCTURED-DATA")
+        constant(value=" ")
+        property(name="MSG" droplastlf="on")
+        constant(value="\n")
+    }
+
+    template(name="get_systemd_unit" type="list") {
+        property(name="!_SYSTEMD_UNIT")
+    }
+
+    template(name="get_syslog_identifier" type="list") {
+        property(name="!SYSLOG_IDENTIFIER")
+    }
+
+    template(name="get_unit" type="list") {
+        property(name="!UNIT")
+    }
+
+  kubernetes.template: |-
+    template(name="get_k8s_namespace_name" type="list") {
+        property(name="!kubernetes!namespace_name")
+    }
+
+    template(name="k8s_appname" type="list") {
+        constant(value="k8s.pod/")
+        property(name="!kubernetes!namespace_name")
+        constant(value="/")
+        property(name="!kubernetes!pod_name")
+        constant(value="/")
+        property(name="!kubernetes!container_name")
+    }
+
+    template(name="k8s_sd" type="list") {
+        constant(value="[")
+          property(name="$!custom_k8s_sd_id")
+          constant(value=" namespace_id=") property(name="$!kubernetes!namespace_id")
+          constant(value=" container_name=") property(name="$!kubernetes!container_name")
+          constant(value=" creation_timestamp=") property(name="$!kubernetes!creation_timestamp")
+          constant(value=" host=") property(name="$!kubernetes!host")
+          constant(value=" namespace_name=") property(name="$!kubernetes!namespace_name")
+          constant(value=" master_url=") property(name="$!kubernetes!master_url")
+          constant(value=" pod_id=") property(name="$!kubernetes!pod_id")
+          constant(value=" pod_name=") property(name="$!kubernetes!pod_name")
+          {{- if ( eq .Values.kubernetesPodLabelsEnabled true ) }}
+          constant(value=" labels=") property(name="$!kubernetes!labels")
+          {{- end }}
+          {{- if ( eq .Values.kubernetesPodAnnotationsEnabled true ) }}
+          constant(value=" annotations=") property(name="$!kubernetes!annotations")
+          {{- end }}
+        constant(value="]")
+    }
+
+    template(name="k8s_container_rfc5424" type="list") {
+        constant(value="<")
+        property(name="PRI")
+        constant(value=">")
+        property(name="$!custom_protocol_version")
+        constant(value=" ")
+        property(name="TIMESTAMP" dateFormat="rfc3339" date.inUTC="on")
+        constant(value=" ")
+        property(name="$!kubernetes!host")
+        constant(value=" ")
+        property(name="$!custom_k8s_appname")
+        constant(value=" ")
+        property(name="PROCID" position.from="1" position.to="255" caseConversion="lower")
+        constant(value=" ")
+        property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
+        constant(value=" ")
+        property(name="$!custom_k8s_sd")
+        constant(value=" ")
+        property(name="MSG" droplastlf="on")
+        constant(value="\n")
+    }
+
+  zypper.template: |-
+    template(name="host_zypper_rfc5424" type="list") {
+        constant(value="<")
+        property(name="PRI")
+        constant(value=">")
+        property(name="$!custom_protocol_version")
+        constant(value=" ")
+        property(name="TIMESTAMP" dateFormat="rfc3339" date.inUTC="on")
+        constant(value=" ")
+        property(name="$.nodename")
+        constant(value=" ")
+        constant(value="os/zypper")
+        constant(value=" ")
+        property(name="PROCID" position.from="1" position.to="255" caseConversion="lower")
+        constant(value=" ")
+        property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
+        constant(value=" ")
+        property(name="STRUCTURED-DATA")
+        constant(value=" ")
+        property(name="MSG" droplastlf="on")
+        constant(value="\n")
+    }

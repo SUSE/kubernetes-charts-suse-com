@@ -1,0 +1,30 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "log-agent-rsyslog.fullname" . }}
+  labels:
+    helm.sh/chart: {{ include "log-agent-rsyslog.chart" . }}
+    app.kubernetes.io/name: {{ include "log-agent-rsyslog.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - api
+  - namespaces
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - {{ include "log-agent-rsyslog.fullname" . }}
+  verbs:
+  - use

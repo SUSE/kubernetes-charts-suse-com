@@ -1,0 +1,6 @@
+Congratuations! You've successfully installed {{ include "log-agent-rsyslog.fullname" . }}.
+
+{{ if and ( .Values.queue ) ( eq .Values.queue.enabled true ) }}
+1. Log agent on each node will start to save unprocessed logs when queues reach its maximum size. Besides user configured queue, there will be another queue for improving OS journal log processing performance which is currenlty set to 50000 messages and not configurable.
+2. When uninstalling log agent, the queue files will be kept on each node to leave users to decide how to operate.
+{{ end }}

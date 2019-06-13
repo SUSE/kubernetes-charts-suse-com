@@ -1,0 +1,79 @@
+---
+image:
+  repository: registry.suse.com/caasp/v4/rsyslog
+  tag: v8.39.0
+
+server:
+  host: rsyslog-server.default.svc.cluster.local
+  port: 514
+  protocol: tcp
+  tls:
+    enabled: true
+    # If root CA not provided, use `streamDriverAuthMode == "anon"`, otherwise `StreamDriverAuthMode = "x509/certvalid"` instead.
+    rootCa: |
+      -----BEGIN CERTIFICATE-----
+      MIIEejCCAuKgAwIBAgIRAJrcFtXMsl1C/B2cg844pJowDQYJKoZIhvcNAQELBQAw
+      VTEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMRUwEwYDVQQLDAxkYXZp
+      ZGtvQGRrbzExHDAaBgNVBAMME21rY2VydCBkYXZpZGtvQGRrbzEwHhcNMTkwNTEx
+      MTM0ODMwWhcNMjkwNTExMTM0ODMwWjBVMR4wHAYDVQQKExVta2NlcnQgZGV2ZWxv
+      cG1lbnQgQ0ExFTATBgNVBAsMDGRhdmlka29AZGtvMTEcMBoGA1UEAwwTbWtjZXJ0
+      IGRhdmlka29AZGtvMTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBANyJ
+      VsHoxgmAEzeEAWUPwD8/B7GBRhY6kGRD9sdNyqXncdnzK2EFAuvcoe7cA+7oV5Pk
+      hvJEHhtMxDlxZOaIILWFyG0pGE2FQ7g3qorJ88EJ42GPcZIjLeM+Jqj2/COBbOxE
+      km3jsYHH0jhGSla9H0H8XCowKVKXKa22IPki7m/VsRjgpOASqMy/v10npxZcumm1
+      wEBOzDb9Fi7GxxWB4ImGfxaan0+9+WfsjuMjfj1f0fKJEFLw8cgJGF/qEICTNoXU
+      dyBZVnzC4kdSh52+tCP8Pt6m87vvsg8LqW7t9RLXn9nb6Dgx/VAKahwVCKgRVwyu
+      GK3jkh4YLE28Zlp5Ym1JS/VfSGMcUhCYIWH6eRRJ5ojA0Bb9XCdGMWRF0zPR5d2b
+      AU1GEan3a9jYTKQoVopattlgB4LDhs8sWzao9nsrq08kE8U1fN4buZhoybuK4DaH
+      vksqy3mcsSGPHDZM6CxzfNBMO83wlNc0Lz+qG7QxTxNfUyq7M124gWiedtayeQID
+      AQABo0UwQzAOBgNVHQ8BAf8EBAMCAgQwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNV
+      HQ4EFgQUFEh5ni0JR8i6TMShKwe7FR474RwwDQYJKoZIhvcNAQELBQADggGBAMz7
+      QnQz9AdfKVPG1cKBCKkc5mDEKSP1KOCbEykN4+b3fBPgrF2T6WemDf/pHVdudkJf
+      CnJTKJ1HDMc3bvZWqm197J350T2Kskr+FZ7R89arA15XBjagYsa8Us/pEwdIGgBc
+      PNRfbUrxcDX1RTyZzLWDR390pmsq3osMT6fm+k4QWrM1LaPahFsGpZR6+ONSZefL
+      OChUv3yQK0fx3JIlMeGoOXh+SMp6s29b27ixlXQyyW+cWwaEKtfcQy+uLO6VcfZX
+      k/pC4ciUxGiOjgY1WWKD/5i7Nq9P4KOBfR5WTMqcfUs60BtOUd9wRj/sbg/fTZa/
+      aS2ctLE6f/5aqImyX2p8VBZ5jl3Kkh3jn1+u86OyRRWVRNS/cTf46FC+2h4Nn6gH
+      FshBe6s1Hrn8ml5ckebZnzId94V18qwVW98ePedZO4XMrZZRSN/bJVCeiUhLatxI
+      aqlTwDoV3eZ41on+e9HzjibYh0apg79BWBbveV3QXyJNVQhIuq/gsJEIxFPlLA==
+      -----END CERTIFICATE-----
+    # If root CA and peer provided, use `StreamDriverAuthMode = "x509/name"`.
+    permittedPeer: ""
+    clientCert: ""
+    clientKey: ""
+
+resources:
+  # Default resource configurations are based on the default settings of log agent, but it would be recommend to adjust as per user needs.
+  limits:
+  # cpu: "" 
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+persistStateInterval: 100
+resumeInterval: 30
+resumeRetryCount: -1
+
+queue:
+  enabled: false
+  size: 50000
+  maxDiskSpace: 2147483648
+
+kubernetesPodLabelsEnabled: false
+kubernetesPodAnnotationsEnabled: false
+
+logs:
+  osSystem:
+    enabled: true
+
+  kubernetesSystem:
+    enabled: true
+
+  kubernetesControlPlane:
+    enabled: true
+
+  kubernetesUserNamespaces:
+    enabled: true
+    exclude:
+      - ""

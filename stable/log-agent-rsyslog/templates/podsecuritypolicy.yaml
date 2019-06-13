@@ -1,0 +1,33 @@
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ include "log-agent-rsyslog.fullname" . }}
+  labels:
+    helm.sh/chart: {{ include "log-agent-rsyslog.chart" . }}
+    app.kubernetes.io/name: {{ include "log-agent-rsyslog.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    fsGroup:
+      rule: RunAsAny
+    volumes:
+      - 'configMap'
+      - 'secret'
+      - 'hostPath'
+    privileged: false
+    allowedHostPaths:
+      - pathPrefix: /var/lib
+        readOnly: false
+      - pathPrefix: /var/log
+        readOnly: true
+      - pathPrefix: /etc
+        readOnly: true
+      - pathPrefix: /run
+        readOnly: true
