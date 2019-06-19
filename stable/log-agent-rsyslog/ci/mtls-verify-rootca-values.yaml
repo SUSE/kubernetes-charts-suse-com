@@ -1,7 +1,7 @@
 ---
 image:
   repository: registry.suse.com/caasp/v4/rsyslog
-  tag: v8.39.0
+  tag: 8.39.0
 
 server:
   host: rsyslog-server.default.svc.cluster.local

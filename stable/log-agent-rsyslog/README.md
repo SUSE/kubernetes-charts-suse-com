@@ -35,7 +35,7 @@ The following table lists the configurable parameters of the log-agent-rsyslog c
 | Parameter | Description | Default |
 | - | - | - |
 | `image.repository` | The image repository to pull from | `registry.suse.com/caasp/v4/rsyslog` |
-| `image.tag` | The image tag to pull | `v8.39.0` |
+| `image.tag` | The image tag to pull | `8.39.0` |
 | `server.host` | Rsyslog server host | `rsyslog-server.default.svc.cluster.local` |
 | `server.port` | Rsyslog server port | `514` |
 | `server.protocol` | Rsyslog server protocol | `tcp` |
