@@ -8,10 +8,10 @@ This chart deploys log-agent-rsyslog to all the nodes in your cluster via Daemon
 
 ## Installing the Chart
 
-To install the chart with the release name `log-agent-rsyslog`, run:
+To install the chart with the release name `my-release`:
 
 ```bash
-$ helm install --name log-agent-rsyslog --wait log-agent-rsyslog
+$ helm install --name my-release stable/log-agent-rsyslog
 ```
 
 After a few minutes, you should see service statuses being written to the configured output.
@@ -20,7 +20,7 @@ After a few minutes, you should see service statuses being written to the config
 
 ## Uninstalling the Chart
 
-To uninstall/delete the  log-agent-rsyslog` deployment:
+To uninstall/delete the `my-release` deployment:
 
 ```bash
 $ helm delete log-agent-rsyslog --purge
@@ -39,20 +39,20 @@ The following table lists the configurable parameters of the log-agent-rsyslog c
 | `server.host` | Rsyslog server host | `rsyslog-server.default.svc.cluster.local` |
 | `server.port` | Rsyslog server port | `514` |
 | `server.protocol` | Rsyslog server protocol | `tcp` |
-| `server.tls.enabled` | Enable tls | `false` |
+| `server.tls.enabled` | Enable TLS | `false` |
 | `server.tls.rootCa` | TLS rootCA |  |
 | `server.tls.permittedPeer` | TLS server permitted peer | |
 | `server.tls.clientCert` | TLS client cert | |
 | `server.tls.clientKey` | TLS client key | |
 | `resources.limits.cpu` | CPU limits | |
 | `resources.limits.memory` | Memory limits | `512Mi` |
-| `resources.requests.cpu` | CPU request | `100m` |
-| `resources.requests.memory` | Memory request | `512Mi` |
-| `persistStateInterval` | Rsyslog persist state interval | `100` |
-| `resumeInverval` | Rsyslog resume interval | `30` |
+| `resources.requests.cpu` | CPU requests | `100m` |
+| `resources.requests.memory` | Memory requests | `512Mi` |
+| `persistStateInterval` | Rsyslog persist state interval in second | `100` |
+| `resumeInverval` | Rsyslog resume interval in second | `30` |
 | `resumeRetryCount` | Rsyslog resume retry count. `-1` is unlimited | `-1` |
 | `queue.enabled` | Enable Rsyslog queue | `false` |
-| `queue.size` | Rsyslog queue size | `100000` |
+| `queue.size` | Rsyslog queue size in byte | `100000` |
 | `queue.maxDiskSpace` | Rsyslog queue max disk space in byte | `2147483648` |
 | `kubernetesPodLabelsEnabled` | Enable kubernetes meta labels in pod logs | `false` |
 | `kubernetesPodAnnotationsEnabled` | Enable kubernetes meta annotations in pod logs | `false` |
@@ -65,25 +65,28 @@ The following table lists the configurable parameters of the log-agent-rsyslog c
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```bash
-$ helm install --name log-agent-rsyslog \
+$ helm install --name my-release \
                --set queue.enabled=true \
-               --wait
-               log-agent-rsyslog
+               stable/log-agent-rsyslog
 ```
 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
-$ helm install --name log-agent-rsyslog --wait -f ci/values.yaml log-agent-rsyslog
+$ helm install --name my-release \
+               --values stable/log-agent-rsyslog/ci/values.yaml \
+               stable/log-agent-rsyslog
 ```
 
 ## Testing
 Go to tests folder, to verify all builtin e2e test cases
+
 ```bash
 make test
 ```
 
 Or run partial test cases with `bats` command. 
+
 ```bash
 bats --tap k8sSystem.bats k8sControlPlane.bats
 ```
