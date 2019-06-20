@@ -102,7 +102,7 @@ data:
                streamDriverAuthMode="anon"
                {{- end }}
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- else }}
         action(type="omfwd"
@@ -112,7 +112,7 @@ data:
                port={{ .Values.server.port | quote }}
                protocol="udp"
                action.ResumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.ResumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.ResumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- end }}
     }
@@ -156,7 +156,7 @@ data:
                streamDriverAuthMode="anon"
                {{- end }}
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- else }}
         action(type="omfwd"
@@ -166,7 +166,7 @@ data:
                port={{ .Values.server.port | quote }}
                protocol="udp"
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- end }}
     }
@@ -240,7 +240,7 @@ data:
                streamDriverAuthMode="anon"
                {{- end }}
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- else }}
         action(type="omfwd"
@@ -250,7 +250,7 @@ data:
                port={{ .Values.server.port | quote }}
                protocol="udp"
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- end }}
     }
@@ -282,7 +282,7 @@ data:
                streamDriverAuthMode="anon"
                {{- end }}
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }} 
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- else }}
         action(type="omfwd"
@@ -292,7 +292,7 @@ data:
                protocol="udp"
                template="host_journal_rfc5424"
                action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
-               action.resumeRetryCount={{ .Values.resumeRetryCount | default "-1" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
                queue.type="Direct")
         {{- end }}
     }
