@@ -1,0 +1,131 @@
+---
+image:
+  repository: registry.suse.com/caasp/v4/rsyslog
+  tag: 8.39.0
+
+server:
+  host: rsyslog-server.default.svc.cluster.local
+  port: 514
+  protocol: tcp
+  tls:
+    enabled: true
+    # If root CA not provided, use `streamDriverAuthMode == "anon"`, otherwise `StreamDriverAuthMode = "x509/certvalid"` instead.
+    rootCa: |
+      -----BEGIN CERTIFICATE-----
+      MIIEejCCAuKgAwIBAgIRAJrcFtXMsl1C/B2cg844pJowDQYJKoZIhvcNAQELBQAw
+      VTEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMRUwEwYDVQQLDAxkYXZp
+      ZGtvQGRrbzExHDAaBgNVBAMME21rY2VydCBkYXZpZGtvQGRrbzEwHhcNMTkwNTEx
+      MTM0ODMwWhcNMjkwNTExMTM0ODMwWjBVMR4wHAYDVQQKExVta2NlcnQgZGV2ZWxv
+      cG1lbnQgQ0ExFTATBgNVBAsMDGRhdmlka29AZGtvMTEcMBoGA1UEAwwTbWtjZXJ0
+      IGRhdmlka29AZGtvMTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBANyJ
+      VsHoxgmAEzeEAWUPwD8/B7GBRhY6kGRD9sdNyqXncdnzK2EFAuvcoe7cA+7oV5Pk
+      hvJEHhtMxDlxZOaIILWFyG0pGE2FQ7g3qorJ88EJ42GPcZIjLeM+Jqj2/COBbOxE
+      km3jsYHH0jhGSla9H0H8XCowKVKXKa22IPki7m/VsRjgpOASqMy/v10npxZcumm1
+      wEBOzDb9Fi7GxxWB4ImGfxaan0+9+WfsjuMjfj1f0fKJEFLw8cgJGF/qEICTNoXU
+      dyBZVnzC4kdSh52+tCP8Pt6m87vvsg8LqW7t9RLXn9nb6Dgx/VAKahwVCKgRVwyu
+      GK3jkh4YLE28Zlp5Ym1JS/VfSGMcUhCYIWH6eRRJ5ojA0Bb9XCdGMWRF0zPR5d2b
+      AU1GEan3a9jYTKQoVopattlgB4LDhs8sWzao9nsrq08kE8U1fN4buZhoybuK4DaH
+      vksqy3mcsSGPHDZM6CxzfNBMO83wlNc0Lz+qG7QxTxNfUyq7M124gWiedtayeQID
+      AQABo0UwQzAOBgNVHQ8BAf8EBAMCAgQwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNV
+      HQ4EFgQUFEh5ni0JR8i6TMShKwe7FR474RwwDQYJKoZIhvcNAQELBQADggGBAMz7
+      QnQz9AdfKVPG1cKBCKkc5mDEKSP1KOCbEykN4+b3fBPgrF2T6WemDf/pHVdudkJf
+      CnJTKJ1HDMc3bvZWqm197J350T2Kskr+FZ7R89arA15XBjagYsa8Us/pEwdIGgBc
+      PNRfbUrxcDX1RTyZzLWDR390pmsq3osMT6fm+k4QWrM1LaPahFsGpZR6+ONSZefL
+      OChUv3yQK0fx3JIlMeGoOXh+SMp6s29b27ixlXQyyW+cWwaEKtfcQy+uLO6VcfZX
+      k/pC4ciUxGiOjgY1WWKD/5i7Nq9P4KOBfR5WTMqcfUs60BtOUd9wRj/sbg/fTZa/
+      aS2ctLE6f/5aqImyX2p8VBZ5jl3Kkh3jn1+u86OyRRWVRNS/cTf46FC+2h4Nn6gH
+      FshBe6s1Hrn8ml5ckebZnzId94V18qwVW98ePedZO4XMrZZRSN/bJVCeiUhLatxI
+      aqlTwDoV3eZ41on+e9HzjibYh0apg79BWBbveV3QXyJNVQhIuq/gsJEIxFPlLA==
+      -----END CERTIFICATE-----
+    # If root CA and peer provided, use `StreamDriverAuthMode = "x509/name"`.
+    permittedPeer: ""
+    clientCert: |
+      -----BEGIN CERTIFICATE-----
+      MIIEDjCCAnagAwIBAgIQFizSitqiwdsV8w7AiwkECTANBgkqhkiG9w0BAQsFADBV
+      MR4wHAYDVQQKExVta2NlcnQgZGV2ZWxvcG1lbnQgQ0ExFTATBgNVBAsMDGRhdmlk
+      a29AZGtvMTEcMBoGA1UEAwwTbWtjZXJ0IGRhdmlka29AZGtvMTAeFw0xOTA1MTEx
+      MzUzMTFaFw0yOTA1MTExMzUzMTFaMEAxJzAlBgNVBAoTHm1rY2VydCBkZXZlbG9w
+      bWVudCBjZXJ0aWZpY2F0ZTEVMBMGA1UECwwMZGF2aWRrb0Bka28xMIIBIjANBgkq
+      hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxBuCkld0JcIO/sbf1S/NpcltPpYNyQF9
+      vJVYslY5Ej4Z7olkx6kjeQv9co/mDLqxsr8Sx2GCiJX67REDyKj/WwKcgjeXGKtB
+      a0OEsbVDS+B3msCEwX4KMH83efrUee2GVO6/nYN+B7HnXEBa1GtIsQryztCAG2MZ
+      PAySGm7k7fMRqvAQRB5H0MaZWMrC7D4/hTS/RxSUQg8C8HbPy4PUhdkle3vwFi8x
+      deoax2H8HKLOxzPBqb1+2aymuRGsObrHsol/qCu/b0ZFk4MtLanFPuuoUgzNgQIk
+      sdkVfojsatlkV+THZmgSeFW5pRmNwOgbO4A+hnAJoUqDIaqca23XfQIDAQABo28w
+      bTAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDAYDVR0TAQH/
+      BAIwADAfBgNVHSMEGDAWgBQUSHmeLQlHyLpMxKErB7sVHjvhHDAXBgNVHREEEDAO
+      ggxjbGllbnQubG9jYWwwDQYJKoZIhvcNAQELBQADggGBAAAOd0IrMy4nGZjJqj+k
+      e7v/Ak0t6hwCEcIyBIL09CLXxwHzFgM8wKi9j7IijPG6IBI0WgOtkiv5le8sb/Kj
+      sbtVX4zLWzYhPhVv5kCNAVfbBTMQ+8Zqh/od0OUye/2zM3vQ0/ZLzdm5a1RFkz4s
+      IgTZV8nUemIr/O4oBmJCbamfXvk0knz8QsSIyX+x5ClA7ojmIq3vVAwTvIM9350U
+      4NK0TuIio3yw11XJOn2bye23QGrbY3lRwafxGvT7jGeVoW8LCBU/LMK4wP0tOevh
+      5F1tZ/fINPiT6IUQuO/frBKTVx5ZS/s4UW+uirZh2Kq6P1QrzIyqyCDRPkBqek00
+      60RjMeRmu8bHtxXcvJVQDOuR9wScrUkzfFXGF2QPrLYLgsxkLdqi0wPREdMr810m
+      kzZiQLbCr/rooQ0xc3uE+aiOuCPgAXvMYg4cB9ZCYMfuwq2PxFLAhokjHpuSaHtN
+      F2CeG1AvjwYiANeRg7wBku4PGCVI5wwWwnXEOVxhaZEh5w==
+      -----END CERTIFICATE-----
+    clientKey: |
+      -----BEGIN PRIVATE KEY-----
+      MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDEG4KSV3Qlwg7+
+      xt/VL82lyW0+lg3JAX28lViyVjkSPhnuiWTHqSN5C/1yj+YMurGyvxLHYYKIlfrt
+      EQPIqP9bApyCN5cYq0FrQ4SxtUNL4HeawITBfgowfzd5+tR57YZU7r+dg34Hsedc
+      QFrUa0ixCvLO0IAbYxk8DJIabuTt8xGq8BBEHkfQxplYysLsPj+FNL9HFJRCDwLw
+      ds/Lg9SF2SV7e/AWLzF16hrHYfwcos7HM8GpvX7ZrKa5Eaw5useyiX+oK79vRkWT
+      gy0tqcU+66hSDM2BAiSx2RV+iOxq2WRX5MdmaBJ4VbmlGY3A6Bs7gD6GcAmhSoMh
+      qpxrbdd9AgMBAAECggEBALaE9C3H/231A4fVCRad+0TGCEsr1YCzRpdyWK8C2PNF
+      oVUFwyqhHUbYBffOPkqyqBi5BX1UH+2HyZdDMsZbo+7Mq2X230YyfhybJrFPB2dj
+      b240qFp+OHWSsctxzLf+ffwmiWjMrUv0JGUT8HWrtGgyzHH4VIMo5J+jA4heletv
+      oW0ekCLR9LO0dmLJUvT4Mo4IpE4sfGaTZhTH+hsjbBZ3EHs0wYUj/qdWgJpcTJu0
+      ub30t8ScplbBGBFHNxWIZRY4Dy3aWAAhMYUteRSLalU0xEkVL7lPatBnNEIdAKqw
+      FunyHZke7wNMNS1eqLYN5SSGvm2ZJhcbL9IelT0N/oECgYEA8Ic1mYpgiggpHl+e
+      4nhwQ/tgRPpxL5fNpgZbPct15EYD3p3TItWeFBUD1LT1WARIG6PdVynv7e1PVRnl
+      WdVwxSVgs7ZaiGE31imMWyLAjDHt9dHV/PCXz0+47D9+jKLE3hrIkrdcM//OHidm
+      x9P/ap7FLoVD0JSPGXXBaLUIS0kCgYEA0LjSkOi0htitJs0wJn++kr0JZoLkydVZ
+      1kp2TBlHxr3UnBbEVL12jpl4XO7/eRngXBB1IXuSFzaAreU3Mu2Mw8l0/dBNUiPt
+      FlxJQb3NPfNCQM4Je9dqVT/v02MP76OdDekh4c4ATTHsNz5KcaFEpByfP8xtOixn
+      2MCM0gZT1pUCgYEAhTqPkO2aDbr5c66JZm5J2Q4LRAno2fDe40CQF4l0Uq4JhKys
+      /5WNixgc2Bwn7cnpWw4IEzjSglq5X60JYhoc7caHauPt/67B6+l1qiF0v/MEGO5S
+      9lkZ7aX+CzYcVa/vFguF3+aatt7Rf9hZUQR3bMpm9B6y8nznSrX0HJhx8KkCgYAL
+      M2/xYNuXRPd91pMX7dEPVN+1RZ77idyJWHOiv9SPQM6xFbOxjH1ZR7ki25yQJihZ
+      KHTwuA3t+vnK2zssG31rYFtL56rOlqj5gzhXM9VY1r4edjAiGjxVmNnI8U8AoDok
+      bfdog8KWYfB4QnqCQJJLcFHHfbP65Dkqc6La/oXvRQKBgBToq8e1BDxnMe6ew3yk
+      HJ/qGNbDmlFZAg8Al844mxdCN4PzYFEAQSbwUUw0k4HRkPVLHcbBz9UCq/IiMp+f
+      W4SnNbtDMgGnHF1VL9FEQu+uGXHW38L98ZaqNookTljSD/L34kLpieu0KAbzmtCc
+      L5ykXhyFbTtuGikWPhQJNQUA
+      -----END PRIVATE KEY-----
+
+resources:
+  # Default resource configurations are based on the default settings of log agent, but it would be recommend to adjust as per user needs.
+  limits:
+  # cpu: "" 
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+persistStateInterval: 100
+resumeInterval: 30
+resumeRetryCount: -1
+
+queue:
+  enabled: false
+  size: 50000
+  maxDiskSpace: 2147483648
+
+kubernetesPodLabelsEnabled: false
+kubernetesPodAnnotationsEnabled: false
+
+logs:
+  osSystem:
+    enabled: true
+
+  kubernetesSystem:
+    enabled: true
+
+  kubernetesControlPlane:
+    enabled: true
+
+  kubernetesUserNamespaces:
+    enabled: true
+    exclude:
+      - ""

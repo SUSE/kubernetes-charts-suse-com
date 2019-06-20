@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rsyslog-server
+  namespace: default
+  labels:
+    app: rsyslog-server
+data:
+  rsyslog.conf: |
+    # Global
+    global(
+        defaultNetstreamDriver="gtls"
+        defaultNetstreamDriverCAFile="/etc/secrets/rootCA.pem"
+        defaultNetstreamDriverKeyFile="/etc/secrets/server-key.pem"
+        defaultNetstreamDriverCertFile="/etc/secrets/server.pem"
+    )
+
+    # Module
+    module(load="imtcp"
+        streamdriver.name="gtls"
+        streamdriver.mode="1"
+        streamdriver.authmode="x509/certvalid"
+    )
+    
+    # Input
+    input(
+        type="imtcp"
+        Port="514"
+        Ruleset="tcp"
+    )
+    
+    # Rules
+    ruleset(name="tcp") {
+        action(
+            type="omfile"
+            dirCreateMode="0700"
+            FileCreateMode="0644"
+            File="/var/log/messages-tcp-rfc3164"
+        )
+        action(
+            type="omfile"
+            Template="RSYSLOG_SyslogProtocol23Format"
+            dirCreateMode="0700"
+            FileCreateMode="0644"
+            File="/var/log/messages-tcp-rfc5424"
+        )
+    }

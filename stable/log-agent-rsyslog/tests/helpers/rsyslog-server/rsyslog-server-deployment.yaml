@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: rsyslog-server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rsyslog-server
+  template:
+    metadata:
+      name: rsyslog-server
+      labels:
+        app: rsyslog-server
+    spec:
+      containers:
+      - name: rsyslog-server
+        image: registry.suse.com/caasp/v4/rsyslog:8.39.0
+        imagePullPolicy: "Always"
+        command: ["rsyslogd"]
+        args: ["-n", "-f", "/etc/rsyslog.conf"]
+        ports:
+        - name: incoming-tcp
+          containerPort: 514
+        - name: incoming-udp
+          containerPort: 514
+        volumeMounts:
+        - name: server-config-volume
+          mountPath: /etc/rsyslog.conf
+          subPath: rsyslog.conf
+        - name: server-secret-volume
+          mountPath: /etc/secrets
+          readOnly: true
+      volumes:
+      - name: server-config-volume
+        configMap:
+          name: rsyslog-server
+      - name: server-secret-volume
+        secret:
+          secretName: rsyslog-server

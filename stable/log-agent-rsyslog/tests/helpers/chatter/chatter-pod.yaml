@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chatter
+  labels:
+    env: label_chatter
+spec:
+  containers:
+  - name: chatter
+    image: opensuse/leap:15.0
+    command: ["/bin/sh"]
+    args: ["-c", "count=0; max_count=6000; while true; do sleep .5; ((count++)); [[ $count -le $max_count ]] && echo Hello[$count]! || sleep 60; done"]
+    imagePullPolicy: "IfNotPresent"

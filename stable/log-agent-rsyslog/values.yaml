@@ -1,0 +1,53 @@
+---
+image:
+  repository: registry.suse.com/caasp/v4/rsyslog
+  tag: 8.39.0
+
+server:
+  host: rsyslog-server.default.svc.cluster.local
+  port: 514
+  protocol: tcp
+  tls:
+    enabled: false
+    # If root CA not provided, use `streamDriverAuthMode == "anon"`, otherwise `StreamDriverAuthMode = "x509/certvalid"` instead.
+    rootCa: ""
+    # If root CA and peer provided, use `StreamDriverAuthMode = "x509/name"`.
+    permittedPeer: ""
+    clientCert: ""
+    clientKey: ""
+
+resources:
+  # Default resource configurations are based on the default settings of log agent, but it would be recommend to adjust as per user needs.
+  limits:
+  # cpu: "" 
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+persistStateInterval: 100
+resumeInterval: 30
+resumeRetryCount: -1
+
+queue:
+  enabled: false
+  size: 50000
+  maxDiskSpace: 2147483648
+
+kubernetesPodLabelsEnabled: false
+kubernetesPodAnnotationsEnabled: false
+
+logs:
+  osSystem:
+    enabled: true
+
+  kubernetesSystem:
+    enabled: true
+
+  kubernetesControlPlane:
+    enabled: true
+
+  kubernetesUserNamespaces:
+    enabled: false
+    exclude:
+      - ""
