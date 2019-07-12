@@ -1,69 +1,4 @@
 ---
-# Service account "eirini" is used by the following instance groups:
-# - post-deployment-setup
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "v1"
-kind: "ServiceAccount"
-metadata:
-  name: "eirini"
-  labels:
-    app.kubernetes.io/component: "eirini"
-    skiff-role-name: "eirini"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-{{- end }}
----
-# Role binding for service account "eirini" and role "configgin-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "RoleBinding"
-metadata:
-  name: "eirini-configgin-role-binding"
-  labels:
-    app.kubernetes.io/component: "eirini-configgin-role-binding"
-    skiff-role-name: "eirini-configgin-role-binding"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "eirini"
-roleRef:
-  apiGroup: "rbac.authorization.k8s.io"
-  kind: "Role"
-  name: "configgin-role"
-{{- end }}
----
-# Cluster role binding for service account "eirini" and cluster role
-# "eirini-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "eirini"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
-{{- end }}
----
 # The post-deployment-setup instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
@@ -143,9 +78,9 @@ spec:
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
         - name: "EIRINI_CERT_COPIER_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_CERT_COPIER_IMAGE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_CERT_COPIER_IMAGE) (list "map" "slice")}}{{.Values.env.EIRINI_CERT_COPIER_IMAGE | toJson | quote}}{{else}}{{.Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{end}}{{else}}""{{end}}
+          value: {{if ne (typeOf .Values.env.EIRINI_CERT_COPIER_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_CERT_COPIER_IMAGE}}{{.Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{end}}{{else}}""{{end}}
         - name: "EIRINI_FLUENTD_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_FLUENTD_IMAGE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_FLUENTD_IMAGE) (list "map" "slice")}}{{.Values.env.EIRINI_FLUENTD_IMAGE | toJson | quote}}{{else}}{{.Values.env.EIRINI_FLUENTD_IMAGE | quote}}{{end}}{{else}}""{{end}}
+          value: {{if ne (typeOf .Values.env.EIRINI_FLUENTD_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_FLUENTD_IMAGE}}{{.Values.env.EIRINI_FLUENTD_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_FLUENTD_IMAGE | quote}}{{end}}{{else}}""{{end}}
         - name: "EIRINI_KUBE_NAMESPACE"
           value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
         - name: "FEATURE_EIRINI_ENABLED"
@@ -236,20 +171,12 @@ spec:
               key: "uaa-ca-cert"
               name: "secrets"
 
-        {{- if not .Values.secrets.UAA_CC_CLIENT_SECRET }}
-        - name: "UAA_CC_CLIENT_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
+        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-cc-client-secret"
+              key: "uaa-clients-cc-routing-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.UAA_CC_CLIENT_SECRET }}
-        - name: "UAA_CC_CLIENT_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-cc-client-secret"
-              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
@@ -260,12 +187,12 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
-        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
+        {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-cc-routing-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "uaa-clients-cc-service-dashboards-client-secret"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
@@ -276,12 +203,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-cc-service-dashboards-client-secret"
-              name: "secrets"
+              key: "uaa-clients-cc-service-key-client-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
@@ -292,11 +219,19 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
+        {{- if .Values.secrets.UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-cc-service-key-client-secret"
+              key: "uaa-clients-cf-smoke-tests-client-secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cf-smoke-tests-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -396,19 +331,19 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_LOGIN_SECRET }}
-        - name: "UAA_CLIENTS_LOGIN_SECRET"
+        {{- if .Values.secrets.UAA_CLIENTS_ROUTING_API_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_ROUTING_API_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-login-secret"
+              key: "uaa-clients-routing-api-client-secret"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_LOGIN_SECRET }}
-        - name: "UAA_CLIENTS_LOGIN_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_ROUTING_API_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_ROUTING_API_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-login-secret"
+              key: "uaa-clients-routing-api-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -468,7 +403,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:168432317fcc3bdf30360fc982a651a9d104ef33"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:8006eab428947b534cfd858d313f8f27a4b756a2"
         lifecycle:
           preStop:
             exec:
@@ -498,30 +433,24 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.post_deployment_setup.capabilities }}
-          privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.post_deployment_setup.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.post_deployment_setup.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.post_deployment_setup.capabilities -}} true {{- else -}} false {{- end }}
+          allowPrivilegeEscalation: false
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
       dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
       imagePullSecrets:
       - name: "registry-credentials"
+      {{- end }}
+
       restartPolicy: "OnFailure"
+
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
       serviceAccountName: "eirini"
       {{- end }}
+
       terminationGracePeriodSeconds: 600
       volumes:
       - name: "deployment-manifest"

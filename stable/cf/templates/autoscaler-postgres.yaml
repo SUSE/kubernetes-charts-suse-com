@@ -137,7 +137,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ .Values.sizing.autoscaler_postgres.count }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_postgres.count) 1) }}{{ 1 }}{{ else }}{{ .Values.sizing.autoscaler_postgres.count }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "autoscaler-postgres"
@@ -174,9 +174,6 @@ spec:
         {{- end }}
       containers:
       - env:
-        - name: "AUTOSCALER_DATABASE_MAX_CONNECTIONS"
-          value: {{if ne (typeOf .Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DATABASE_MAX_CONNECTIONS | quote}}{{end}}{{else}}""{{end}}
-
         {{- if not .Values.secrets.AUTOSCALER_DB_PASSWORD }}
         - name: "AUTOSCALER_DB_PASSWORD"
           valueFrom:
@@ -193,6 +190,10 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "AUTOSCALER_DB_PORT"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_DB_PORT) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DB_PORT) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DB_PORT | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DB_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "AUTOSCALER_DB_ROLE_NAME"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_DB_ROLE_NAME) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DB_ROLE_NAME) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DB_ROLE_NAME | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DB_ROLE_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
@@ -251,7 +252,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-postgres:239ae598e2189ea7bc3ab8aac91cd31689879070"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-postgres:05c8adf3a4b8c372e5593e29809e7a9f32d528bc"
         lifecycle:
           preStop:
             exec:
@@ -287,19 +288,7 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.autoscaler_postgres.capabilities }}
-          privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.autoscaler_postgres.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.autoscaler_postgres.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: {{ if has "ALL" .Values.sizing.autoscaler_postgres.capabilities -}} true {{- else -}} false {{- end }}
+          allowPrivilegeEscalation: false
         volumeMounts:
         - mountPath: "/var/vcap/store"
           name: "postgres-data"
@@ -308,9 +297,18 @@ spec:
           name: "deployment-manifest"
           readOnly: true
       dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
       imagePullSecrets:
       - name: "registry-credentials"
+      {{- end }}
+
       restartPolicy: "Always"
+
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "default"
+      {{- end }}
+
       terminationGracePeriodSeconds: 600
       volumes:
       - name: "deployment-manifest"

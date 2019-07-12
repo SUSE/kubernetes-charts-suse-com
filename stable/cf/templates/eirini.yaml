@@ -1,94 +1,4 @@
 ---
-# Service account "eirini-privileged" is used by the following instance groups:
-# - eirini
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "v1"
-kind: "ServiceAccount"
-metadata:
-  name: "eirini-privileged"
-  labels:
-    app.kubernetes.io/component: "eirini-privileged"
-    skiff-role-name: "eirini-privileged"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-{{- end }}
----
-# Role binding for service account "eirini-privileged" and role "configgin-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "RoleBinding"
-metadata:
-  name: "eirini-privileged-configgin-role-binding"
-  labels:
-    app.kubernetes.io/component: "eirini-privileged-configgin-role-binding"
-    skiff-role-name: "eirini-privileged-configgin-role-binding"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "eirini-privileged"
-roleRef:
-  apiGroup: "rbac.authorization.k8s.io"
-  kind: "Role"
-  name: "configgin-role"
-{{- end }}
----
-# Cluster role binding for service account "eirini-privileged" and cluster role
-# "eirini-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-eirini-role-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-eirini-role-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-eirini-role-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "eirini-privileged"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
-{{- end }}
----
-# Cluster role binding for service account "eirini-privileged" and cluster role
-# "privileged"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-privileged-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-privileged-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-privileged-privileged-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "eirini-privileged"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-privileged" .Release.Namespace) }}
-{{- end }}
----
 {{- if .Values.enable.eirini }}
 apiVersion: "v1"
 items:
@@ -230,7 +140,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ .Values.sizing.eirini.count }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.eirini.count) 1) }}{{ 1 }}{{ else }}{{ .Values.sizing.eirini.count }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "eirini"
@@ -340,7 +250,7 @@ spec:
         {{- end }}
 
         - name: "EIRINI_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_IMAGE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_IMAGE) (list "map" "slice")}}{{.Values.env.EIRINI_IMAGE | toJson | quote}}{{else}}{{.Values.env.EIRINI_IMAGE | quote}}{{end}}{{else}}""{{end}}
+          value: {{if ne (typeOf .Values.env.EIRINI_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_IMAGE}}{{.Values.env.EIRINI_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_IMAGE | quote}}{{end}}{{else}}""{{end}}
         - name: "EIRINI_KUBE_HEAPSTER_ADDRESS"
           value: {{if ne (typeOf .Values.env.EIRINI_KUBE_HEAPSTER_ADDRESS) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_HEAPSTER_ADDRESS) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_HEAPSTER_ADDRESS | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_HEAPSTER_ADDRESS | quote}}{{end}}{{else}}""{{end}}
         - name: "EIRINI_KUBE_NAMESPACE"
@@ -420,7 +330,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini:cfe1f3c7eded129a18b801ce0535fcdc053d5d5e"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini:9f3292b232a92ac9d72f5819f5cd4307671fdaa8"
         lifecycle:
           preStop:
             exec:
@@ -456,30 +366,24 @@ spec:
             {{- end }}
 
         securityContext:
-          {{- if has "ALL" .Values.sizing.eirini.capabilities }}
-          privileged: true
-          {{- end }}
-
-          {{- if not (has "ALL" .Values.sizing.eirini.capabilities) }}
-          capabilities:
-            add:
-            {{- range .Values.sizing.eirini.capabilities }}
-            - {{ . | upper }}
-            {{- end }}
-          {{- end }}
-
-          allowPrivilegeEscalation: true
+          allowPrivilegeEscalation: false
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
       dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
       imagePullSecrets:
       - name: "registry-credentials"
-      restartPolicy: "Always"
-      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-      serviceAccountName: "eirini-privileged"
       {{- end }}
+
+      restartPolicy: "Always"
+
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "eirini"
+      {{- end }}
+
       terminationGracePeriodSeconds: 600
       volumes:
       - name: "deployment-manifest"

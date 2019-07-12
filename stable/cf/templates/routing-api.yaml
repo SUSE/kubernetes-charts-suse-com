@@ -1,96 +1,4 @@
 ---
-# Service account "withsysresource-privileged" is used by the following instance
-# groups:
-# - routing-api
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "v1"
-kind: "ServiceAccount"
-metadata:
-  name: "withsysresource-privileged"
-  labels:
-    app.kubernetes.io/component: "withsysresource-privileged"
-    skiff-role-name: "withsysresource-privileged"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-{{- end }}
----
-# Role binding for service account "withsysresource-privileged" and role
-# "configgin-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "RoleBinding"
-metadata:
-  name: "withsysresource-privileged-configgin-role-binding"
-  labels:
-    app.kubernetes.io/component: "withsysresource-privileged-configgin-role-binding"
-    skiff-role-name: "withsysresource-privileged-configgin-role-binding"
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "withsysresource-privileged"
-roleRef:
-  apiGroup: "rbac.authorization.k8s.io"
-  kind: "Role"
-  name: "configgin-role"
-{{- end }}
----
-# Cluster role binding for service account "withsysresource-privileged" and
-# cluster role "withsysresource"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-withsysresource-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-withsysresource-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-withsysresource-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "withsysresource-privileged"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-withsysresource" .Release.Namespace) }}
-{{- end }}
----
-# Cluster role binding for service account "withsysresource-privileged" and
-# cluster role "privileged"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-privileged-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-privileged-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-withsysresource-privileged-privileged-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "withsysresource-privileged"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-privileged" .Release.Namespace) }}
-{{- end }}
----
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
@@ -233,7 +141,7 @@ metadata:
 
 spec:
   podManagementPolicy: "OrderedReady"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.routing_api.count) 1) -}} 2 {{- else -}} {{ .Values.sizing.routing_api.count }} {{- end }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.routing_api.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.routing_api.count }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "routing-api"
@@ -405,7 +313,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:049e486e9c249bd792cd8549237dd9544a36c336"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-routing-api:471273f8ade9b4c94667f038240574e175c03eda"
         lifecycle:
           preStop:
             exec:
@@ -443,6 +351,10 @@ spec:
             {{- end }}
 
         securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - "SYS_RESOURCE"
           privileged: true
         volumeMounts:
         - mountPath: "/opt/fissile/config"
@@ -573,7 +485,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:39c7e06aaa613d8d7ae5ac05dc952c5d1cf1be17"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6319ca25569ce524e19c97615a38c073bc928f0"
         lifecycle:
           preStop:
             exec:
@@ -603,18 +515,25 @@ spec:
             {{- end }}
 
         securityContext:
+          allowPrivilegeEscalation: true
           privileged: true
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
       dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
       imagePullSecrets:
       - name: "registry-credentials"
-      restartPolicy: "Always"
-      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-      serviceAccountName: "withsysresource-privileged"
       {{- end }}
+
+      restartPolicy: "Always"
+
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "default"
+      {{- end }}
+
       terminationGracePeriodSeconds: 600
       volumes:
       - name: "deployment-manifest"
