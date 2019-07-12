@@ -1,101 +1,227 @@
 ---
+{{- if .Values.enable.autoscaler }}
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "locket-set"
+    name: "autoscaler-actors-set"
     labels:
-      app.kubernetes.io/component: "locket-set"
-      skiff-role-name: "locket-set"
+      app.kubernetes.io/component: "autoscaler-actors-set"
+      skiff-role-name: "autoscaler-actors-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "locket-set"
+      app: "autoscaler-actors-set"
       {{- end }}
   spec:
     clusterIP: "None"
     ports:
-    - name: "locket"
-      port: 8891
+    - name: "scheduler"
+      port: 7102
+      protocol: "TCP"
+      targetPort: 0
+    - name: "sdhealthport"
+      port: 9102
+      protocol: "TCP"
+      targetPort: 0
+    - name: "scaling-engine"
+      port: 7104
+      protocol: "TCP"
+      targetPort: 0
+    - name: "sehealthport"
+      port: 9104
+      protocol: "TCP"
+      targetPort: 0
+    - name: "ophealthport"
+      port: 9108
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "locket"
+      app.kubernetes.io/component: "autoscaler-actors"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "locket-locket-set"
+    name: "autoscaler-actors-scheduler-set"
     labels:
-      app.kubernetes.io/component: "locket-locket-set"
-      skiff-role-name: "locket-locket-set"
+      app.kubernetes.io/component: "autoscaler-actors-scheduler-set"
+      skiff-role-name: "autoscaler-actors-scheduler-set"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "locket-locket-set"
+      app: "autoscaler-actors-scheduler-set"
       {{- end }}
   spec:
     clusterIP: "None"
     ports:
-    - name: "locket"
-      port: 8891
+    - name: "scheduler"
+      port: 7102
+      protocol: "TCP"
+      targetPort: 0
+    - name: "sdhealthport"
+      port: 9102
       protocol: "TCP"
       targetPort: 0
     selector:
-      app.kubernetes.io/component: "locket"
+      app.kubernetes.io/component: "autoscaler-actors"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "locket-locket"
+    name: "autoscaler-actors-scheduler"
     labels:
-      app.kubernetes.io/component: "locket-locket"
-      skiff-role-name: "locket-locket"
+      app.kubernetes.io/component: "autoscaler-actors-scheduler"
+      skiff-role-name: "autoscaler-actors-scheduler"
       app.kubernetes.io/instance: {{ .Release.Name | quote }}
       app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
       app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
       app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
       helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
       {{- if .Values.config.use_istio }}
-      app: "locket-locket"
+      app: "autoscaler-actors-scheduler"
       {{- end }}
   spec:
     ports:
-    - name: "locket"
-      port: 8891
+    - name: "scheduler"
+      port: 7102
       protocol: "TCP"
-      targetPort: 8891
+      targetPort: 7102
+    - name: "sdhealthport"
+      port: 9102
+      protocol: "TCP"
+      targetPort: 9102
     selector:
-      app.kubernetes.io/component: "locket"
+      app.kubernetes.io/component: "autoscaler-actors"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "autoscaler-actors-scalingengine-set"
+    labels:
+      app.kubernetes.io/component: "autoscaler-actors-scalingengine-set"
+      skiff-role-name: "autoscaler-actors-scalingengine-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "autoscaler-actors-scalingengine-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "scaling-engine"
+      port: 7104
+      protocol: "TCP"
+      targetPort: 0
+    - name: "sehealthport"
+      port: 9104
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "autoscaler-actors"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "autoscaler-actors-scalingengine"
+    labels:
+      app.kubernetes.io/component: "autoscaler-actors-scalingengine"
+      skiff-role-name: "autoscaler-actors-scalingengine"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "autoscaler-actors-scalingengine"
+      {{- end }}
+  spec:
+    ports:
+    - name: "scaling-engine"
+      port: 7104
+      protocol: "TCP"
+      targetPort: 7104
+    - name: "sehealthport"
+      port: 9104
+      protocol: "TCP"
+      targetPort: 9104
+    selector:
+      app.kubernetes.io/component: "autoscaler-actors"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "autoscaler-actors-operator-set"
+    labels:
+      app.kubernetes.io/component: "autoscaler-actors-operator-set"
+      skiff-role-name: "autoscaler-actors-operator-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "autoscaler-actors-operator-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "ophealthport"
+      port: 9108
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "autoscaler-actors"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "autoscaler-actors-operator"
+    labels:
+      app.kubernetes.io/component: "autoscaler-actors-operator"
+      skiff-role-name: "autoscaler-actors-operator"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "autoscaler-actors-operator"
+      {{- end }}
+  spec:
+    ports:
+    - name: "ophealthport"
+      port: 9108
+      protocol: "TCP"
+      targetPort: 9108
+    selector:
+      app.kubernetes.io/component: "autoscaler-actors"
 kind: "List"
+{{- end }}
 ---
-# The locket instance group contains the following jobs:
+# The autoscaler-actors instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
 # - authorize-internal-ca: Install both internal and UAA CA certificates
 #
-# - patch-properties: Dummy BOSH job used to host parameters that are used in
-#   SCF patches for upstream bugs
-#
-# Also: locket
+# Also: scheduler, scalingengine, operator, and bpm
+{{- if .Values.enable.autoscaler }}
 
-{{- if gt (int .Values.sizing.locket.count) 3 }}
-_maxReplicas: {{ fail "locket cannot have more than 3 instances" }}
+{{- if gt (int .Values.sizing.autoscaler_actors.count) 3 }}
+_maxReplicas: {{ fail "autoscaler_actors cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.locket.count) 1) (lt (int .Values.sizing.locket.count) 2)) }}
-_minHAReplicas: {{ fail "locket must have at least 2 instances for HA" }}
+{{- if and .Values.config.HA (and (ne (int .Values.sizing.autoscaler_actors.count) 1) (lt (int .Values.sizing.autoscaler_actors.count) 2)) }}
+_minHAReplicas: {{ fail "autoscaler_actors must have at least 2 instances for HA" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.locket.count) 1 }}
-_minReplicas: {{ fail "locket must have at least 1 instances" }}
+{{- if lt (int .Values.sizing.autoscaler_actors.count) 1 }}
+_minReplicas: {{ fail "autoscaler_actors must have at least 1 instances" }}
 {{- end }}
 
 {{- if .Values.sizing.HA }}
@@ -121,10 +247,10 @@ _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
-  name: "locket"
+  name: "autoscaler-actors"
   labels:
-    app.kubernetes.io/component: "locket"
-    skiff-role-name: "locket"
+    app.kubernetes.io/component: "autoscaler-actors"
+    skiff-role-name: "autoscaler-actors"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -132,7 +258,7 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 
     {{- if .Values.config.use_istio }}
-    app: "locket"
+    app: "autoscaler-actors"
     {{- end }}
 
     {{- if .Values.config.use_istio }}
@@ -141,17 +267,17 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.locket.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.locket.count }}{{ end }}
+  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_actors.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.autoscaler_actors.count }}{{ end }}
   selector:
     matchLabels:
-      skiff-role-name: "locket"
-  serviceName: "locket-set"
+      skiff-role-name: "autoscaler-actors"
+  serviceName: "autoscaler-actors-set"
   template:
     metadata:
-      name: "locket"
+      name: "autoscaler-actors"
       labels:
-        app.kubernetes.io/component: "locket"
-        skiff-role-name: "locket"
+        app.kubernetes.io/component: "autoscaler-actors"
+        skiff-role-name: "autoscaler-actors"
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
         app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
         app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -159,7 +285,7 @@ spec:
         helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 
         {{- if .Values.config.use_istio }}
-        app: "locket"
+        app: "autoscaler-actors"
         {{- end }}
 
         {{- if .Values.config.use_istio }}
@@ -181,51 +307,186 @@ spec:
                 - key: "app.kubernetes.io/component"
                   operator: "In"
                   values:
-                  - "locket"
+                  - "autoscaler-actors"
               topologyKey: "beta.kubernetes.io/os"
             weight: 100
-        {{- if .Values.sizing.locket.affinity.nodeAffinity }}
-        nodeAffinity: {{ toJson .Values.sizing.locket.affinity.nodeAffinity }}
+        {{- if .Values.sizing.autoscaler_actors.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.autoscaler_actors.affinity.nodeAffinity }}
         {{- end }}
       containers:
       - env:
+        - name: "AUTOSCALER_DB_ADDRESS"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_DB_ADDRESS) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DB_ADDRESS) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DB_ADDRESS | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DB_ADDRESS | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if not .Values.secrets.AUTOSCALER_DB_PASSWORD }}
+        - name: "AUTOSCALER_DB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-db-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_DB_PASSWORD }}
+        - name: "AUTOSCALER_DB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-db-password"
+              name: "secrets"
+        {{- end }}
+
+        - name: "AUTOSCALER_DB_PORT"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_DB_PORT) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DB_PORT) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DB_PORT | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DB_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "AUTOSCALER_DB_ROLE_NAME"
+          value: {{if ne (typeOf .Values.env.AUTOSCALER_DB_ROLE_NAME) "<nil>"}}{{if has (kindOf .Values.env.AUTOSCALER_DB_ROLE_NAME) (list "map" "slice")}}{{.Values.env.AUTOSCALER_DB_ROLE_NAME | toJson | quote}}{{else}}{{.Values.env.AUTOSCALER_DB_ROLE_NAME | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-client-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_SERVER_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-server-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_SERVER_CERT }}
+        - name: "AUTOSCALER_SCALING_ENGINE_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-server-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCALING_ENGINE_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCALING_ENGINE_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCALING_ENGINE_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scaling-engine-server-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-client-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-client-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-client-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-client-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_SERVER_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
+        - name: "AUTOSCALER_UAA_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-uaa-client-secret"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
+        - name: "AUTOSCALER_UAA_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-uaa-client-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT }}
-        - name: "DIEGO_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.DIEGO_CLIENT_CERT_KEY }}
-        - name: "DIEGO_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "diego-client-cert-key"
-              name: "secrets"
-        {{- end }}
-
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -252,41 +513,6 @@ spec:
             fieldRef:
               fieldPath: "metadata.namespace"
 
-        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
-        - name: "LOGGREGATOR_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-client-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT }}
-        - name: "LOGGREGATOR_CLIENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-client-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_CLIENT_CERT_KEY }}
-        - name: "LOGGREGATOR_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-client-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_CLIENT_CERT_KEY }}
-        - name: "LOGGREGATOR_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-client-cert-key"
-              name: "secrets"
-        {{- end }}
-
-        - name: "LOG_LEVEL"
-          value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -300,22 +526,6 @@ spec:
           valueFrom:
             secretKeyRef:
               key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
               name: "secrets"
         {{- end }}
 
@@ -336,47 +546,59 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-locket:9624a09cb05a3460bab1d1b2f0bea7217452b66c"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-actors:3ac10f38bee25536a6337a15d54c589803d342a0"
         lifecycle:
           preStop:
             exec:
               command:
               - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
-        name: "locket"
+        name: "autoscaler-actors"
         ports:
-        - containerPort: 8891
-          name: "locket"
+        - containerPort: 7102
+          name: "scheduler"
+          protocol: "TCP"
+        - containerPort: 9102
+          name: "sdhealthport"
+          protocol: "TCP"
+        - containerPort: 7104
+          name: "scaling-engine"
+          protocol: "TCP"
+        - containerPort: 9104
+          name: "sehealthport"
+          protocol: "TCP"
+        - containerPort: 9108
+          name: "ophealthport"
           protocol: "TCP"
         readinessProbe:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
-            - "head -c0 </dev/tcp/${HOSTNAME}/8891"
+            - "curl --silent --fail --head http://${HOSTNAME}:9102"
+            - "curl --silent --fail --head http://${HOSTNAME}:9104"
+            - "curl --silent --fail --head http://${HOSTNAME}:9108"
         resources:
           requests:
-            {{- if and .Values.config.memory.requests .Values.sizing.locket.memory.request }}
-            memory: "{{ int .Values.sizing.locket.memory.request }}Mi"
+            {{- if and .Values.config.memory.requests .Values.sizing.autoscaler_actors.memory.request }}
+            memory: "{{ int .Values.sizing.autoscaler_actors.memory.request }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.requests .Values.sizing.locket.cpu.request }}
-            cpu: "{{ int .Values.sizing.locket.cpu.request }}m"
+            {{- if and .Values.config.cpu.requests .Values.sizing.autoscaler_actors.cpu.request }}
+            cpu: "{{ int .Values.sizing.autoscaler_actors.cpu.request }}m"
             {{- end }}
 
           limits:
-            {{- if and .Values.config.memory.limits .Values.sizing.locket.memory.limit }}
-            memory: "{{ int .Values.sizing.locket.memory.limit }}Mi"
+            {{- if and .Values.config.memory.limits .Values.sizing.autoscaler_actors.memory.limit }}
+            memory: "{{ int .Values.sizing.autoscaler_actors.memory.limit }}Mi"
             {{- end }}
 
-            {{- if and .Values.config.cpu.limits .Values.sizing.locket.cpu.limit }}
-            cpu: "{{ int .Values.sizing.locket.cpu.limit }}m"
+            {{- if and .Values.config.cpu.limits .Values.sizing.autoscaler_actors.cpu.limit }}
+            cpu: "{{ int .Values.sizing.autoscaler_actors.cpu.limit }}m"
             {{- end }}
 
         securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            add:
-            - "SYS_RESOURCE"
+          allowPrivilegeEscalation: true
+          privileged: true
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
@@ -567,3 +789,4 @@ spec:
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+{{- end }}
