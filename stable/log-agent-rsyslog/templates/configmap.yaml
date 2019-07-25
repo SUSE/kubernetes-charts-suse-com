@@ -532,19 +532,19 @@ data:
     template(name="k8s_sd" type="list") {
         constant(value="[")
           property(name="$!custom_k8s_sd_id")
-          constant(value=" namespace_id=") property(name="$!kubernetes!namespace_id")
-          constant(value=" container_name=") property(name="$!kubernetes!container_name")
-          constant(value=" creation_timestamp=") property(name="$!kubernetes!creation_timestamp")
-          constant(value=" host=") property(name="$!kubernetes!host")
-          constant(value=" namespace_name=") property(name="$!kubernetes!namespace_name")
-          constant(value=" master_url=") property(name="$!kubernetes!master_url")
-          constant(value=" pod_id=") property(name="$!kubernetes!pod_id")
-          constant(value=" pod_name=") property(name="$!kubernetes!pod_name")
+          constant(value=" namespace_id=\"") property(name="$!kubernetes!namespace_id") constant(value="\"")
+          constant(value=" container_name=\"") property(name="$!kubernetes!container_name") constant(value="\"")
+          constant(value=" creation_timestamp=\"") property(name="$!kubernetes!creation_timestamp") constant(value="\"")
+          constant(value=" host=\"") property(name="$!kubernetes!host") constant(value="\"")
+          constant(value=" namespace_name=\"") property(name="$!kubernetes!namespace_name") constant(value="\"")
+          constant(value=" master_url=\"") property(name="$!kubernetes!master_url") constant(value="\"")
+          constant(value=" pod_id=\"") property(name="$!kubernetes!pod_id") constant(value="\"")
+          constant(value=" pod_name=\"") property(name="$!kubernetes!pod_name") constant(value="\"")
           {{- if ( eq .Values.kubernetesPodLabelsEnabled true ) }}
-          constant(value=" labels=") property(name="$!kubernetes!labels")
+          constant(value=" labels=\"") property(name="$!kubernetes!labels" format="json") constant(value="\"")
           {{- end }}
           {{- if ( eq .Values.kubernetesPodAnnotationsEnabled true ) }}
-          constant(value=" annotations=") property(name="$!kubernetes!annotations")
+          constant(value=" annotations=\"") property(name="$!kubernetes!annotations" format="json") constant(value="\"")
           {{- end }}
         constant(value="]")
     }
