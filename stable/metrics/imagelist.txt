@@ -1,7 +1,8 @@
-stratos-metrics-configmap-reload:1.0.0-e913e7f-cap
-stratos-metrics-firehose-exporter:1.0.0-e913e7f-cap
-stratos-metrics-firehose-init:1.0.0-e913e7f-cap
-stratos-metrics-init-chown-data:1.0.0-e913e7f-cap
-stratos-metrics-kube-state-metrics:1.0.0-e913e7f-cap
-stratos-metrics-nginx:1.0.0-e913e7f-cap
-stratos-metrics-prometheus:1.0.0-e913e7f-cap
+stratos-metrics-cf-exporter:1.1.0-39adb67-cap
+stratos-metrics-firehose-exporter:1.1.0-39adb67-cap
+stratos-metrics-firehose-init:1.1.0-39adb67-cap
+stratos-metrics-nginx:1.1.0-39adb67-cap
+stratos-metrics-configmap-reload:1.1.0-39adb67-cap
+stratos-metrics-init-chown-data:1.1.0-39adb67-cap
+stratos-metrics-kube-state-metrics:1.1.0-39adb67-cap
+stratos-metrics-prometheus:1.1.0-39adb67-cap

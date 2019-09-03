@@ -1,44 +1,75 @@
-# Default values for stratos-metrics.
-cfName: cfdevio
+# Default values for stratos-metrics
 dockerRepository: registry.suse.com
 dockerOrganization: cap
 dockerRegistrySecret: regsecret
-imageTag: 1.0.0-e913e7f-cap
-useLb: false
+imageTag: 1.1.0-39adb67-cap
+imagePullPolicy: IfNotPresent
+
 metrics:
-  externalIP: 
+  # Preferred way of setting username and password for the nginx server that fronts Prometheus
+  username: metrics
+  password: s3cr3t
+  # Metrics service
+  service:
+    annotations: []
+    externalIPs: []
+    loadBalancerIP:
+    loadBalancerSourceRanges: []
+    servicePort: 443
+    #nodePort: 30000
+    type: ClusterIP
+    externalName:
+  # Deprecated - use metrics.service.externalIPs
+  externalIP:
 kubernetes:
-  authEndpoint: 
+  apiEndpoint:
+  # authEndpoint is deprecated - use apiEndpoint
+  authEndpoint:
+
+# Image for the config job
+configJob:
+  image: stratos-metrics-firehose-init
+
+# Use by both the Firehose Exporter and the CF Exporter
+cloudFoundry:
+  # URL of the Cloud Foundry API endpoint
+  apiEndpoint:
+  # Admin Client for the UAA
+  uaaAdminClient: admin
+  # Admin Client Secret for the UAA
+  uaaAdminClientSecret:
+  # Skip SSL verification when communicating with CF and UAA
+  skipSslVerification: "true"
+
+# Configuration for the Cloud Foundry Firehose Exporter
+# The firehose exporter collects data from Cloud Foundry and sends it to Prometheus
 firehoseExporter:
   enabled: true
   instances: 1
-  serviceName: f-exp-service
-  servicePort: 9186
-  externalPort: 9186
-  serviceType: ClusterIP
+  # URL of the Doppler Endpoint - takes precendence if set over the API Endpoint
+  dopplerUrl:
+  uaa:
+    client: prometheus-firehose-exporter
+    # Leave blank to generate a random secret
+    clientSecret:
+  # Do not change these
   image: stratos-metrics-firehose-exporter
   initContainerImage: stratos-metrics-firehose-init
-  dopplerUrl: wss://doppler.cf-dev.io:4443
-  noIdentityZone: false
+
+cfExporter:
+  enabled: false
   uaa:
-    endpoint: uaa.cf-dev.io:2793
-    skipSslVerification: "true"
-    cfIdentityZone: cf
-    admin:
-      client: admin
-      clientSecret: admin_secret
-    prometheusAdmin:
-      client: prom_admin
-      clientSecret: prom_admin_secret
-    client: prometheus-firehose
-    clientSecret: prometheus-client-secret
+    client: prometheus-cf-exporter
+    # Leave blank to generate a random secret
+    clientSecret:
+  # Do not change these
+  image: stratos-metrics-cf-exporter
+  initContainerImage: stratos-metrics-firehose-init
+
 nginx:
-  serviceName: metrics-nginx
-  username: metrics
-  password: s3cr3t
   image: stratos-metrics-nginx
-  serviceType: NodePort
-  externalPort: 443
+  # Name of secret to use for TLS rather than a self-signed certificate
+  tls:
   ssl:
     cert: |
       -----BEGIN CERTIFICATE-----
@@ -91,18 +122,21 @@ nginx:
       42qv5Z0qoLTOch+GVuj0ZF1UgJh+RJWom7lPhTS0UP+VZFBc++nGl7PGTRflm3Zd
       mEVvEQxyBz3V1fZ0Yz246W60
       -----END PRIVATE KEY-----
+      
  # SCF values compatability 
 env:
-  UAA_HOST: 
-  UAA_ADMIN_CLIENT_SECRET: 
-  UAA_CF_IDENTITY_ZONE: scf
-  UAA_PORT: 2793
+  # If DOMAIN is set, the CF API Endpoint will fallback to https://api.DOMAIN if not set
   DOMAIN:
-  DOPPLER_PORT: 4443
 kube:
+  auth: "rbac"
   external_metrics_port: 7443
+  registry:
+    password:
+    username:
+secrets:
+  UAA_ADMIN_CLIENT_SECRET:
 
-# Values for the Promethues sub-chart
+# Values for the Prometheus sub-chart
 prometheus:
   imagePullSecrets:
   alertmanager:
@@ -111,28 +145,28 @@ prometheus:
     enabled: false
   configmapReload:
     image:
-      repository: registry.suse.com/cap/stratos-metrics-configmap-reload
-      tag: 1.0.0-e913e7f-cap
+      repository: staging.registry.howdoi.website/splatform/stratos-metrics-configmap-reload
+      tag: 1.1.0-39adb67-cap
   initChownData:
     image:
-      repository: registry.suse.com/cap/stratos-metrics-init-chown-data
-      tag: 1.0.0-e913e7f-cap
-  kubeStateMetrics:    
+      repository: staging.registry.howdoi.website/splatform/stratos-metrics-init-chown-data
+      tag: 1.1.0-39adb67-cap
+  kubeStateMetrics:
     enabled: false
     image:
-      repository: registry.suse.com/cap/stratos-metrics-kube-state-metrics
-      tag: 1.0.0-e913e7f-cap
+      repository: staging.registry.howdoi.website/splatform/stratos-metrics-kube-state-metrics
+      tag: 1.1.0-39adb67-cap
   nodeExporter:    
     enabled: false
     image:
-      repository: registry.suse.com/cap/stratos-metrics-node-exporter
-      tag: 1.0.0-e913e7f-cap
+      repository: staging.registry.howdoi.website/splatform/stratos-metrics-node-exporter
+      tag: 1.1.0-39adb67-cap
   server:
     name: prometheus
     configMapOverrideName: stratos-metrics-config
     image:
-      repository: registry.suse.com/cap/stratos-metrics-prometheus
-      tag: 1.0.0-e913e7f-cap
+      repository: staging.registry.howdoi.website/splatform/stratos-metrics-prometheus
+      tag: 1.1.0-39adb67-cap
     replicaCount: 1
     service:
       servicePort: 9090
@@ -145,7 +179,9 @@ prometheus:
   serverFiles:
     alerts: {}
     rules: {}
-kube:
-  registry:
-    password:
-    username:
+
+services:
+  loadbalanced: false
+
+# useLb is deprecated
+useLb: false
