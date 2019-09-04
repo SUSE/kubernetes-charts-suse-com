@@ -104,15 +104,15 @@ kind: "List"
 # Also: bbs and cfdot
 {{- if not .Values.enable.eirini }}
 
-{{- if gt (int .Values.sizing.diego_api.count) 3 }}
+{{- if and (ne (typeOf .Values.sizing.diego_api.count) "<nil>") (gt (int .Values.sizing.diego_api.count) 3) }}
 _maxReplicas: {{ fail "diego_api cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.diego_api.count) 1) (lt (int .Values.sizing.diego_api.count) 2)) }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.diego_api.count) "<nil>") (lt (int .Values.sizing.diego_api.count) 2) }}
 _minHAReplicas: {{ fail "diego_api must have at least 2 instances for HA" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.diego_api.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.diego_api.count) "<nil>") (lt (int .Values.sizing.diego_api.count) 1) }}
 _minReplicas: {{ fail "diego_api must have at least 1 instances" }}
 {{- end }}
 
@@ -159,7 +159,7 @@ metadata:
 
 spec:
   podManagementPolicy: "OrderedReady"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.diego_api.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.diego_api.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.diego_api.count) "<nil>") }}{{ .Values.sizing.diego_api.count }}{{ else }}{{ if .Values.config.HA }}{{ 2 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "diego-api"
@@ -423,7 +423,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:4741035336a8557edc0fed94f373f8670dd58f4b"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-api:248f643b8a7bb7e52038f507c3fbe8d528bfc328"
         lifecycle:
           preStop:
             exec:
@@ -598,7 +598,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6319ca25569ce524e19c97615a38c073bc928f0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
         lifecycle:
           preStop:
             exec:

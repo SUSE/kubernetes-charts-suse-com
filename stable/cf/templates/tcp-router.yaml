@@ -140,15 +140,15 @@ kind: "List"
 #
 # Also: tcp_router and bpm
 
-{{- if gt (int .Values.sizing.tcp_router.count) 3 }}
+{{- if and (ne (typeOf .Values.sizing.tcp_router.count) "<nil>") (gt (int .Values.sizing.tcp_router.count) 3) }}
 _maxReplicas: {{ fail "tcp_router cannot have more than 3 instances" }}
 {{- end }}
 
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.tcp_router.count) 1) (lt (int .Values.sizing.tcp_router.count) 2)) }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.tcp_router.count) "<nil>") (lt (int .Values.sizing.tcp_router.count) 2) }}
 _minHAReplicas: {{ fail "tcp_router must have at least 2 instances for HA" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.tcp_router.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.tcp_router.count) "<nil>") (lt (int .Values.sizing.tcp_router.count) 1) }}
 _minReplicas: {{ fail "tcp_router must have at least 1 instances" }}
 {{- end }}
 
@@ -195,7 +195,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.tcp_router.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.tcp_router.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.tcp_router.count) "<nil>") }}{{ .Values.sizing.tcp_router.count }}{{ else }}{{ if .Values.config.HA }}{{ 2 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "tcp-router"
@@ -329,7 +329,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:dddde9441c97e376a71ea5b247a80a2d01843fce"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-tcp-router:b2bcbed037817e170d5927f168820b99770162b1"
         lifecycle:
           preStop:
             exec:
@@ -512,7 +512,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6319ca25569ce524e19c97615a38c073bc928f0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
         lifecycle:
           preStop:
             exec:

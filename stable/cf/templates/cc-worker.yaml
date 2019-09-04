@@ -11,15 +11,15 @@
 #
 # Also: bpm
 
-{{- if gt (int .Values.sizing.cc_worker.count) 65535 }}
+{{- if and (ne (typeOf .Values.sizing.cc_worker.count) "<nil>") (gt (int .Values.sizing.cc_worker.count) 65535) }}
 _maxReplicas: {{ fail "cc_worker cannot have more than 65535 instances" }}
 {{- end }}
 
-{{- if and .Values.config.HA (and (ne (int .Values.sizing.cc_worker.count) 1) (lt (int .Values.sizing.cc_worker.count) 2)) }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.cc_worker.count) "<nil>") (lt (int .Values.sizing.cc_worker.count) 2) }}
 _minHAReplicas: {{ fail "cc_worker must have at least 2 instances for HA" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.cc_worker.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.cc_worker.count) "<nil>") (lt (int .Values.sizing.cc_worker.count) 1) }}
 _minReplicas: {{ fail "cc_worker must have at least 1 instances" }}
 {{- end }}
 
@@ -66,7 +66,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.cc_worker.count) 1) }}{{ 2 }}{{ else }}{{ .Values.sizing.cc_worker.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.cc_worker.count) "<nil>") }}{{ .Values.sizing.cc_worker.count }}{{ else }}{{ if .Values.config.HA }}{{ 2 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "cc-worker"
@@ -214,8 +214,6 @@ spec:
           value: {{if ne (typeOf .Values.env.DISABLE_CUSTOM_BUILDPACKS) "<nil>"}}{{if has (kindOf .Values.env.DISABLE_CUSTOM_BUILDPACKS) (list "map" "slice")}}{{.Values.env.DISABLE_CUSTOM_BUILDPACKS | toJson | quote}}{{else}}{{.Values.env.DISABLE_CUSTOM_BUILDPACKS | quote}}{{end}}{{else}}{{fail "env.DISABLE_CUSTOM_BUILDPACKS has not been set"}}{{end}}
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
-        - name: "FEATURE_EIRINI_ENABLED"
-          value: {{ .Values.enable.eirini | quote }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -307,20 +305,20 @@ spec:
         - name: "STAGING_TIMEOUT"
           value: {{if ne (typeOf .Values.env.STAGING_TIMEOUT) "<nil>"}}{{if has (kindOf .Values.env.STAGING_TIMEOUT) (list "map" "slice")}}{{.Values.env.STAGING_TIMEOUT | toJson | quote}}{{else}}{{.Values.env.STAGING_TIMEOUT | quote}}{{end}}{{else}}{{fail "env.STAGING_TIMEOUT has not been set"}}{{end}}
 
-        {{- if .Values.secrets.STAGING_UPLOAD_PASSWORD }}
-        - name: "STAGING_UPLOAD_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "staging-upload-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.STAGING_UPLOAD_PASSWORD }}
         - name: "STAGING_UPLOAD_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "staging-upload-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.STAGING_UPLOAD_PASSWORD }}
+        - name: "STAGING_UPLOAD_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "staging-upload-password"
+              name: "secrets"
         {{- end }}
 
         - name: "UAA_CA_CERT"
@@ -373,7 +371,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:54cfbc8a9f09f130432e744117b66804d4d44056"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:0807ec7955ef993537c092e03f90cab2c1539dea"
         lifecycle:
           preStop:
             exec:
@@ -537,7 +535,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:e6319ca25569ce524e19c97615a38c073bc928f0"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
         lifecycle:
           preStop:
             exec:

@@ -86,11 +86,15 @@ kind: "List"
 #   highly-available configuration.
 {{- if .Values.enable.autoscaler }}
 
-{{- if gt (int .Values.sizing.autoscaler_postgres.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.autoscaler_postgres.count) "<nil>") (gt (int .Values.sizing.autoscaler_postgres.count) 1) }}
 _maxReplicas: {{ fail "autoscaler_postgres cannot have more than 1 instances" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.autoscaler_postgres.count) 1 }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.autoscaler_postgres.count) "<nil>") (lt (int .Values.sizing.autoscaler_postgres.count) 1) }}
+_minHAReplicas: {{ fail "autoscaler_postgres must have at least 1 instances for HA" }}
+{{- end }}
+
+{{- if and (ne (typeOf .Values.sizing.autoscaler_postgres.count) "<nil>") (lt (int .Values.sizing.autoscaler_postgres.count) 1) }}
 _minReplicas: {{ fail "autoscaler_postgres must have at least 1 instances" }}
 {{- end }}
 
@@ -137,7 +141,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.autoscaler_postgres.count) 1) }}{{ 1 }}{{ else }}{{ .Values.sizing.autoscaler_postgres.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.autoscaler_postgres.count) "<nil>") }}{{ .Values.sizing.autoscaler_postgres.count }}{{ else }}{{ if .Values.config.HA }}{{ 1 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "autoscaler-postgres"
@@ -252,7 +256,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-postgres:05c8adf3a4b8c372e5593e29809e7a9f32d528bc"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-postgres:f8acb4b6fcd342eb09661f70d11fd6983257e968"
         lifecycle:
           preStop:
             exec:
