@@ -1,5 +1,5 @@
 # Default values for stratos-metrics
-dockerRepository:c
+dockerRepository: registry.suse.com
 dockerOrganization: cap
 dockerRegistrySecret: regsecret
 imageTag: 1.1.0-39adb67-cap
