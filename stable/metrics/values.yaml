@@ -1,5 +1,5 @@
 # Default values for stratos-metrics
-dockerRepository: registry.suse.com
+dockerRepository:c
 dockerOrganization: cap
 dockerRegistrySecret: regsecret
 imageTag: 1.1.0-39adb67-cap
@@ -145,27 +145,27 @@ prometheus:
     enabled: false
   configmapReload:
     image:
-      repository: staging.registry.howdoi.website/splatform/stratos-metrics-configmap-reload
+      repository: registry.suse.com/cap/stratos-metrics-configmap-reload
       tag: 1.1.0-39adb67-cap
   initChownData:
     image:
-      repository: staging.registry.howdoi.website/splatform/stratos-metrics-init-chown-data
+      repository: registry.suse.com/cap/stratos-metrics-init-chown-data
       tag: 1.1.0-39adb67-cap
   kubeStateMetrics:
     enabled: false
     image:
-      repository: staging.registry.howdoi.website/splatform/stratos-metrics-kube-state-metrics
+      repository: registry.suse.com/cap/stratos-metrics-kube-state-metrics
       tag: 1.1.0-39adb67-cap
   nodeExporter:    
     enabled: false
     image:
-      repository: staging.registry.howdoi.website/splatform/stratos-metrics-node-exporter
+      repository: registry.suse.com/cap/stratos-metrics-node-exporter
       tag: 1.1.0-39adb67-cap
   server:
     name: prometheus
     configMapOverrideName: stratos-metrics-config
     image:
-      repository: staging.registry.howdoi.website/splatform/stratos-metrics-prometheus
+      repository: registry.suse.com/cap/stratos-metrics-prometheus
       tag: 1.1.0-39adb67-cap
     replicaCount: 1
     service:
