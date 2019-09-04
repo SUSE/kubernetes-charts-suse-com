@@ -1,52 +1,17 @@
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  name: "{{ .Release.Name }}-nginx-tls"
-type: Opaque
-data:
-  cert.crt: {{ .Values.nginx.ssl.cert | b64enc }}
-  cert.key: {{ .Values.nginx.ssl.certKey | b64enc }}
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: "{{ .Release.Name }}-stratos-metrics-config"
   labels:
     app.kubernetes.io/name: "stratos-metrics"
     app.kubernetes.io/instance: "{{ .Release.Name }}"
-    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
-    app.kubernetes.io/component: "stratos-metrics-{{ .Values.cfName }}-config"
-    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app.kubernetes.io/component: "stratos-metrics-config"
 data:
-  nginx-metadata: |
-    [
-      {{- if .Values.firehoseExporter.enabled }}
-      {
-        "type": "cf",
-      {{- if .Values.env.DOMAIN }}  
-        "url": "wss://doppler.{{ .Values.env.DOMAIN }}:{{.Values.env.DOPPLER_PORT}}",
-      {{- else }}
-        "url": "{{ .Values.firehoseExporter.dopplerUrl }}",
-      {{- end }}
-        "job": "cf-firehose"
-      }
-      {{- end }}
-      {{- if .Values.kubernetes.authEndpoint }}
-        {{- if .Values.firehoseExporter.enabled }}
-            ,
-        {{- end }}
-      {
-        "type": "k8s",
-        "url": "{{ .Values.kubernetes.authEndpoint }}",
-        "job": "k8s-metrics"
-      }
-      {{- end }}
-    ]
   nginx-config: |
     upstream prometheus {
         least_conn;
-        server                      {{ .Release.Name }}-prometheus-prometheus:9090;
+        server                      {{ .Release.Name }}-prometheus-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090;
         keepalive                   32;
     }
     server {
@@ -58,7 +23,7 @@ data:
       ssl_ciphers                 HIGH:!aNULL:!MD5;
 
       client_max_body_size        50M;
-
+      
       location /stratos { 
           alias /etc/nginx/conf.d/metadata.json;
           auth_basic "metrics-auth";
@@ -98,24 +63,30 @@ data:
     scrape_configs:
     {{- if .Values.firehoseExporter.enabled }}
     {{ $releaseName := .Release.Name }}
+    {{ $namespace := .Release.Namespace }}
     {{ $values :=  .Values }}
-
       # Firehose exporter job
       - job_name: cf-firehose
         static_configs:
           - targets:
       {{- range int .Values.firehoseExporter.instances | until }}
-            - "{{  $releaseName }}-{{$values.firehoseExporter.serviceName}}-{{.}}:{{$values.firehoseExporter.servicePort}}"
+            - "{{ $releaseName }}-f-exp-service-{{.}}.{{ $namespace }}.svc.cluster.local:9186"
       {{- end}}
             labels:
-            {{- if $values.env.DOMAIN }}  
-              doppler_endpoint: "wss://doppler.{{ $values.env.DOMAIN }}:{{$values.env.DOPPLER_PORT}}"
-            {{- else }}
-              doppler_endpoint: "{{ $values.firehoseExporter.dopplerUrl }}"
-            {{- end }}
+              cloud_foundry: "{{ template "cloudFoundryApiEndpoint" . }}"
     {{- end }}
 
-    # A scrape configuration for running Prometheus on a Kubernetes cluster.
+    {{- if .Values.cfExporter.enabled }}
+      # CF exporter job
+      - job_name: cf-exporter
+        static_configs:
+          - targets:
+            - "{{ .Release.Name }}-cf-exp-service.{{ .Release.Namespace }}.svc.cluster.local:9193"
+            labels:
+              cloud_foundry: "{{ template "cloudFoundryApiEndpoint" . }}"
+    {{- end }}
+
+      # A scrape configuration for running Prometheus on a Kubernetes cluster.
       # This uses separate scrape configs for cluster components (i.e. API server, node)
       # and services to allow each to use different authentication configs.
       #
