@@ -1,7 +1,7 @@
 ---
 # Service account "eirini" is used by the following instance groups:
+# - configure-eirini
 # - eirini
-# - post-deployment-setup
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "v1"
 kind: "ServiceAccount"
@@ -40,15 +40,61 @@ roleRef:
   name: "configgin-role"
 {{- end }}
 ---
-# Cluster role "eirini-role" only used by account "[eirini]"
+# Role binding for service account "eirini" and role "secrets-role"
+{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "eirini-secrets-role-binding"
+  labels:
+    app.kubernetes.io/component: "eirini-secrets-role-binding"
+    skiff-role-name: "eirini-secrets-role-binding"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+subjects:
+- kind: "ServiceAccount"
+  name: "eirini"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "secrets-role"
+{{- end }}
+---
+# Role binding for service account "eirini" and role "psp-role"
+{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "RoleBinding"
+metadata:
+  name: "eirini-psp-role-binding"
+  labels:
+    app.kubernetes.io/component: "eirini-psp-role-binding"
+    skiff-role-name: "eirini-psp-role-binding"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+subjects:
+- kind: "ServiceAccount"
+  name: "eirini"
+roleRef:
+  apiGroup: "rbac.authorization.k8s.io"
+  kind: "Role"
+  name: "psp-role"
+{{- end }}
+---
+# Cluster role "mutating-webhook-role" only used by account "[eirini]"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "rbac.authorization.k8s.io/v1"
 kind: "ClusterRole"
 metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
+  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-mutating-webhook-role" .Release.Namespace) }}
   labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
+    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-mutating-webhook-role" .Release.Namespace) }}
+    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-mutating-webhook-role" .Release.Namespace) }}
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -56,23 +102,23 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 rules:
 - apiGroups:
-  - "*"
+  - "admissionregistration.k8s.io"
   resources:
-  - "*"
+  - "mutatingwebhookconfigurations"
   verbs:
   - "*"
 {{- end }}
 ---
 # Cluster role binding for service account "eirini" and cluster role
-# "eirini-role"
+# "mutating-webhook-role"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "rbac.authorization.k8s.io/v1"
 kind: "ClusterRoleBinding"
 metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
+  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-mutating-webhook-role-cluster-binding" .Release.Namespace) }}
   labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-eirini-role-cluster-binding" .Release.Namespace) }}
+    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-mutating-webhook-role-cluster-binding" .Release.Namespace) }}
+    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-mutating-webhook-role-cluster-binding" .Release.Namespace) }}
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -85,5 +131,57 @@ subjects:
 roleRef:
   kind: "ClusterRole"
   apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-eirini-role" .Release.Namespace) }}
+  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-mutating-webhook-role" .Release.Namespace) }}
+{{- end }}
+---
+# Cluster role "daemonset-role" only used by account "[eirini]"
+{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "ClusterRole"
+metadata:
+  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-daemonset-role" .Release.Namespace) }}
+  labels:
+    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-daemonset-role" .Release.Namespace) }}
+    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-daemonset-role" .Release.Namespace) }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+rules:
+- apiGroups:
+  - "extensions"
+  resources:
+  - "daemonsets"
+  verbs:
+  - "create"
+  - "get"
+  - "list"
+  - "delete"
+  - "update"
+{{- end }}
+---
+# Cluster role binding for service account "eirini" and cluster role
+# "daemonset-role"
+{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+apiVersion: "rbac.authorization.k8s.io/v1"
+kind: "ClusterRoleBinding"
+metadata:
+  name: {{ template "fissile.SanitizeName" (printf "%s-eirini-daemonset-role-cluster-binding" .Release.Namespace) }}
+  labels:
+    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-eirini-daemonset-role-cluster-binding" .Release.Namespace) }}
+    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-eirini-daemonset-role-cluster-binding" .Release.Namespace) }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+subjects:
+- kind: "ServiceAccount"
+  name: "eirini"
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: "ClusterRole"
+  apiGroup: "rbac.authorization.k8s.io"
+  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-daemonset-role" .Release.Namespace) }}
 {{- end }}

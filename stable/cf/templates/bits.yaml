@@ -85,11 +85,15 @@ kind: "List"
 #
 # Also: statsd_injector, bpm, and bits-service
 
-{{- if gt (int .Values.sizing.bits.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.bits.count) "<nil>") (gt (int .Values.sizing.bits.count) 1) }}
 _maxReplicas: {{ fail "bits cannot have more than 1 instances" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.bits.count) 1 }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.bits.count) "<nil>") (lt (int .Values.sizing.bits.count) 1) }}
+_minHAReplicas: {{ fail "bits must have at least 1 instances for HA" }}
+{{- end }}
+
+{{- if and (ne (typeOf .Values.sizing.bits.count) "<nil>") (lt (int .Values.sizing.bits.count) 1) }}
 _minReplicas: {{ fail "bits must have at least 1 instances" }}
 {{- end }}
 
@@ -136,7 +140,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.bits.count) 1) }}{{ 1 }}{{ else }}{{ .Values.sizing.bits.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.bits.count) "<nil>") }}{{ .Values.sizing.bits.count }}{{ else }}{{ if .Values.config.HA }}{{ 1 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "bits"
@@ -351,7 +355,7 @@ spec:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SIZING_NATS_COUNT"
-          value: {{ if and .Values.config.HA (eq (int .Values.sizing.nats.count) 1) }}{{ 2 | quote }}{{ else }}{{ .Values.sizing.nats.count | quote }}{{ end }}
+          value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -397,7 +401,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-bits:a8b303f2b32409d507d79a8556927d1b4149a859"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-bits:71402d1880ca56de95e63dce72d576c91d061a89"
         lifecycle:
           preStop:
             exec:

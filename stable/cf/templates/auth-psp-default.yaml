@@ -34,6 +34,7 @@ spec:
   - "configMap"
   - "secret"
   - "emptyDir"
+  - "hostPath"
   - "downwardAPI"
   - "projected"
   - "persistentVolumeClaim"

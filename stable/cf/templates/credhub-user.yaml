@@ -86,11 +86,15 @@ kind: "List"
 # Also: credhub and bpm
 {{- if .Values.enable.credhub }}
 
-{{- if gt (int .Values.sizing.credhub_user.count) 1 }}
+{{- if and (ne (typeOf .Values.sizing.credhub_user.count) "<nil>") (gt (int .Values.sizing.credhub_user.count) 1) }}
 _maxReplicas: {{ fail "credhub_user cannot have more than 1 instances" }}
 {{- end }}
 
-{{- if lt (int .Values.sizing.credhub_user.count) 1 }}
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.credhub_user.count) "<nil>") (lt (int .Values.sizing.credhub_user.count) 1) }}
+_minHAReplicas: {{ fail "credhub_user must have at least 1 instances for HA" }}
+{{- end }}
+
+{{- if and (ne (typeOf .Values.sizing.credhub_user.count) "<nil>") (lt (int .Values.sizing.credhub_user.count) 1) }}
 _minReplicas: {{ fail "credhub_user must have at least 1 instances" }}
 {{- end }}
 
@@ -137,7 +141,7 @@ metadata:
 
 spec:
   podManagementPolicy: "Parallel"
-  replicas: {{ if and .Values.config.HA (eq (int .Values.sizing.credhub_user.count) 1) }}{{ 1 }}{{ else }}{{ .Values.sizing.credhub_user.count }}{{ end }}
+  replicas: {{ if (ne (typeOf .Values.sizing.credhub_user.count) "<nil>") }}{{ .Values.sizing.credhub_user.count }}{{ else }}{{ if .Values.config.HA }}{{ 1 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
   selector:
     matchLabels:
       skiff-role-name: "credhub-user"
@@ -244,7 +248,7 @@ spec:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SIZING_NATS_COUNT"
-          value: {{ if and .Values.config.HA (eq (int .Values.sizing.nats.count) 1) }}{{ 2 | quote }}{{ else }}{{ .Values.sizing.nats.count | quote }}{{ end }}
+          value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
         - name: "LOG_LEVEL"
           value: {{if ne (typeOf .Values.env.LOG_LEVEL) "<nil>"}}{{if has (kindOf .Values.env.LOG_LEVEL) (list "map" "slice")}}{{.Values.env.LOG_LEVEL | toJson | quote}}{{else}}{{.Values.env.LOG_LEVEL | quote}}{{end}}{{else}}{{fail "env.LOG_LEVEL has not been set"}}{{end}}
 
@@ -317,7 +321,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-credhub-user:6237acf61275a9d8c533b2c2faf939cb445867db"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-credhub-user:56df15437d2d39dc8fa9a555d89408941f8519ab"
         lifecycle:
           preStop:
             exec:

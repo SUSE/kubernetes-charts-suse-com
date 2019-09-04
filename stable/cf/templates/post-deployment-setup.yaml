@@ -75,14 +75,25 @@ spec:
             secretKeyRef:
               key: "cluster-admin-password"
               name: "secrets"
-        - name: "DOMAIN"
-          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
-        - name: "EIRINI_CERT_COPIER_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_CERT_COPIER_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_CERT_COPIER_IMAGE}}{{.Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{end}}{{else}}""{{end}}
-        - name: "EIRINI_FLUENTD_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_FLUENTD_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_FLUENTD_IMAGE}}{{.Values.env.EIRINI_FLUENTD_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_FLUENTD_IMAGE | quote}}{{end}}{{else}}""{{end}}
-        - name: "EIRINI_KUBE_NAMESPACE"
-          value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if .Values.secrets.EIRINI_PERSI_NFS_BROKER_PASSWORD }}
+        - name: "EIRINI_PERSI_NFS_BROKER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-persi-nfs-broker-password"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.EIRINI_PERSI_NFS_BROKER_PASSWORD }}
+        - name: "EIRINI_PERSI_NFS_BROKER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-persi-nfs-broker-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        - name: "EIRINI_PERSI_PLANS"
+          value: {{if ne (typeOf .Values.env.EIRINI_PERSI_PLANS) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_PERSI_PLANS) (list "map" "slice")}}{{.Values.env.EIRINI_PERSI_PLANS | toJson | quote}}{{else}}{{.Values.env.EIRINI_PERSI_PLANS | quote}}{{end}}{{else}}""{{end}}
         - name: "FEATURE_EIRINI_ENABLED"
           value: {{ .Values.enable.eirini | quote }}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -117,20 +128,20 @@ spec:
         - name: "KUBE_SECRETS_GENERATION_NAME"
           value: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
 
-        {{- if .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
         {{- end }}
 
         - name: "NO_PROXY"
@@ -403,7 +414,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:8006eab428947b534cfd858d313f8f27a4b756a2"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:bd42376a9e68f7aea2486cfaa7c609866f483686"
         lifecycle:
           preStop:
             exec:
@@ -448,7 +459,7 @@ spec:
       restartPolicy: "OnFailure"
 
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-      serviceAccountName: "eirini"
+      serviceAccountName: "default"
       {{- end }}
 
       terminationGracePeriodSeconds: 600
