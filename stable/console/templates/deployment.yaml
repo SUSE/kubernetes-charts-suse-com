@@ -22,7 +22,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.0-638c6b7e0-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.1-b1a2ab8a5-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -42,7 +42,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.0-638c6b7e0-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.1-b1a2ab8a5-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -93,7 +93,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.0-638c6b7e0-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.1-b1a2ab8a5-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -249,6 +249,8 @@ spec:
           value: {{ default "" .Values.env.SMTP_PASSWORD | quote }}
         - name: INVITE_USER_SUBJECT
           value: {{ default "" .Values.console.userInviteSubject | quote }}
+        - name: ENABLE_TECH_PREVIEW
+          value: {{ default "false" .Values.console.techPreview | quote }}
         ports:
         - containerPort: 3003
           name: proxy
@@ -313,7 +315,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.0-638c6b7e0-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.1-b1a2ab8a5-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}

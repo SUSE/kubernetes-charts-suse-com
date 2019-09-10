@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 2.5.0-638c6b7e0-cap
+consoleVersion: 2.5.1-b1a2ab8a5-cap
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
@@ -45,6 +45,9 @@ console:
 
   # Whether to perform the volume migration job on install/upgrade (migrate to secrets)
   migrateVolumes: true
+  
+  # Enable/disable Tech Preview
+  techPreview: false
 
 images:
   console: stratos-console
