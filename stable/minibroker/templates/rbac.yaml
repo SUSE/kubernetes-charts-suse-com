@@ -1,22 +1,91 @@
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: minibroker
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  {{- template "minibroker.labels" . }}
+
+{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
+
+# If a "defaultNamespace" has been defined, then only grant access to the
+# release namespace itself (for storing data in a configmap), and to the
+# defaultNamespace (to maintain the service instances).
+{{- if .Values.defaultNamespace }}
+
+# If we install the services into the release namespace, then the namespace
+# already exists, and the configmap role binding becomes redundant because
+# we'll grant full access to the defaultNamespace.
+{{- if ne .Release.Namespace .Values.defaultNamespace }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.defaultNamespace }}
+  {{- template "minibroker.labels" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: minibroker-configmap
+  {{- template "minibroker.labels" . }}
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs:     ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: minibroker-configmap
+  {{- template "minibroker.labels" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: minibroker-configmap
+subjects:
+- kind: ServiceAccount
+  name: minibroker
+  namespace: {{ .Release.Namespace }}
+{{- end }}{{/* if ne .Release.Namespace .Values.defaultNamespace */}}
+
+# Provide full access to the defaultNamespace to the release namespace
+# service account.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: minibroker-services
+  namespace: {{ .Values.defaultNamespace }}
+  {{- template "minibroker.labels" . }}
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs:     ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: minibroker-services
+  namespace: {{ .Values.defaultNamespace }}
+  {{- template "minibroker.labels" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: minibroker-services
+subjects:
+- kind: ServiceAccount
+  name: minibroker
+  namespace: {{ .Release.Namespace }}
+
+# If a defaultNamespace has not been defined, then run everything
+# using cluster-admin permissions; we now own this place! :)
+{{- else }}{{/* if .Values.defaultNamespace */}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: minibroker
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  {{- template "minibroker.labels" . }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -25,3 +94,6 @@ subjects:
 - kind: ServiceAccount
   name: minibroker
   namespace: {{ .Release.Namespace }}
+{{- end }}{{/* if .Values.defaultNamespace */}}
+
+{{- end }}{{/* if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" */}}

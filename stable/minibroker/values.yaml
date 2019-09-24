@@ -1,6 +1,6 @@
 # Default values for the minibroker
 # Image to use
-image: minibroker:latest
+image: splatform/minibroker:1b8db9db6bd9b20448599d81dee0ebcd896c1c43
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
 imagePullPolicy: IfNotPresent
 deploymentPolicy: RollingUpdate
@@ -10,6 +10,9 @@ tls:
   cert:
   # base-64 encoded PEM data for the private key matching the certificate
   key:
+
+# The logging level to use; higher values emit more information
+logLevel: 5
 
 serviceCatalogEnabledOnly: true
 
