@@ -1,26 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  name: {{ template "minibroker.fullname" . }}
+  {{- template "minibroker.labels" . }}
 spec:
   replicas: 1
   strategy:
     type: {{ .Values.deploymentStrategy }}
   selector:
     matchLabels:
-      app: {{ template "fullname" . }}
+      app: {{ template "minibroker.fullname" . }}
   template:
     metadata:
-      labels:
-        app: {{ template "fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ .Release.Name }}"
-        heritage: "{{ .Release.Service }}"
+      {{- include "minibroker.labels" . | nindent 6 }}
     spec:
       serviceAccountName: minibroker
       containers:
@@ -52,12 +44,12 @@ spec:
         - "{{ .Values.tls.key }}"
         {{- end }}
         - -v
-        - "5"
+        - {{ .Values.logLevel | default "5" | quote }}
         - -logtostderr
         ports:
         - containerPort: 8080
       - name: tiller
-        image: "gcr.io/kubernetes-helm/tiller:v2.8.1"
+        image: "gcr.io/kubernetes-helm/tiller:v2.13.1"
         imagePullPolicy: IfNotPresent
         env:
         - name: TILLER_NAMESPACE
