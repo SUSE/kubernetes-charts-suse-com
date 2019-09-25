@@ -1,6 +1,6 @@
 # Default values for the minibroker
 # Image to use
-image: splatform/minibroker:1b8db9db6bd9b20448599d81dee0ebcd896c1c43
+image: minibroker:1b8db9db6bd9b20448599d81dee0ebcd896c1c43
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
 imagePullPolicy: IfNotPresent
 deploymentPolicy: RollingUpdate
