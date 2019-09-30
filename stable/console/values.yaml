@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 2.5.1-b1a2ab8a5-cap
+consoleVersion: 2.5.2-5b47569cf-cap
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
@@ -48,6 +48,9 @@ console:
   
   # Enable/disable Tech Preview
   techPreview: false
+
+  # Use local admin user instead of UAA - set to a password to enable
+  localAdminPassword: ~
 
 images:
   console: stratos-console
@@ -99,6 +102,8 @@ env:
   DOMAIN:
   UAA_HOST: 
   UAA_PORT: 2793
+  # UAA Zone (namespace cf ias deployed to when deployed to Kubernetes)
+  UAA_ZONE: scf
 
   # SMTP Settings for Email Sending (User Invites)
   # If true, authenticate against the SMTP server using AUTH command.

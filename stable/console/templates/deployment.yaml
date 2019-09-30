@@ -22,7 +22,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.1-b1a2ab8a5-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.2-5b47569cf-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -42,7 +42,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.1-b1a2ab8a5-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.2-5b47569cf-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -93,7 +93,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.1-b1a2ab8a5-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.2-5b47569cf-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -181,6 +181,24 @@ spec:
         - name: LOG_LEVEL
           value: {{.Values.console.backendLogLevel}}
         {{- end }}
+        # Local admin user
+        {{- if .Values.console.localAdminPassword }}
+        - name: CONSOLE_CLIENT 
+          value: cf
+        - name: CONSOLE_ADMIN_SCOPE 
+          value: stratos.admin
+        - name: SKIP_SSL_VALIDATION 
+          value: "true"
+        - name: AUTH_ENDPOINT_TYPE 
+          value: local
+        - name: LOCAL_USER 
+          value: admin
+        - name: LOCAL_USER_PASSWORD 
+          value: "{{.Values.console.localAdminPassword}}"
+        - name: LOCAL_USER_SCOPE 
+          value: stratos.admin
+        {{- else }}
+        # UAA
         {{- if or .Values.env.UAA_HOST .Values.env.DOMAIN }}  
         - name: UAA_ENDPOINT 
           value: {{ template "scfUaaEndpoint" . }}
@@ -207,6 +225,7 @@ spec:
           value: {{.Values.uaa.consoleAdminIdentifier}}
         - name: SKIP_SSL_VALIDATION 
           value: {{default "true" .Values.uaa.skipSSLValidation | quote}}
+        {{- end }}
         {{- end }}
         {{- if .Values.console.cookieDomain }}{{ if ne .Values.console.cookieDomain "-" }}
         - name: COOKIE_DOMAIN
@@ -315,7 +334,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.1-b1a2ab8a5-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.2-5b47569cf-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}
