@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 2.5.2-5b47569cf-cap
+consoleVersion: 2.5.3-cd78237ae-cap
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme
@@ -32,6 +32,28 @@ console:
     # nodePort: 30000
     type: ClusterIP
     externalName:
+    ingress:
+      ## If true, Ingress will be created
+      enabled: false
+
+      ## Additional annotations
+      annotations: {}
+
+      ## Additional labels
+      extraLabels: {}
+
+      ## Host for the ingress
+      # Defaults to console.[env.Domain] if env.Domain is set and host is not
+      host:
+
+      # Name of secret containing TLS certificate
+      secretName:
+
+      # crt and key for TLS Certificate (this chart will create the secret based on these)
+      tls:
+        crt:
+        key:
+
     http:
       enabled: false
       servicePort: 80

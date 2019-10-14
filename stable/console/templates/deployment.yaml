@@ -22,7 +22,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.2-5b47569cf-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.3-cd78237ae-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -42,7 +42,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.2-5b47569cf-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.3-cd78237ae-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -93,7 +93,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.2-5b47569cf-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.3-cd78237ae-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -247,6 +247,8 @@ spec:
           value: {{default "false" .Values.console.ssoLogin | quote}}
         - name: SSO_OPTIONS
           value: {{default "" .Values.console.ssoOptions | quote}}
+        - name: SSO_WHITELIST
+          value: {{ default "" .Values.console.ssoWhiteList | quote }}
         {{- if .Values.console.templatesConfigMapName }}
         - name: TEMPLATE_DIR
           value: /etc/templates
@@ -334,7 +336,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.2-5b47569cf-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.3-cd78237ae-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}
