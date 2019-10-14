@@ -1,7 +1,7 @@
 ---
 # The sidecar role for cf-usb-sidecar-mysql contains the main
 # deployment of the sidecar (csm + extension binaries).
-apiVersion: "extensions/v1beta1"
+apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
   name: "cf-usb-sidecar-mysql"

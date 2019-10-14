@@ -2,7 +2,7 @@
 {{- if .Values.cfExporter.enabled }}
 {{ $cfExporterClientSecret :=  default (randAlphaNum 64) .Values.cfExporter.uaa.clientSecret }}
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "{{ .Release.Name }}-cf-exporter"

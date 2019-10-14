@@ -1,6 +1,6 @@
 {{ $firehoseClientSecret :=  default (randAlphaNum 64) .Values.firehoseExporter.uaa.clientSecret }}
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "{{ .Release.Name }}-nginx"
@@ -118,7 +118,7 @@ spec:
   {{- range int .Values.firehoseExporter.instances | until }}
 
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "{{ $releaseName }}-firehose-exporters-{{ . }}"

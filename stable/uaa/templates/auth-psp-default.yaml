@@ -1,7 +1,7 @@
 ---
 # Pod security policy "default"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (not .Values.kube.psp.default) }}
-apiVersion: "extensions/v1beta1"
+apiVersion: "policy/v1beta1"
 kind: "PodSecurityPolicy"
 metadata:
   name: {{ template "fissile.SanitizeName" (printf "%s-psp-default" .Release.Namespace) }}

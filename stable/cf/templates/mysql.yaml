@@ -145,7 +145,7 @@ _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "
 _oddReplicas: {{ fail "mysql must have an odd instance count" }}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: "apps/v1"
 kind: "StatefulSet"
 metadata:
   name: "mysql"
