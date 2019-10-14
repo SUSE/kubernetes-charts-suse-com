@@ -1,4 +1,4 @@
-stratos-console:2.5.2-5b47569cf-cap
-stratos-jetstream:2.5.2-5b47569cf-cap
-stratos-mariadb:2.5.2-5b47569cf-cap
-stratos-postflight-job:2.5.2-5b47569cf-cap
+stratos-console:2.5.3-cd78237ae-cap
+stratos-jetstream:2.5.3-cd78237ae-cap
+stratos-mariadb:2.5.3-cd78237ae-cap
+stratos-postflight-job:2.5.3-cd78237ae-cap
