@@ -22,7 +22,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.5.3-cd78237ae-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.6.0-41cbb1b1d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -42,7 +42,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.5.3-cd78237ae-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.6.0-41cbb1b1d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -93,7 +93,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.5.3-cd78237ae-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.6.0-41cbb1b1d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -336,7 +336,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.5.3-cd78237ae-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.6.0-41cbb1b1d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}
