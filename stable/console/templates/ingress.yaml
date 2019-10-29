@@ -60,7 +60,7 @@ metadata:
 {{- end }}    
 spec:
   tls:
-  - secretName: {{ default "{{ .Release.Name }}-ingress-tls" .Values.console.service.ingress.secretName | quote }}
+  - secretName: {{ .Values.console.service.ingress.secretName | default (print .Release.Name "-ingress-tls") | quote }}
     hosts:
     - {{ template "ingress.host" . }}
   rules:
