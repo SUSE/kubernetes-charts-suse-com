@@ -128,9 +128,12 @@ kind: "List"
 #
 # - route_registrar: Used for registering routes
 #
-# Also: bpm, statsd_injector, go-buildpack, binary-buildpack, nodejs-buildpack,
-# ruby-buildpack, php-buildpack, python-buildpack, staticfile-buildpack,
-# nginx-buildpack, java-buildpack, and dotnet-core-buildpack
+# Also: bpm, statsd_injector, go-buildpack, go-buildpack, binary-buildpack,
+# binary-buildpack, nodejs-buildpack, nodejs-buildpack, ruby-buildpack,
+# ruby-buildpack, php-buildpack, php-buildpack, python-buildpack,
+# python-buildpack, staticfile-buildpack, staticfile-buildpack, nginx-buildpack,
+# nginx-buildpack, java-buildpack, java-buildpack, dotnet-core-buildpack, and
+# dotnet-core-buildpack
 
 {{- if and (ne (typeOf .Values.sizing.api_group.count) "<nil>") (gt (int .Values.sizing.api_group.count) 65535) }}
 _maxReplicas: {{ fail "api_group cannot have more than 65535 instances" }}
@@ -164,7 +167,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "api-group"
@@ -261,22 +264,6 @@ spec:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if not .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-admin-users-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-admin-users-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
@@ -296,20 +283,20 @@ spec:
         - name: "BROKER_CLIENT_TIMEOUT_SECONDS"
           value: {{if ne (typeOf .Values.env.BROKER_CLIENT_TIMEOUT_SECONDS) "<nil>"}}{{if has (kindOf .Values.env.BROKER_CLIENT_TIMEOUT_SECONDS) (list "map" "slice")}}{{.Values.env.BROKER_CLIENT_TIMEOUT_SECONDS | toJson | quote}}{{else}}{{.Values.env.BROKER_CLIENT_TIMEOUT_SECONDS | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if .Values.secrets.BULK_API_PASSWORD }}
-        - name: "BULK_API_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bulk-api-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BULK_API_PASSWORD }}
         - name: "BULK_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "bulk-api-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BULK_API_PASSWORD }}
+        - name: "BULK_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "bulk-api-password"
+              name: "secrets"
         {{- end }}
 
         - name: "CATS_SUITES"
@@ -370,20 +357,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.CC_SERVER_CRT_KEY }}
-        - name: "CC_SERVER_CRT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "cc-server-crt-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.CC_SERVER_CRT_KEY }}
         - name: "CC_SERVER_CRT_KEY"
           valueFrom:
             secretKeyRef:
               key: "cc-server-crt-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.CC_SERVER_CRT_KEY }}
+        - name: "CC_SERVER_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt-key"
+              name: "secrets"
         {{- end }}
 
         - name: "CDN_URI"
@@ -401,6 +388,10 @@ spec:
             secretKeyRef:
               key: "db-encryption-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        - name: "DB_EXTERNAL_HOST"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_PORT"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_PORT) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_PORT) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_PORT | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "DEFAULT_APP_DISK_IN_MB"
           value: {{if ne (typeOf .Values.env.DEFAULT_APP_DISK_IN_MB) "<nil>"}}{{if has (kindOf .Values.env.DEFAULT_APP_DISK_IN_MB) (list "map" "slice")}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | toJson | quote}}{{else}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | quote}}{{end}}{{else}}{{fail "env.DEFAULT_APP_DISK_IN_MB has not been set"}}{{end}}
         - name: "DEFAULT_APP_MEMORY"
@@ -415,6 +406,39 @@ spec:
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
         - name: "DROPLET_MAX_STAGED_STORED"
           value: {{if ne (typeOf .Values.env.DROPLET_MAX_STAGED_STORED) "<nil>"}}{{if has (kindOf .Values.env.DROPLET_MAX_STAGED_STORED) (list "map" "slice")}}{{.Values.env.DROPLET_MAX_STAGED_STORED | toJson | quote}}{{else}}{{.Values.env.DROPLET_MAX_STAGED_STORED | quote}}{{end}}{{else}}{{fail "env.DROPLET_MAX_STAGED_STORED has not been set"}}{{end}}
+
+        {{- if not .Values.secrets.EIRINI_CLIENT_CRT }}
+        - name: "EIRINI_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.EIRINI_CLIENT_CRT }}
+        - name: "EIRINI_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.EIRINI_CLIENT_CRT_KEY }}
+        - name: "EIRINI_CLIENT_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.EIRINI_CLIENT_CRT_KEY }}
+        - name: "EIRINI_CLIENT_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "ENABLE_SECURITY_EVENT_LOGGING"
           value: {{if ne (typeOf .Values.env.ENABLE_SECURITY_EVENT_LOGGING) "<nil>"}}{{if has (kindOf .Values.env.ENABLE_SECURITY_EVENT_LOGGING) (list "map" "slice")}}{{.Values.env.ENABLE_SECURITY_EVENT_LOGGING | toJson | quote}}{{else}}{{.Values.env.ENABLE_SECURITY_EVENT_LOGGING | quote}}{{end}}{{else}}""{{end}}
         - name: "FEATURE_EIRINI_ENABLED"
@@ -458,6 +482,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "api-group"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -465,20 +491,20 @@ spec:
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
 
-        {{- if not .Values.secrets.LOG_CACHE_CERT }}
-        - name: "LOG_CACHE_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "log-cache-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOG_CACHE_CERT }}
         - name: "LOG_CACHE_CERT"
           valueFrom:
             secretKeyRef:
               key: "log-cache-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOG_CACHE_CERT }}
+        - name: "LOG_CACHE_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "log-cache-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOG_CACHE_CERT_KEY }}
@@ -520,20 +546,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
-        - name: "MYSQL_CCDB_ROLE_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-ccdb-role-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.NATS_PASSWORD }}
@@ -606,20 +632,20 @@ spec:
               key: "uaa-ca-cert"
               name: "secrets"
 
-        {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
-        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cc-routing-secret"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-routing-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
+        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-routing-secret"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
@@ -654,20 +680,20 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET }}
-        - name: "UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cloud-controller-username-lookup-secret"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET }}
         - name: "UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cloud-controller-username-lookup-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET }}
+        - name: "UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cloud-controller-username-lookup-secret"
+              name: "secrets"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -682,7 +708,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-api-group:20dd808a1e15cea33a8cdcd5abdd3ecc309b0382"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-api-group:4d331538c069a2c0da081b6117928a74d7dd932b"
         lifecycle:
           preStop:
             exec:
@@ -760,6 +786,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "loggregator-agent"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -767,20 +795,20 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
         - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-agent-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
@@ -799,20 +827,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
         - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-forward-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
@@ -859,7 +887,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
         lifecycle:
           preStop:
             exec:

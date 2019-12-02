@@ -132,7 +132,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "autoscaler-api"
@@ -203,20 +203,20 @@ spec:
         {{- end }}
       containers:
       - env:
-        {{- if .Values.secrets.AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT }}
-        - name: "AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "autoscaler-asapi-public-server-cert"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT }}
         - name: "AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT"
           valueFrom:
             secretKeyRef:
               key: "autoscaler-asapi-public-server-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT }}
+        - name: "AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-asapi-public-server-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.AUTOSCALER_ASAPI_PUBLIC_SERVER_CERT_KEY }}
@@ -235,20 +235,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.AUTOSCALER_ASAPI_SERVER_CERT }}
-        - name: "AUTOSCALER_ASAPI_SERVER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "autoscaler-asapi-server-cert"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUTOSCALER_ASAPI_SERVER_CERT }}
         - name: "AUTOSCALER_ASAPI_SERVER_CERT"
           valueFrom:
             secretKeyRef:
               key: "autoscaler-asapi-server-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_ASAPI_SERVER_CERT }}
+        - name: "AUTOSCALER_ASAPI_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-asapi-server-cert"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.AUTOSCALER_ASAPI_SERVER_CERT_KEY }}
@@ -371,20 +371,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY }}
-        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "autoscaler-scheduler-client-cert-key"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY }}
         - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY"
           valueFrom:
             secretKeyRef:
               key: "autoscaler-scheduler-client-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY }}
+        - name: "AUTOSCALER_SCHEDULER_CLIENT_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-scheduler-client-cert-key"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
@@ -430,20 +430,14 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "autoscaler-api"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
         - name: "KUBE_SIZING_NATS_COUNT"
           value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
-
-        {{- if not .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -453,11 +447,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.NATS_PASSWORD }}
-        - name: "NATS_PASSWORD"
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "nats-password"
+              key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -467,6 +461,14 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -486,7 +488,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-api:e075ca951ac824553518d5f59f9bd964a38d8894"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-autoscaler-api:2f56fac2d85e1a1141490b92922c69da0569a6d8"
         lifecycle:
           preStop:
             exec:
@@ -558,6 +560,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "loggregator-agent"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -565,20 +569,20 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
         - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-agent-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
@@ -597,20 +601,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
         - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-forward-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
@@ -657,7 +661,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
         lifecycle:
           preStop:
             exec:

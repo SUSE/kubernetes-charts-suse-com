@@ -132,7 +132,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "cf-usb-group"
@@ -240,14 +240,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.CF_USB_PASSWORD }}
-        - name: "CF_USB_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "cf-usb-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.CF_USB_PASSWORD }}
         - name: "CF_USB_PASSWORD"
           valueFrom:
@@ -256,6 +248,16 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.CF_USB_PASSWORD }}
+        - name: "CF_USB_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "cf-usb-password"
+              name: "secrets"
+        {{- end }}
+
+        - name: "DB_EXTERNAL_HOST"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -279,6 +281,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "cf-usb-group"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -302,14 +306,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
-        - name: "MYSQL_CF_USB_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-cf-usb-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_CF_USB_PASSWORD }}
         - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
@@ -318,12 +314,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.NATS_PASSWORD }}
-        - name: "NATS_PASSWORD"
+        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
+        - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "nats-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "mysql-cf-usb-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.NATS_PASSWORD }}
@@ -332,6 +328,14 @@ spec:
             secretKeyRef:
               key: "nats-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -348,20 +352,20 @@ spec:
               key: "uaa-ca-cert"
               name: "secrets"
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
-        - name: "UAA_CLIENTS_CF_USB_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cf-usb-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
         - name: "UAA_CLIENTS_CF_USB_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cf-usb-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
+        - name: "UAA_CLIENTS_CF_USB_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cf-usb-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -372,7 +376,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb-group:ba78b0274ee093ac497cf5aecadc386e82e98529"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cf-usb-group:6ba3ed1dbc6bc945090ecea6fed1cd54c8b9f86d"
         lifecycle:
           preStop:
             exec:
