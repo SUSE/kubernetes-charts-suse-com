@@ -172,7 +172,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "router"
@@ -279,6 +279,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "router"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -434,7 +436,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:f50256bfbdcc775d7701f6e980a4ef94f289d41c"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-router:cdbe3d3ceb1e4eca4bffe65879908dd354c5e65b"
         lifecycle:
           preStop:
             exec:
@@ -477,6 +479,7 @@ spec:
           allowPrivilegeEscalation: true
           capabilities:
             add:
+            - "AUDIT_WRITE"
             - "SYS_RESOURCE"
           privileged: true
         volumeMounts:
@@ -509,6 +512,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "loggregator-agent"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -516,20 +521,20 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
         - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-agent-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
@@ -548,20 +553,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
         - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-forward-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
@@ -608,7 +613,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
         lifecycle:
           preStop:
             exec:

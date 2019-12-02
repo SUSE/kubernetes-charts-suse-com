@@ -62,56 +62,6 @@ roleRef:
   name: "psp-role"
 {{- end }}
 ---
-# Cluster role "node-reader-role" only used by account "[garden-runc]"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRole"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-node-reader-role" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-node-reader-role" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-node-reader-role" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - "nodes"
-  verbs:
-  - "get"
-  - "list"
-  - "watch"
-{{- end }}
----
-# Cluster role binding for service account "garden-runc" and cluster role
-# "node-reader-role"
-{{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-apiVersion: "rbac.authorization.k8s.io/v1"
-kind: "ClusterRoleBinding"
-metadata:
-  name: {{ template "fissile.SanitizeName" (printf "%s-garden-runc-node-reader-role-cluster-binding" .Release.Namespace) }}
-  labels:
-    app.kubernetes.io/component: {{ template "fissile.SanitizeName" (printf "%s-garden-runc-node-reader-role-cluster-binding" .Release.Namespace) }}
-    skiff-role-name: {{ template "fissile.SanitizeName" (printf "%s-garden-runc-node-reader-role-cluster-binding" .Release.Namespace) }}
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-subjects:
-- kind: "ServiceAccount"
-  name: "garden-runc"
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: "ClusterRole"
-  apiGroup: "rbac.authorization.k8s.io"
-  name: {{ template "fissile.SanitizeName" (printf "%s-cluster-role-node-reader-role" .Release.Namespace) }}
-{{- end }}
----
 {{- if not .Values.enable.eirini }}
 apiVersion: "v1"
 items:
@@ -303,7 +253,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "diego-cell"
@@ -493,6 +443,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "diego-cell"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -671,7 +623,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:39c45f9d7c3f83263d3f77fdba42e6f4b89a3ef1"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-diego-cell:7413e1e7f799e7be08287fe94b29f79a98d0d582"
         lifecycle:
           preStop:
             exec:
@@ -753,6 +705,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "loggregator-agent"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -760,20 +714,20 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
         - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-agent-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
@@ -792,20 +746,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
         - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-forward-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
@@ -852,7 +806,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
         lifecycle:
           preStop:
             exec:

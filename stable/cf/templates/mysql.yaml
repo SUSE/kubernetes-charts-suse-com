@@ -1,4 +1,5 @@
 ---
+{{- if .Values.enable.mysql }}
 apiVersion: "v1"
 items:
 - apiVersion: "v1"
@@ -97,6 +98,7 @@ items:
     selector:
       app.kubernetes.io/component: "mysql"
 kind: "List"
+{{- end }}
 ---
 # The mysql instance group contains the following jobs:
 #
@@ -108,6 +110,7 @@ kind: "List"
 #
 # Also: pxc-mysql, galera-agent, gra-log-purger, cluster-health-logger,
 # bootstrap, mysql, and bpm
+{{- if .Values.enable.mysql }}
 
 {{- if and (ne (typeOf .Values.sizing.mysql.count) "<nil>") (gt (int .Values.sizing.mysql.count) 7) }}
 _maxReplicas: {{ fail "mysql cannot have more than 7 instances" }}
@@ -145,7 +148,7 @@ _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "
 _oddReplicas: {{ fail "mysql must have an odd instance count" }}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "mysql"
@@ -237,14 +240,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.GALERA_SERVER_CERT_KEY }}
-        - name: "GALERA_SERVER_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "galera-server-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.GALERA_SERVER_CERT_KEY }}
         - name: "GALERA_SERVER_CERT_KEY"
           valueFrom:
@@ -253,16 +248,16 @@ spec:
               name: "secrets"
         {{- end }}
 
-        - name: "GARDEN_ROOTFS_DRIVER"
-          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
-
-        {{- if .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
+        {{- if not .Values.secrets.GALERA_SERVER_CERT_KEY }}
+        - name: "GALERA_SERVER_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets"
+              key: "galera-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
+
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -272,8 +267,18 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "mysql"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -311,20 +316,20 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
-        - name: "MYSQL_CCDB_ROLE_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-ccdb-role-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
@@ -516,7 +521,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:88b725b95fe1c27fa66419d8bb10222f50a76094"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:6c2421f2299709e5826ad67ec8496b4f92a5e63b"
         lifecycle:
           preStop:
             exec:
@@ -560,6 +565,9 @@ spec:
 
         securityContext:
           allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - "AUDIT_WRITE"
           privileged: true
         volumeMounts:
         - mountPath: "/var/vcap/store"
@@ -604,3 +612,4 @@ spec:
       resources:
         requests:
           storage: "{{ .Values.sizing.mysql.disk_sizes.mysql_data }}G"
+{{- end }}

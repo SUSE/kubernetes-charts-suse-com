@@ -43,7 +43,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "cc-worker"
@@ -119,22 +119,6 @@ spec:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if not .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-admin-users-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-admin-users-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
@@ -202,6 +186,10 @@ spec:
             secretKeyRef:
               key: "db-encryption-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        - name: "DB_EXTERNAL_HOST"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_PORT"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_PORT) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_PORT) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_PORT | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_PORT | quote}}{{end}}{{else}}""{{end}}
         - name: "DEFAULT_APP_DISK_IN_MB"
           value: {{if ne (typeOf .Values.env.DEFAULT_APP_DISK_IN_MB) "<nil>"}}{{if has (kindOf .Values.env.DEFAULT_APP_DISK_IN_MB) (list "map" "slice")}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | toJson | quote}}{{else}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | quote}}{{end}}{{else}}{{fail "env.DEFAULT_APP_DISK_IN_MB has not been set"}}{{end}}
         - name: "DEFAULT_APP_MEMORY"
@@ -214,6 +202,8 @@ spec:
           value: {{if ne (typeOf .Values.env.DISABLE_CUSTOM_BUILDPACKS) "<nil>"}}{{if has (kindOf .Values.env.DISABLE_CUSTOM_BUILDPACKS) (list "map" "slice")}}{{.Values.env.DISABLE_CUSTOM_BUILDPACKS | toJson | quote}}{{else}}{{.Values.env.DISABLE_CUSTOM_BUILDPACKS | quote}}{{end}}{{else}}{{fail "env.DISABLE_CUSTOM_BUILDPACKS has not been set"}}{{end}}
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
+        - name: "FEATURE_EIRINI_ENABLED"
+          value: {{ .Values.enable.eirini | quote }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -251,6 +241,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "cc-worker"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -278,20 +270,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
-        - name: "MYSQL_CCDB_ROLE_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-ccdb-role-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -305,20 +297,20 @@ spec:
         - name: "STAGING_TIMEOUT"
           value: {{if ne (typeOf .Values.env.STAGING_TIMEOUT) "<nil>"}}{{if has (kindOf .Values.env.STAGING_TIMEOUT) (list "map" "slice")}}{{.Values.env.STAGING_TIMEOUT | toJson | quote}}{{else}}{{.Values.env.STAGING_TIMEOUT | quote}}{{end}}{{else}}{{fail "env.STAGING_TIMEOUT has not been set"}}{{end}}
 
-        {{- if not .Values.secrets.STAGING_UPLOAD_PASSWORD }}
-        - name: "STAGING_UPLOAD_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "staging-upload-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.STAGING_UPLOAD_PASSWORD }}
         - name: "STAGING_UPLOAD_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "staging-upload-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.STAGING_UPLOAD_PASSWORD }}
+        - name: "STAGING_UPLOAD_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "staging-upload-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "UAA_CA_CERT"
@@ -371,7 +363,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:0807ec7955ef993537c092e03f90cab2c1539dea"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-worker:50d8567be1355ee213408dbce036e19ac74d268c"
         lifecycle:
           preStop:
             exec:
@@ -436,6 +428,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "loggregator-agent"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -443,20 +437,20 @@ spec:
         - name: "KUBE_AZ"
           value: "z1"
 
-        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
-        - name: "LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_AGENT_CERT }}
         - name: "LOGGREGATOR_AGENT_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-agent-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT }}
+        - name: "LOGGREGATOR_AGENT_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-agent-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOGGREGATOR_AGENT_CERT_KEY }}
@@ -475,20 +469,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
         - name: "LOGGREGATOR_FORWARD_CERT"
           valueFrom:
             secretKeyRef:
               key: "loggregator-forward-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
+        - name: "LOGGREGATOR_FORWARD_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "loggregator-forward-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
@@ -535,7 +529,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:56d14d4392e61f63c3e59dc27f970fe8606596bf"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
         lifecycle:
           preStop:
             exec:

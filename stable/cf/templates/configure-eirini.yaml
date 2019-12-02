@@ -110,10 +110,38 @@ spec:
               name: "secrets"
         {{- end }}
 
-        - name: "DOMAIN"
-          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
-        - name: "EIRINI_CERT_COPIER_IMAGE"
-          value: {{if ne (typeOf .Values.env.EIRINI_CERT_COPIER_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_CERT_COPIER_IMAGE}}{{.Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_CERT_COPIER_IMAGE | quote}}{{end}}{{else}}""{{end}}
+        {{- if not .Values.secrets.EIRINI_CLIENT_CRT }}
+        - name: "EIRINI_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.EIRINI_CLIENT_CRT }}
+        - name: "EIRINI_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.EIRINI_CLIENT_CRT_KEY }}
+        - name: "EIRINI_CLIENT_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.EIRINI_CLIENT_CRT_KEY }}
+        - name: "EIRINI_CLIENT_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt-key"
+              name: "secrets"
+        {{- end }}
+
         - name: "EIRINI_KUBE_NAMESPACE"
           value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -137,6 +165,8 @@ spec:
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "configure-eirini"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
@@ -155,7 +185,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-configure-eirini:7fc26a67aa825b2601bbc007b7fce7b0efe24761"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-configure-eirini:8b848eeb6fa2af1571584e463402428f76b26a10"
         lifecycle:
           preStop:
             exec:
