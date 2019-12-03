@@ -117,7 +117,7 @@ spec:
           value:  "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
         - name: "CONFIGMAP_NAME"
           value:  "{{ .Release.Name }}-endpoint-config"
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.configJob.image}}:1.1.0-39adb67-cap
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.configJob.image}}:1.1.1-2fa6cdf-cap
         command: ["/create-configmaps.sh"]
         imagePullPolicy: {{.Values.imagePullPolicy}}
         livenessProbe: ~
@@ -135,8 +135,6 @@ spec:
       serviceAccountName: "metrics-config"
       {{- end }}
       terminationGracePeriodSeconds: 600
-      # Fail the job if after 10 tries it is still failing
-      backoffLimit: 10
       # Job should not take longer than 5 minutes
       activeDeadlineSeconds: 300
       # Depend on the config ConfigMap, so we know its created before we patch it with latest config
