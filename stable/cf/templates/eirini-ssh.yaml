@@ -1,0 +1,449 @@
+---
+{{- if .Values.enable.eirini }}
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-set"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-set"
+      skiff-role-name: "eirini-ssh-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "eirini-ssh"
+      port: 2222
+      protocol: "TCP"
+      targetPort: 0
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-eirini-ssh-proxy-set"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-eirini-ssh-proxy-set"
+      skiff-role-name: "eirini-ssh-eirini-ssh-proxy-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-eirini-ssh-proxy-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "eirini-ssh"
+      port: 2222
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-eirini-ssh-proxy"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-eirini-ssh-proxy"
+      skiff-role-name: "eirini-ssh-eirini-ssh-proxy"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-eirini-ssh-proxy"
+      {{- end }}
+  spec:
+    ports:
+    - name: "eirini-ssh"
+      port: 2222
+      protocol: "TCP"
+      targetPort: 2222
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-eirini-ssh-proxy-public"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-eirini-ssh-proxy-public"
+      skiff-role-name: "eirini-ssh-eirini-ssh-proxy-public"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-eirini-ssh-proxy-public"
+      {{- end }}
+  spec:
+    {{- if not (or .Values.services.loadbalanced .Values.ingress.enabled) }}
+    externalIPs: {{ .Values.kube.external_ips | toJson }}
+    {{- end }}
+
+    ports:
+    - name: "eirini-ssh"
+      port: 2222
+      protocol: "TCP"
+      targetPort: 2222
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+
+    {{- if .Values.services.loadbalanced }}
+    type: "LoadBalancer"
+    {{- end }}
+
+  {{- if and .Values.services.loadbalanced .Values.ingress.enabled }}
+  _incompatible: {{ fail "services.loadbalanced and ingress.enabled cannot both be set" }}
+  {{- end }}
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-eirini-ssh-extension-set"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-eirini-ssh-extension-set"
+      skiff-role-name: "eirini-ssh-eirini-ssh-extension-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-eirini-ssh-extension-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-ssh-eirini-ssh-extension"
+    labels:
+      app.kubernetes.io/component: "eirini-ssh-eirini-ssh-extension"
+      skiff-role-name: "eirini-ssh-eirini-ssh-extension"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-ssh-eirini-ssh-extension"
+      {{- end }}
+  spec:
+    ports:
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 8443
+    selector:
+      app.kubernetes.io/component: "eirini-ssh"
+kind: "List"
+{{- end }}
+---
+# The eirini-ssh instance group contains the following jobs:
+#
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure SCF
+#
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# - patch-properties: Dummy BOSH job used to host parameters that are used in
+#   SCF patches for upstream bugs
+#
+# Also: bpm, eirini-ssh-proxy, and eirini-ssh-extension
+{{- if .Values.enable.eirini }}
+
+{{- if and (ne (typeOf .Values.sizing.eirini_ssh.count) "<nil>") (gt (int .Values.sizing.eirini_ssh.count) 1) }}
+_maxReplicas: {{ fail "eirini_ssh cannot have more than 1 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.eirini_ssh.count) "<nil>") (lt (int .Values.sizing.eirini_ssh.count) 1) }}
+_minHAReplicas: {{ fail "eirini_ssh must have at least 1 instances for HA" }}
+{{- end }}
+
+{{- if and (ne (typeOf .Values.sizing.eirini_ssh.count) "<nil>") (lt (int .Values.sizing.eirini_ssh.count) 1) }}
+_minReplicas: {{ fail "eirini_ssh must have at least 1 instances" }}
+{{- end }}
+
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
+kind: "StatefulSet"
+metadata:
+  name: "eirini-ssh"
+  labels:
+    app.kubernetes.io/component: "eirini-ssh"
+    skiff-role-name: "eirini-ssh"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+
+    {{- if .Values.config.use_istio }}
+    app: "eirini-ssh"
+    {{- end }}
+
+    {{- if .Values.config.use_istio }}
+    version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    {{- end }}
+
+spec:
+  podManagementPolicy: "Parallel"
+  replicas: {{ if (ne (typeOf .Values.sizing.eirini_ssh.count) "<nil>") }}{{ .Values.sizing.eirini_ssh.count }}{{ else }}{{ if .Values.config.HA }}{{ 1 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
+  selector:
+    matchLabels:
+      skiff-role-name: "eirini-ssh"
+  serviceName: "eirini-ssh-set"
+  template:
+    metadata:
+      name: "eirini-ssh"
+      labels:
+        app.kubernetes.io/component: "eirini-ssh"
+        skiff-role-name: "eirini-ssh"
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+        app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+
+        {{- if .Values.config.use_istio }}
+        app: "eirini-ssh"
+        {{- end }}
+
+        {{- if .Values.config.use_istio }}
+        version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        {{- end }}
+
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if .Values.config.use_istio }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
+    spec:
+      affinity:
+        {{- if .Values.sizing.eirini_ssh.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.eirini_ssh.affinity.nodeAffinity }}
+        {{- end }}
+      containers:
+      - env:
+        {{- if not .Values.secrets.APP_SSH_KEY }}
+        - name: "APP_SSH_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "app-ssh-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.APP_SSH_KEY }}
+        - name: "APP_SSH_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "app-ssh-key"
+              name: "secrets"
+        {{- end }}
+
+        - name: "AZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
+        - name: "CATS_SUITES"
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "EIRINI_KUBE_NAMESPACE"
+          value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
+        - name: "EIRINI_SSH_PORT"
+          value: {{if ne (typeOf .Values.env.EIRINI_SSH_PORT) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_SSH_PORT) (list "map" "slice")}}{{.Values.env.EIRINI_SSH_PORT | toJson | quote}}{{else}}{{.Values.env.EIRINI_SSH_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "eirini-ssh"
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        - name: "PZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_HOST"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_PORT"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secrets"
+
+        {{- if not .Values.secrets.UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET }}
+        - name: "UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-diego-ssh-proxy-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET }}
+        - name: "UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-diego-ssh-proxy-secret"
+              name: "secrets"
+        {{- end }}
+
+        - name: "UAA_HOST"
+          value: {{if ne (typeOf .Values.env.UAA_HOST) "<nil>"}}{{if has (kindOf .Values.env.UAA_HOST) (list "map" "slice")}}{{.Values.env.UAA_HOST | toJson | quote}}{{else}}{{.Values.env.UAA_HOST | quote}}{{end}}{{else}}{{fail "env.UAA_HOST has not been set"}}{{end}}
+        - name: "UAA_PORT"
+          value: {{if ne (typeOf .Values.env.UAA_PORT) "<nil>"}}{{if has (kindOf .Values.env.UAA_PORT) (list "map" "slice")}}{{.Values.env.UAA_PORT | toJson | quote}}{{else}}{{.Values.env.UAA_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini-ssh:f54dfe5b05eceee93cadd25fb368a8928abeb0c9"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "eirini-ssh"
+        ports:
+        - containerPort: 2222
+          name: "eirini-ssh"
+          protocol: "TCP"
+        - containerPort: 8443
+          name: "webhook"
+          protocol: "TCP"
+        readinessProbe:
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+        resources:
+          requests:
+            {{- if and .Values.config.memory.requests .Values.sizing.eirini_ssh.memory.request }}
+            memory: "{{ int .Values.sizing.eirini_ssh.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.requests .Values.sizing.eirini_ssh.cpu.request }}
+            cpu: "{{ int .Values.sizing.eirini_ssh.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.config.memory.limits .Values.sizing.eirini_ssh.memory.limit }}
+            memory: "{{ int .Values.sizing.eirini_ssh.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.limits .Values.sizing.eirini_ssh.cpu.limit }}
+            cpu: "{{ int .Values.sizing.eirini_ssh.cpu.limit }}m"
+            {{- end }}
+
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - "ALL"
+          privileged: true
+        volumeMounts:
+        - mountPath: "/opt/fissile/config"
+          name: "deployment-manifest"
+          readOnly: true
+      dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
+      imagePullSecrets:
+      - name: "registry-credentials"
+      {{- end }}
+
+      restartPolicy: "Always"
+
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "eirini"
+      {{- end }}
+
+      terminationGracePeriodSeconds: 600
+      volumes:
+      - name: "deployment-manifest"
+        secret:
+          secretName: "deployment-manifest"
+          items:
+          - key: "deployment-manifest"
+            path: "deployment-manifest.yml"
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
+{{- end }}

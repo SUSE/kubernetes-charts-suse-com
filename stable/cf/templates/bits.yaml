@@ -1,89 +1,13 @@
 ---
-apiVersion: "v1"
-items:
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "bits-set"
-    labels:
-      app.kubernetes.io/component: "bits-set"
-      skiff-role-name: "bits-set"
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
-      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-      {{- if .Values.config.use_istio }}
-      app: "bits-set"
-      {{- end }}
-  spec:
-    clusterIP: "None"
-    ports:
-    - name: "server"
-      port: 443
-      protocol: "TCP"
-      targetPort: 0
-    selector:
-      app.kubernetes.io/component: "bits"
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "bits-bits-service-set"
-    labels:
-      app.kubernetes.io/component: "bits-bits-service-set"
-      skiff-role-name: "bits-bits-service-set"
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
-      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-      {{- if .Values.config.use_istio }}
-      app: "bits-bits-service-set"
-      {{- end }}
-  spec:
-    clusterIP: "None"
-    ports:
-    - name: "server"
-      port: 443
-      protocol: "TCP"
-      targetPort: 0
-    selector:
-      app.kubernetes.io/component: "bits"
-- apiVersion: "v1"
-  kind: "Service"
-  metadata:
-    name: "bits-bits-service"
-    labels:
-      app.kubernetes.io/component: "bits-bits-service"
-      skiff-role-name: "bits-bits-service"
-      app.kubernetes.io/instance: {{ .Release.Name | quote }}
-      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
-      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
-      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
-      {{- if .Values.config.use_istio }}
-      app: "bits-bits-service"
-      {{- end }}
-  spec:
-    ports:
-    - name: "server"
-      port: 443
-      protocol: "TCP"
-      targetPort: 443
-    selector:
-      app.kubernetes.io/component: "bits"
-kind: "List"
----
 # The bits instance group contains the following jobs:
 #
 # - global-properties: Dummy BOSH job used to host global parameters that are
 #   required to configure SCF
 #
-# - route_registrar: Used for registering routes
-#
-# - eirinifs: This job copies the eirinifs to a desired location
+# - eirinifs-sle15: This job copies the eirinifs-sle15 to a desired location
 #
 # Also: statsd_injector, bpm, and bits-service
+{{- if .Values.enable.eirini }}
 
 {{- if and (ne (typeOf .Values.sizing.bits.count) "<nil>") (gt (int .Values.sizing.bits.count) 1) }}
 _maxReplicas: {{ fail "bits cannot have more than 1 instances" }}
@@ -117,7 +41,7 @@ _moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad 
 _moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
 {{- end }}
 
-apiVersion: "apps/v1beta1"
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
 kind: "StatefulSet"
 metadata:
   name: "bits"
@@ -180,20 +104,12 @@ spec:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if not .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
+        {{- if not .Values.secrets.BITS_SERVICE_SECRET }}
+        - name: "BITS_SERVICE_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "bits-admin-users-password"
+              key: "bits-service-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.BITS_ADMIN_USERS_PASSWORD }}
-        - name: "BITS_ADMIN_USERS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-admin-users-password"
-              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.BITS_SERVICE_SECRET }}
@@ -204,11 +120,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.BITS_SERVICE_SECRET }}
-        - name: "BITS_SERVICE_SECRET"
+        {{- if not .Values.secrets.BITS_SERVICE_SSL_CERT }}
+        - name: "BITS_SERVICE_SSL_CERT"
           valueFrom:
             secretKeyRef:
-              key: "bits-service-secret"
+              key: "bits-service-ssl-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -218,14 +134,6 @@ spec:
             secretKeyRef:
               key: "bits-service-ssl-cert"
               name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.BITS_SERVICE_SSL_CERT }}
-        - name: "BITS_SERVICE_SSL_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "bits-service-ssl-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.BITS_SERVICE_SSL_CERT_KEY }}
@@ -244,20 +152,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.BLOBSTORE_PASSWORD }}
-        - name: "BLOBSTORE_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "blobstore-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.BLOBSTORE_PASSWORD }}
         - name: "BLOBSTORE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "blobstore-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.BLOBSTORE_PASSWORD }}
+        - name: "BLOBSTORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-password"
+              name: "secrets"
         {{- end }}
 
         - name: "CATS_SUITES"
@@ -332,14 +240,6 @@ spec:
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
-        {{- if .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
@@ -348,14 +248,22 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
         - name: "KUBERNETES_CLUSTER_DOMAIN"
           value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "bits"
         - name: "KUBERNETES_NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SIZING_NATS_COUNT"
-          value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -373,22 +281,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.NATS_PASSWORD }}
-        - name: "NATS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "nats-password"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.NATS_PASSWORD }}
-        - name: "NATS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "nats-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         - name: "PZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_HOST"
@@ -401,7 +293,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-bits:71402d1880ca56de95e63dce72d576c91d061a89"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-bits:7f177658aa643d2e7312bfd404f05a24688c4c1c"
         lifecycle:
           preStop:
             exec:
@@ -409,10 +301,7 @@ spec:
               - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
         name: "bits"
-        ports:
-        - containerPort: 443
-          name: "server"
-          protocol: "TCP"
+        ports: ~
         readinessProbe:
           exec:
             command:
@@ -468,3 +357,4 @@ spec:
   updateStrategy:
     type: "RollingUpdate"
   {{- end }}
+{{- end }}

@@ -1,0 +1,394 @@
+---
+{{- if .Values.enable.eirini }}
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-persi-set"
+    labels:
+      app.kubernetes.io/component: "eirini-persi-set"
+      skiff-role-name: "eirini-persi-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-persi-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "broker"
+      port: 8999
+      protocol: "TCP"
+      targetPort: 0
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-persi"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-persi-eirini-persi-broker-set"
+    labels:
+      app.kubernetes.io/component: "eirini-persi-eirini-persi-broker-set"
+      skiff-role-name: "eirini-persi-eirini-persi-broker-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-persi-eirini-persi-broker-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "broker"
+      port: 8999
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-persi"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-persi-eirini-persi-broker"
+    labels:
+      app.kubernetes.io/component: "eirini-persi-eirini-persi-broker"
+      skiff-role-name: "eirini-persi-eirini-persi-broker"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-persi-eirini-persi-broker"
+      {{- end }}
+  spec:
+    ports:
+    - name: "broker"
+      port: 8999
+      protocol: "TCP"
+      targetPort: 8999
+    selector:
+      app.kubernetes.io/component: "eirini-persi"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-persi-eirini-persi-set"
+    labels:
+      app.kubernetes.io/component: "eirini-persi-eirini-persi-set"
+      skiff-role-name: "eirini-persi-eirini-persi-set"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-persi-eirini-persi-set"
+      {{- end }}
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      app.kubernetes.io/component: "eirini-persi"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "eirini-persi-eirini-persi"
+    labels:
+      app.kubernetes.io/component: "eirini-persi-eirini-persi"
+      skiff-role-name: "eirini-persi-eirini-persi"
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+      app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+      app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+      helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+      {{- if .Values.config.use_istio }}
+      app: "eirini-persi-eirini-persi"
+      {{- end }}
+  spec:
+    ports:
+    - name: "webhook"
+      port: 443
+      protocol: "TCP"
+      targetPort: 8443
+    selector:
+      app.kubernetes.io/component: "eirini-persi"
+kind: "List"
+{{- end }}
+---
+# The eirini-persi instance group contains the following jobs:
+#
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure SCF
+#
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# - patch-properties: Dummy BOSH job used to host parameters that are used in
+#   SCF patches for upstream bugs
+#
+# Also: bpm, eirini-persi-broker, and eirini-persi
+{{- if .Values.enable.eirini }}
+
+{{- if and (ne (typeOf .Values.sizing.eirini_persi.count) "<nil>") (gt (int .Values.sizing.eirini_persi.count) 1) }}
+_maxReplicas: {{ fail "eirini_persi cannot have more than 1 instances" }}
+{{- end }}
+
+{{- if and .Values.config.HA .Values.config.HA_strict (ne (typeOf .Values.sizing.eirini_persi.count) "<nil>") (lt (int .Values.sizing.eirini_persi.count) 1) }}
+_minHAReplicas: {{ fail "eirini_persi must have at least 1 instances for HA" }}
+{{- end }}
+
+{{- if and (ne (typeOf .Values.sizing.eirini_persi.count) "<nil>") (lt (int .Values.sizing.eirini_persi.count) 1) }}
+_minReplicas: {{ fail "eirini_persi must have at least 1 instances" }}
+{{- end }}
+
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: {{ if (.Capabilities.APIVersions.Has "apps/v1") }}apps/v1{{ else }}apps/v1beta1{{ end }}
+kind: "StatefulSet"
+metadata:
+  name: "eirini-persi"
+  labels:
+    app.kubernetes.io/component: "eirini-persi"
+    skiff-role-name: "eirini-persi"
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+    app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+
+    {{- if .Values.config.use_istio }}
+    app: "eirini-persi"
+    {{- end }}
+
+    {{- if .Values.config.use_istio }}
+    version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+    {{- end }}
+
+spec:
+  podManagementPolicy: "Parallel"
+  replicas: {{ if (ne (typeOf .Values.sizing.eirini_persi.count) "<nil>") }}{{ .Values.sizing.eirini_persi.count }}{{ else }}{{ if .Values.config.HA }}{{ 1 }}{{ else }}{{ 1 }}{{ end }}{{ end }}
+  selector:
+    matchLabels:
+      skiff-role-name: "eirini-persi"
+  serviceName: "eirini-persi-set"
+  template:
+    metadata:
+      name: "eirini-persi"
+      labels:
+        app.kubernetes.io/component: "eirini-persi"
+        skiff-role-name: "eirini-persi"
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
+        app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
+
+        {{- if .Values.config.use_istio }}
+        app: "eirini-persi"
+        {{- end }}
+
+        {{- if .Values.config.use_istio }}
+        version: {{ default .Chart.Version .Chart.AppVersion | quote }}
+        {{- end }}
+
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if .Values.config.use_istio }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
+    spec:
+      affinity:
+        {{- if .Values.sizing.eirini_persi.affinity.nodeAffinity }}
+        nodeAffinity: {{ toJson .Values.sizing.eirini_persi.affinity.nodeAffinity }}
+        {{- end }}
+      containers:
+      - env:
+        - name: "AZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
+        - name: "CATS_SUITES"
+          value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "EIRINI_KUBE_NAMESPACE"
+          value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if not .Values.secrets.EIRINI_PERSI_NFS_BROKER_PASSWORD }}
+        - name: "EIRINI_PERSI_NFS_BROKER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-persi-nfs-broker-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.EIRINI_PERSI_NFS_BROKER_PASSWORD }}
+        - name: "EIRINI_PERSI_NFS_BROKER_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-persi-nfs-broker-password"
+              name: "secrets"
+        {{- end }}
+
+        - name: "EIRINI_PERSI_PLANS"
+          value: {{if ne (typeOf .Values.env.EIRINI_PERSI_PLANS) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_PERSI_PLANS) (list "map" "slice")}}{{.Values.env.EIRINI_PERSI_PLANS | toJson | quote}}{{else}}{{.Values.env.EIRINI_PERSI_PLANS | quote}}{{end}}{{else}}""{{end}}
+        - name: "GARDEN_ROOTFS_DRIVER"
+          value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        {{- end }}
+
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_CONTAINER_NAME"
+          value: "eirini-persi"
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        {{- end }}
+
+        - name: "PZ_LABEL_NAME"
+          value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_HOST"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_HOST) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_HOST) (list "map" "slice")}}{{.Values.env.SCF_LOG_HOST | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_HOST | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_PORT"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PORT) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PORT) (list "map" "slice")}}{{.Values.env.SCF_LOG_PORT | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "SCF_LOG_PROTOCOL"
+          value: {{if ne (typeOf .Values.env.SCF_LOG_PROTOCOL) "<nil>"}}{{if has (kindOf .Values.env.SCF_LOG_PROTOCOL) (list "map" "slice")}}{{.Values.env.SCF_LOG_PROTOCOL | toJson | quote}}{{else}}{{.Values.env.SCF_LOG_PROTOCOL | quote}}{{end}}{{else}}{{fail "env.SCF_LOG_PROTOCOL has not been set"}}{{end}}
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secrets"
+        - name: "VCAP_HARD_NPROC"
+          value: {{ .Values.kube.limits.nproc.hard | quote }}
+        - name: "VCAP_SOFT_NPROC"
+          value: {{ .Values.kube.limits.nproc.soft | quote }}
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini-persi:9823f0071745ef36b2322863a74e3addd6a91fd8"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "eirini-persi"
+        ports:
+        - containerPort: 8999
+          name: "broker"
+          protocol: "TCP"
+        - containerPort: 8443
+          name: "webhook"
+          protocol: "TCP"
+        readinessProbe:
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+        resources:
+          requests:
+            {{- if and .Values.config.memory.requests .Values.sizing.eirini_persi.memory.request }}
+            memory: "{{ int .Values.sizing.eirini_persi.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.requests .Values.sizing.eirini_persi.cpu.request }}
+            cpu: "{{ int .Values.sizing.eirini_persi.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.config.memory.limits .Values.sizing.eirini_persi.memory.limit }}
+            memory: "{{ int .Values.sizing.eirini_persi.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.limits .Values.sizing.eirini_persi.cpu.limit }}
+            cpu: "{{ int .Values.sizing.eirini_persi.cpu.limit }}m"
+            {{- end }}
+
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - "ALL"
+          privileged: true
+        volumeMounts:
+        - mountPath: "/opt/fissile/config"
+          name: "deployment-manifest"
+          readOnly: true
+      dnsPolicy: "ClusterFirst"
+
+      {{- if ne .Values.kube.registry.username "" }}
+      imagePullSecrets:
+      - name: "registry-credentials"
+      {{- end }}
+
+      restartPolicy: "Always"
+
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "eirini"
+      {{- end }}
+
+      terminationGracePeriodSeconds: 600
+      volumes:
+      - name: "deployment-manifest"
+        secret:
+          secretName: "deployment-manifest"
+          items:
+          - key: "deployment-manifest"
+            path: "deployment-manifest.yml"
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
+{{- end }}
