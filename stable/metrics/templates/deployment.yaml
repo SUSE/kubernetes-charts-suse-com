@@ -21,7 +21,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.1.0-39adb67-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.1.1-2fa6cdf-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: nginx
         env:
@@ -48,7 +48,7 @@ spec:
   {{- if .Values.firehoseExporter.enabled }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.1.0-39adb67-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.1.1-2fa6cdf-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION
@@ -139,7 +139,7 @@ spec:
         helm.sh/chart: "{{ $helmChartName }}-{{ $helmChartVersion | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.1.0-39adb67-cap
+      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.1.1-2fa6cdf-cap
         imagePullPolicy: {{ $values.imagePullPolicy }}
         name: firehose-exporter
         env:

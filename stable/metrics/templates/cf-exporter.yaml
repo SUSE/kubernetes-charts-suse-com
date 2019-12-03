@@ -23,7 +23,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.1.0-39adb67-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.1.1-2fa6cdf-cap
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         name: cf-exporter
         env:
@@ -52,7 +52,7 @@ spec:
      {{- end }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.1.0-39adb67-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.1.1-2fa6cdf-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION
