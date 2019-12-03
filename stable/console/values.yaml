@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 2.6.0-41cbb1b1d-cap
+consoleVersion: 2.6.1-9e13f7b0c-cap
 dockerRegistrySecret: regsecret
 # Specify default DB password
 dbPassword: changeme

@@ -1,5 +1,9 @@
 ---
+{{- if semverCompare ">=1.16" (printf "%s.%s" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor)}}
+apiVersion: apps/v1
+{{- else }}
 apiVersion: apps/v1beta1
+{{- end }}
 kind: StatefulSet
 metadata:
   name: stratos
@@ -22,7 +26,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.6.0-41cbb1b1d-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.6.1-9e13f7b0c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -42,7 +46,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.6.0-41cbb1b1d-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.6.1-9e13f7b0c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -93,7 +97,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.6.0-41cbb1b1d-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.6.1-9e13f7b0c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -309,7 +313,11 @@ spec:
           name: {{ .Values.console.templatesConfigMapName }}
       {{- end }}
 ---
+{{- if semverCompare ">=1.16" (printf "%s.%s" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor)}}
+apiVersion: apps/v1
+{{- else }}
 apiVersion: extensions/v1beta1
+{{- end }}
 kind: Deployment
 metadata:
   name: stratos-db
@@ -336,7 +344,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.6.0-41cbb1b1d-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.6.1-9e13f7b0c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}
