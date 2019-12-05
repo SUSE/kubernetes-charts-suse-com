@@ -2,7 +2,7 @@ rbac:
   create: true
 
 podSecurityPolicy:
-  enabled: false
+  enabled: true
 
 imagePullSecrets:
 # - name: "image-pull-secret"
