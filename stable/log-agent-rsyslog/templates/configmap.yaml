@@ -524,9 +524,9 @@ data:
         constant(value="k8s.pod/")
         property(name="!kubernetes!namespace_name")
         constant(value="/")
-        property(name="!kubernetes!pod_name")
-        constant(value="/")
         property(name="!kubernetes!container_name")
+        constant(value="/")
+        property(name="!kubernetes!pod_name")
     }
 
     template(name="k8s_sd" type="list") {
