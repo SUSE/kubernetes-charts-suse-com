@@ -1,15 +1,20 @@
-# Grafana Helm Chart
+# SUSE release of Grafana Helm Chart
 
 **Note well:** this chart is a 1:1 copy of the upstream one. The only difference
 resides with the default values used at deployment time: a supported SLE
 images is being used.
+
+**Note for updates:** The upstream version is at
+[github helm repo](https://github.com/helm/charts/tree/master/stable/grafana)
+
+# Grafana Helm Chart
 
 * Installs the web dashboarding system [Grafana](http://grafana.org/)
 
 ## TL;DR;
 
 ```console
-$ helm install stable/grafana
+$ helm install suse/grafana
 ```
 
 ## Installing the Chart
@@ -17,7 +22,7 @@ $ helm install stable/grafana
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm install --name my-release stable/grafana
+$ helm install --name my-release suse/grafana
 ```
 
 ## Uninstalling the Chart
