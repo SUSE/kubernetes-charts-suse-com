@@ -1,15 +1,20 @@
-# Prometheus
+# SUSE release of Prometheus Helm Chart
 
 **Note well:** this chart is a 1:1 copy of the upstream one. The only difference
 resides with the default values used at deployment time: a supported SLE
 images is being used.
+
+**Note for updates:** The upstream version is at
+[github helm repo]https://github.com/helm/charts/tree/master/stable/prometheus
+
+# Prometheus
 
 [Prometheus](https://prometheus.io/), a [Cloud Native Computing Foundation](https://cncf.io/) project, is a systems and service monitoring system. It collects metrics from configured targets at given intervals, evaluates rule expressions, displays the results, and can trigger alerts if some condition is observed to be true.
 
 ## TL;DR;
 
 ```console
-$ helm install stable/prometheus
+$ helm install suse/prometheus
 ```
 
 ## Introduction
@@ -25,7 +30,7 @@ This chart bootstraps a [Prometheus](https://prometheus.io/) deployment on a [Ku
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm install --name my-release stable/prometheus
+$ helm install --name my-release suse/prometheus
 ```
 
 The command deploys Prometheus on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
@@ -333,14 +338,14 @@ Parameter | Description | Default
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
-$ helm install stable/prometheus --name my-release \
+$ helm install suse/prometheus --name my-release \
     --set server.terminationGracePeriodSeconds=360
 ```
 
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install stable/prometheus --name my-release -f values.yaml
+$ helm install suse/prometheus --name my-release -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
@@ -367,7 +372,7 @@ serverFiles:
 ```
 
 ```console
-$ helm install stable/prometheus --name my-release -f values.yaml -f service1-alert.yaml -f service2-alert.yaml
+$ helm install suse/prometheus --name my-release -f values.yaml -f service1-alert.yaml -f service2-alert.yaml
 ```
 
 ### RBAC Configuration
