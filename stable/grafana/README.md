@@ -25,13 +25,6 @@ To install the chart with the release name `my-release`:
 $ helm install --name my-release suse/grafana
 ```
 
-Or with Helm v3:
-
-```console
-$ helm install my-release suse/grafana
-```
-
-
 ## Uninstalling the Chart
 
 To uninstall/delete the my-release deployment:
