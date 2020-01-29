@@ -859,8 +859,8 @@ pushgateway:
   ## pushgateway container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/pushgateway
-    tag: v0.8.0
+    repository: registry.suse.com/caasp/v4/prometheus-pushgateway
+    tag: "0.6.0"
     pullPolicy: IfNotPresent
 
   ## pushgateway priorityClassName
