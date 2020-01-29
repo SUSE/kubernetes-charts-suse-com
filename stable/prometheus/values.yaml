@@ -323,7 +323,7 @@ kubeStateMetrics:
   ##
   image:
     repository: registry.suse.com/caasp/v4/kube-state-metrics
-    tag: "1.6.0"
+    tag: "1.9.3"
     pullPolicy: IfNotPresent
 
   ## kube-state-metrics priorityClassName
