@@ -23,6 +23,7 @@ spec:
   hostNetwork: false
   hostIPC: false
   hostPID: false
+  {{- if (semverCompare ">=0.15.1" .Values.controller.image.tag) }}
   runAsUser:
     # Require the container to run without root privileges.
     rule: 'MustRunAsNonRoot'
@@ -38,6 +39,14 @@ spec:
       # Forbid adding the root group.
       - min: 1
         max: 65535
+  {{- else }}
+  runAsUser:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  {{- end }}
   readOnlyRootFilesystem: false
   seLinux:
     rule: 'RunAsAny'
