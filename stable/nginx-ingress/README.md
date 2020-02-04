@@ -1,9 +1,13 @@
-# nginx-ingress
+# SUSE release of nginx-ingress
 
 **Note well:** this chart is a 1:1 copy of the upstream one. The only difference
 resides with the default values used at deployment time: a supported SLE
 images is being used.
 
+**Note for update:** The upstream version is at
+[github helm repo](https://github.com/helm/charts/tree/master/stable/nginx-ingress)
+
+# nginx-ingress
 
 [nginx-ingress](https://github.com/kubernetes/ingress-nginx) is an Ingress controller that uses ConfigMap to store the nginx configuration.
 
@@ -12,7 +16,7 @@ To use, add the `kubernetes.io/ingress.class: nginx` annotation to your Ingress 
 ## TL;DR;
 
 ```console
-$ helm install stable/nginx-ingress
+$ helm install suse/nginx-ingress
 ```
 
 ## Introduction
@@ -27,7 +31,7 @@ This chart bootstraps an nginx-ingress deployment on a [Kubernetes](http://kuber
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm install --name my-release stable/nginx-ingress
+$ helm install --name my-release suse/nginx-ingress
 ```
 
 The command deploys nginx-ingress on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
@@ -163,21 +167,21 @@ Parameter | Description | Default
 `udp` | UDP service key:value pairs | `{}`
 
 ```console
-$ helm install stable/nginx-ingress --name my-release \
+$ helm install suse/nginx-ingress --name my-release \
     --set controller.stats.enabled=true
 ```
 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install stable/nginx-ingress --name my-release -f values.yaml
+$ helm install suse/nginx-ingress --name my-release -f values.yaml
 ```
 
 A useful trick to debug issues with ingress is to increase the logLevel
 as described [here](https://github.com/kubernetes/ingress-nginx/blob/master/docs/troubleshooting.md#debug)
 
 ```console
-$ helm install stable/nginx-ingress --set controller.extraArgs.v=2
+$ helm install suse/nginx-ingress --set controller.extraArgs.v=2
 ```
 
 ## PodDisruptionBudget
@@ -189,7 +193,7 @@ else it would make it impossible to evacuate a node. See [gh issue #7127](https:
 The Nginx ingress controller can export Prometheus metrics. In order for this to work, the VTS dashboard must be enabled as well.
 
 ```console
-$ helm install stable/nginx-ingress --name my-release \
+$ helm install suse/nginx-ingress --name my-release \
     --set controller.stats.enabled=true \
     --set controller.metrics.enabled=true
 ```

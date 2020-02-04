@@ -11,7 +11,7 @@ This chart deploys log-agent-rsyslog to all the nodes in your cluster via Daemon
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm install --name my-release stable/log-agent-rsyslog
+$ helm install --name my-release suse/log-agent-rsyslog
 ```
 
 After a few minutes, you should see service statuses being written to the configured output.
@@ -67,7 +67,7 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 ```bash
 $ helm install --name my-release \
                --set queue.enabled=true \
-               stable/log-agent-rsyslog
+               suse/log-agent-rsyslog
 ```
 
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
@@ -75,7 +75,7 @@ Alternatively, a YAML file that specifies the values for the parameters can be p
 ```bash
 $ helm install --name my-release \
                --values stable/log-agent-rsyslog/ci/values.yaml \
-               stable/log-agent-rsyslog
+               suse/log-agent-rsyslog
 ```
 
 ## Testing
