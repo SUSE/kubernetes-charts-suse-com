@@ -26,7 +26,7 @@ spec:
         component: stratos
     spec:
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.6.1-9e13f7b0c-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:2.7.0-35f5964bd-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         env:
@@ -46,7 +46,7 @@ spec:
         - containerPort: 443
           name: https
           protocol: TCP
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.6.1-9e13f7b0c-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.postflight}}:2.7.0-35f5964bd-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: "postflight"
         env:
@@ -97,7 +97,7 @@ spec:
             name: "{{ .Release.Name }}-upgrade-volume"
           - mountPath: /etc/secrets/
             name: "{{ .Release.Name }}-secret"
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.6.1-9e13f7b0c-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:2.7.0-35f5964bd-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
@@ -123,6 +123,8 @@ spec:
           value: "30"
         - name: HTTP_CLIENT_TIMEOUT_MUTATING_IN_SECS
           value: "120"
+        - name: HTTP_CLIENT_TIMEOUT_LONGRUNNING_IN_SECS
+          value: "600"
         - name: SKIP_TLS_VERIFICATION
           value: "false"
         - name: CONSOLE_PROXY_TLS_ADDRESS
@@ -328,6 +330,12 @@ metadata:
     app.kubernetes.io/component: "stratos-db"
     helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: "stratos"
@@ -344,7 +352,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.6.1-9e13f7b0c-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:2.7.0-35f5964bd-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         {{- if .Values.mariadb.usePassword }}
