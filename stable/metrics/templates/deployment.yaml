@@ -1,6 +1,10 @@
 {{ $firehoseClientSecret :=  default (randAlphaNum 64) .Values.firehoseExporter.uaa.clientSecret }}
 ---
+{{- if semverCompare ">=1.16" (printf "%s.%s" .Capabilities.KubeVersion.Major (trimSuffix "+" .Capabilities.KubeVersion.Minor) )}}
+apiVersion: apps/v1
+{{- else }}
 apiVersion: apps/v1beta1
+{{- end }}
 kind: Deployment
 metadata:
   name: "{{ .Release.Name }}-nginx"
@@ -21,7 +25,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.1.1-2fa6cdf-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.1.2-85daaa2-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: nginx
         env:
@@ -48,7 +52,7 @@ spec:
   {{- if .Values.firehoseExporter.enabled }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.1.1-2fa6cdf-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.1.2-85daaa2-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION
@@ -115,10 +119,15 @@ spec:
 {{ $helmChartVersion :=  .Chart.Version }}
 {{ $values :=  .Values }}
 {{ $dot := . }}
+{{ $caps := .Capabilities }}
   {{- range int .Values.firehoseExporter.instances | until }}
 
 ---
+{{- if semverCompare ">=1.16" (printf "%s.%s" $caps.KubeVersion.Major (trimSuffix "+" $caps.KubeVersion.Minor) )}}
+apiVersion: apps/v1
+{{- else }}
 apiVersion: apps/v1beta1
+{{- end }}
 kind: Deployment
 metadata:
   name: "{{ $releaseName }}-firehose-exporters-{{ . }}"
@@ -139,7 +148,7 @@ spec:
         helm.sh/chart: "{{ $helmChartName }}-{{ $helmChartVersion | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.1.1-2fa6cdf-cap
+      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.1.2-85daaa2-cap
         imagePullPolicy: {{ $values.imagePullPolicy }}
         name: firehose-exporter
         env:

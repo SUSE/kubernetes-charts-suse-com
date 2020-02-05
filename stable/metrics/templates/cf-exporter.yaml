@@ -2,7 +2,11 @@
 {{- if .Values.cfExporter.enabled }}
 {{ $cfExporterClientSecret :=  default (randAlphaNum 64) .Values.cfExporter.uaa.clientSecret }}
 ---
+{{- if semverCompare ">=1.16" (printf "%s.%s" .Capabilities.KubeVersion.Major (trimSuffix "+" .Capabilities.KubeVersion.Minor) )}}
+apiVersion: apps/v1
+{{- else }}
 apiVersion: apps/v1beta1
+{{- end }}
 kind: Deployment
 metadata:
   name: "{{ .Release.Name }}-cf-exporter"
@@ -23,7 +27,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.1.1-2fa6cdf-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.1.2-85daaa2-cap
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         name: cf-exporter
         env:
@@ -52,7 +56,7 @@ spec:
      {{- end }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.1.1-2fa6cdf-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.1.2-85daaa2-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION
