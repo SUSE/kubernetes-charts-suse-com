@@ -2,7 +2,7 @@
 dockerRepository: registry.suse.com
 dockerOrganization: cap
 dockerRegistrySecret: regsecret
-imageTag: 1.1.1-2fa6cdf-cap
+imageTag: 1.1.2-85daaa2-cap
 imagePullPolicy: IfNotPresent
 
 metrics:
@@ -146,27 +146,27 @@ prometheus:
   configmapReload:
     image:
       repository: registry.suse.com/cap/stratos-metrics-configmap-reload
-      tag: 1.1.1-2fa6cdf-cap
+      tag: 1.1.2-85daaa2-cap
   initChownData:
     image:
       repository: registry.suse.com/cap/stratos-metrics-init-chown-data
-      tag: 1.1.1-2fa6cdf-cap
+      tag: 1.1.2-85daaa2-cap
   kubeStateMetrics:
     enabled: false
     image:
       repository: registry.suse.com/cap/stratos-metrics-kube-state-metrics
-      tag: 1.1.1-2fa6cdf-cap
+      tag: 1.1.2-85daaa2-cap
   nodeExporter:    
     enabled: false
     image:
       repository: registry.suse.com/cap/stratos-metrics-node-exporter
-      tag: 1.1.1-2fa6cdf-cap
+      tag: 1.1.2-85daaa2-cap
   server:
     name: prometheus
     configMapOverrideName: stratos-metrics-config
     image:
       repository: registry.suse.com/cap/stratos-metrics-prometheus
-      tag: 1.1.1-2fa6cdf-cap
+      tag: 1.1.2-85daaa2-cap
     replicaCount: 1
     service:
       servicePort: 9090
