@@ -1,17 +1,17 @@
 ---
-# Service account "eirini" is used by the following instance groups:
-# - configure-eirini
-# - eirini
-# - eirini-persi
-# - eirini-ssh
+# Service account "active-passive" is used by the following instance groups:
+# - diego-api
+# - diego-brain
+# - mysql-proxy
+# - routing-api
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "v1"
 kind: "ServiceAccount"
 metadata:
-  name: "eirini"
+  name: "active-passive"
   labels:
-    app.kubernetes.io/component: "eirini"
-    skiff-role-name: "eirini"
+    app.kubernetes.io/component: "active-passive"
+    skiff-role-name: "active-passive"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -19,15 +19,15 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 {{- end }}
 ---
-# Role "services" only used by account "[- eirini]"
+# Role "active-passive" only used by account "[- active-passive]"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "rbac.authorization.k8s.io/v1"
 kind: "Role"
 metadata:
-  name: "services"
+  name: "active-passive"
   labels:
-    app.kubernetes.io/component: "services"
-    skiff-role-name: "services"
+    app.kubernetes.io/component: "active-passive"
+    skiff-role-name: "active-passive"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -37,20 +37,28 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - "pods"
+  verbs:
+  - "patch"
+- apiGroups:
+  - ""
+  resources:
   - "services"
   verbs:
   - "get"
+  - "list"
+  - "patch"
 {{- end }}
 ---
-# Role binding for service account "eirini" and role "services"
+# Role binding for service account "active-passive" and role "active-passive"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "rbac.authorization.k8s.io/v1"
 kind: "RoleBinding"
 metadata:
-  name: "eirini-services-binding"
+  name: "active-passive-active-passive-binding"
   labels:
-    app.kubernetes.io/component: "eirini-services-binding"
-    skiff-role-name: "eirini-services-binding"
+    app.kubernetes.io/component: "active-passive-active-passive-binding"
+    skiff-role-name: "active-passive-active-passive-binding"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -58,22 +66,22 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 subjects:
 - kind: "ServiceAccount"
-  name: "eirini"
+  name: "active-passive"
 roleRef:
   apiGroup: "rbac.authorization.k8s.io"
   kind: "Role"
-  name: "services"
+  name: "active-passive"
 {{- end }}
 ---
-# Role binding for service account "eirini" and role "psp"
+# Role binding for service account "active-passive" and role "psp"
 {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
 apiVersion: "rbac.authorization.k8s.io/v1"
 kind: "RoleBinding"
 metadata:
-  name: "eirini-psp-binding"
+  name: "active-passive-psp-binding"
   labels:
-    app.kubernetes.io/component: "eirini-psp-binding"
-    skiff-role-name: "eirini-psp-binding"
+    app.kubernetes.io/component: "active-passive-psp-binding"
+    skiff-role-name: "active-passive-psp-binding"
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/name: {{ default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -81,7 +89,7 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" .Chart.Name (.Chart.Version | replace "+" "_") | quote }}
 subjects:
 - kind: "ServiceAccount"
-  name: "eirini"
+  name: "active-passive"
 roleRef:
   apiGroup: "rbac.authorization.k8s.io"
   kind: "Role"
