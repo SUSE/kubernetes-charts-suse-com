@@ -180,6 +180,7 @@ spec:
         nodeAffinity: {{ toJson .Values.sizing.eirini.affinity.nodeAffinity }}
         {{- end }}
       containers:
+      {{- if .Values.enable.eirini }}
       - env:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
@@ -202,6 +203,14 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.CC_SERVER_CRT_KEY }}
+        - name: "CC_SERVER_CRT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         {{- if .Values.secrets.CC_SERVER_CRT_KEY }}
         - name: "CC_SERVER_CRT_KEY"
           valueFrom:
@@ -210,13 +219,13 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.CC_SERVER_CRT_KEY }}
-        - name: "CC_SERVER_CRT_KEY"
+        - name: "CONFIGGIN_SA_TOKEN"
           valueFrom:
             secretKeyRef:
-              key: "cc-server-crt-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
 
         {{- if not .Values.secrets.DOPPLER_CERT }}
         - name: "DOPPLER_CERT"
@@ -234,20 +243,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.DOPPLER_CERT_KEY }}
-        - name: "DOPPLER_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "doppler-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.DOPPLER_CERT_KEY }}
         - name: "DOPPLER_CERT_KEY"
           valueFrom:
             secretKeyRef:
               key: "doppler-cert-key"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.DOPPLER_CERT_KEY }}
+        - name: "DOPPLER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "doppler-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "EIRINI_DOWNLOADER_IMAGE"
@@ -259,14 +268,6 @@ spec:
         - name: "EIRINI_KUBE_NAMESPACE"
           value: {{if ne (typeOf .Values.env.EIRINI_KUBE_NAMESPACE) "<nil>"}}{{if has (kindOf .Values.env.EIRINI_KUBE_NAMESPACE) (list "map" "slice")}}{{.Values.env.EIRINI_KUBE_NAMESPACE | toJson | quote}}{{else}}{{.Values.env.EIRINI_KUBE_NAMESPACE | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if not .Values.secrets.EIRINI_REGISTRY_PASSWORD }}
-        - name: "EIRINI_REGISTRY_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "eirini-registry-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.EIRINI_REGISTRY_PASSWORD }}
         - name: "EIRINI_REGISTRY_PASSWORD"
           valueFrom:
@@ -275,16 +276,16 @@ spec:
               name: "secrets"
         {{- end }}
 
-        - name: "EIRINI_REGISTRY_USERNAME"
-          value: "admin"
-
-        {{- if not .Values.secrets.EIRINI_SERVER_CERT }}
-        - name: "EIRINI_SERVER_CERT"
+        {{- if not .Values.secrets.EIRINI_REGISTRY_PASSWORD }}
+        - name: "EIRINI_REGISTRY_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "eirini-server-cert"
+              key: "eirini-registry-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
+
+        - name: "EIRINI_REGISTRY_USERNAME"
+          value: "admin"
 
         {{- if .Values.secrets.EIRINI_SERVER_CERT }}
         - name: "EIRINI_SERVER_CERT"
@@ -294,11 +295,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.EIRINI_SERVER_CERT_KEY }}
-        - name: "EIRINI_SERVER_CERT_KEY"
+        {{- if not .Values.secrets.EIRINI_SERVER_CERT }}
+        - name: "EIRINI_SERVER_CERT"
           valueFrom:
             secretKeyRef:
-              key: "eirini-server-cert-key"
+              key: "eirini-server-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -310,18 +311,18 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.EIRINI_SERVER_CERT_KEY }}
+        - name: "EIRINI_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "EIRINI_UPLOADER_IMAGE"
           value: {{if ne (typeOf .Values.env.EIRINI_UPLOADER_IMAGE) "<nil>"}}{{if contains "/" .Values.env.EIRINI_UPLOADER_IMAGE}}{{.Values.env.EIRINI_UPLOADER_IMAGE | quote}}{{else}}{{print .Values.kube.registry.hostname "/" .Values.kube.organization "/" .Values.env.EIRINI_UPLOADER_IMAGE | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
@@ -329,6 +330,14 @@ spec:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
@@ -390,20 +399,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.NATS_PASSWORD }}
-        - name: "NATS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "nats-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.NATS_PASSWORD }}
         - name: "NATS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "nats-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.NATS_PASSWORD }}
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -423,7 +432,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini:10a80a85bff50e0c9c9834a15a72c1a3ce66ea7f"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-eirini:155759633d709645f18b2e3cdced9183d0f0169f"
         lifecycle:
           preStop:
             exec:
@@ -468,6 +477,7 @@ spec:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}

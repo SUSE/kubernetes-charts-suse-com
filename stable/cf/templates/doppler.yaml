@@ -194,8 +194,8 @@ kind: "List"
 #
 # - route_registrar: Used for registering routes
 #
-# Also: log-cache-gateway, log-cache-nozzle, log-cache-cf-auth-proxy,
-# log-cache-expvar-forwarder, log-cache, doppler, and bpm
+# Also: log-cache-gateway, log-cache-nozzle, log-cache-cf-auth-proxy, log-cache,
+# doppler, and bpm
 
 {{- if and (ne (typeOf .Values.sizing.doppler.count) "<nil>") (gt (int .Values.sizing.doppler.count) 65535) }}
 _maxReplicas: {{ fail "doppler cannot have more than 65535 instances" }}
@@ -293,7 +293,7 @@ spec:
                   operator: "In"
                   values:
                   - "doppler"
-              topologyKey: "beta.kubernetes.io/os"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
             weight: 100
         {{- if .Values.sizing.doppler.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.doppler.affinity.nodeAffinity }}
@@ -304,16 +304,25 @@ spec:
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-        - name: "DOMAIN"
-          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
-
-        {{- if not .Values.secrets.DOPPLER_CERT }}
-        - name: "DOPPLER_CERT"
+        - name: "CONFIGGIN_IMPORT_API_GROUP"
           valueFrom:
             secretKeyRef:
-              key: "doppler-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
+              name: "api-group"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "CONFIGGIN_IMPORT_ROUTING_API"
+          valueFrom:
+            secretKeyRef:
+              name: "routing-api"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "DOMAIN"
+          value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
 
         {{- if .Values.secrets.DOPPLER_CERT }}
         - name: "DOPPLER_CERT"
@@ -321,6 +330,14 @@ spec:
             secretKeyRef:
               key: "doppler-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.DOPPLER_CERT }}
+        - name: "DOPPLER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "doppler-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.DOPPLER_CERT_KEY }}
@@ -342,20 +359,20 @@ spec:
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
-        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
-        - name: "INTERNAL_CA_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-ca-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.INTERNAL_CA_CERT }}
         - name: "INTERNAL_CA_CERT"
           valueFrom:
             secretKeyRef:
               key: "internal-ca-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.INTERNAL_CA_CERT }}
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "KUBERNETES_CLUSTER_DOMAIN"
@@ -366,16 +383,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SIZING_NATS_COUNT"
-          value: {{ if (ne (typeOf .Values.sizing.nats.count) "<nil>") }}{{ .Values.sizing.nats.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 2 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
-
-        {{- if not .Values.secrets.LOG_CACHE_CERT }}
-        - name: "LOG_CACHE_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "log-cache-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
 
         {{- if .Values.secrets.LOG_CACHE_CERT }}
         - name: "LOG_CACHE_CERT"
@@ -385,11 +392,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOG_CACHE_CERT_KEY }}
-        - name: "LOG_CACHE_CERT_KEY"
+        {{- if not .Values.secrets.LOG_CACHE_CERT }}
+        - name: "LOG_CACHE_CERT"
           valueFrom:
             secretKeyRef:
-              key: "log-cache-cert-key"
+              key: "log-cache-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -401,11 +408,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOG_CACHE_CF_AUTH_PROXY_EXTERNAL_CERT }}
-        - name: "LOG_CACHE_CF_AUTH_PROXY_EXTERNAL_CERT"
+        {{- if not .Values.secrets.LOG_CACHE_CERT_KEY }}
+        - name: "LOG_CACHE_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "log-cache-cf-auth-proxy-external-cert"
+              key: "log-cache-cert-key"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -415,6 +422,14 @@ spec:
             secretKeyRef:
               key: "log-cache-cf-auth-proxy-external-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOG_CACHE_CF_AUTH_PROXY_EXTERNAL_CERT }}
+        - name: "LOG_CACHE_CF_AUTH_PROXY_EXTERNAL_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "log-cache-cf-auth-proxy-external-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.LOG_CACHE_CF_AUTH_PROXY_EXTERNAL_CERT_KEY }}
@@ -433,35 +448,67 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT }}
-        - name: "LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT"
+        {{- if .Values.secrets.LOG_CACHE_GATEWAY_PROXY_CERT }}
+        - name: "LOG_CACHE_GATEWAY_PROXY_CERT"
           valueFrom:
             secretKeyRef:
-              key: "log-cache-to-loggregator-agent-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT }}
-        - name: "LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "log-cache-to-loggregator-agent-cert"
+              key: "log-cache-gateway-proxy-cert"
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT_KEY"
+        {{- if not .Values.secrets.LOG_CACHE_GATEWAY_PROXY_CERT }}
+        - name: "LOG_CACHE_GATEWAY_PROXY_CERT"
           valueFrom:
             secretKeyRef:
-              key: "log-cache-to-loggregator-agent-cert-key"
+              key: "log-cache-gateway-proxy-cert"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT_KEY }}
-        - name: "LOG_CACHE_TO_LOGGREGATOR_AGENT_CERT_KEY"
+        {{- if .Values.secrets.LOG_CACHE_GATEWAY_PROXY_CERT_KEY }}
+        - name: "LOG_CACHE_GATEWAY_PROXY_CERT_KEY"
           valueFrom:
             secretKeyRef:
-              key: "log-cache-to-loggregator-agent-cert-key"
+              key: "log-cache-gateway-proxy-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.LOG_CACHE_GATEWAY_PROXY_CERT_KEY }}
+        - name: "LOG_CACHE_GATEWAY_PROXY_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "log-cache-gateway-proxy-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.METRICS_CERT }}
+        - name: "METRICS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metrics-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRICS_CERT }}
+        - name: "METRICS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metrics-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.METRICS_CERT_KEY }}
+        - name: "METRICS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metrics-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.METRICS_CERT_KEY }}
+        - name: "METRICS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metrics-cert-key"
               name: "secrets"
         {{- end }}
 
@@ -511,20 +558,20 @@ spec:
               key: "uaa-ca-cert"
               name: "secrets"
 
-        {{- if not .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
-        - name: "UAA_CLIENTS_DOPPLER_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-doppler-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
         - name: "UAA_CLIENTS_DOPPLER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-doppler-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
+        - name: "UAA_CLIENTS_DOPPLER_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-doppler-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -535,7 +582,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-doppler:e6c247b03262c9cf2e0b9096328068b8c7a114ad"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-doppler:da14867a9ba02904e7986db10b6fb70ad1b6eab5"
         lifecycle:
           preStop:
             exec:
@@ -601,6 +648,18 @@ spec:
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "CONFIGGIN_IMPORT_DOPPLER"
+          valueFrom:
+            secretKeyRef:
+              name: "doppler"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -663,38 +722,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
-        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
-        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -711,6 +738,70 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "PZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_HOST"
@@ -723,7 +814,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:98a13dd53091f3cfc60126204d00aa5033ea7e1f"
         lifecycle:
           preStop:
             exec:

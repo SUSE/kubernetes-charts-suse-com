@@ -209,18 +209,35 @@ spec:
                 - key: "app.kubernetes.io/component"
                   operator: "In"
                   values:
-                  - "mysql"
-              topologyKey: "beta.kubernetes.io/os"
+                  - "mysql-proxy"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
             weight: 100
         {{- if .Values.sizing.mysql_proxy.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.mysql_proxy.affinity.nodeAffinity }}
         {{- end }}
       containers:
+      {{- if .Values.enable.mysql }}
       - env:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+
+        {{- if .Values.enable.mysql }}
+        - name: "CONFIGGIN_IMPORT_MYSQL"
+          valueFrom:
+            secretKeyRef:
+              name: "mysql"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        {{- end }}
+
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -248,8 +265,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: "metadata.namespace"
-        - name: "KUBE_SIZING_MYSQL_COUNT"
-          value: {{ if (ne (typeOf .Values.sizing.mysql.count) "<nil>") }}{{ .Values.sizing.mysql.count | quote }}{{ else }}{{ if .Values.config.HA }}{{ 3 | quote }}{{ else }}{{ 1 | quote }}{{ end }}{{ end }}
 
         {{- if not .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
@@ -267,20 +282,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
-        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-proxy-admin-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
         - name: "MYSQL_PROXY_ADMIN_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-proxy-admin-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_PROXY_ADMIN_PASSWORD }}
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
+              name: "secrets"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -295,7 +310,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:f33ea205fa1fa6a7a13df76044a868fc8d42739e"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql-proxy:3e3d60899c81a9736cb4f36db2d73a8c5a8cc4b7"
         lifecycle:
           preStop:
             exec:
@@ -349,6 +364,7 @@ spec:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}
@@ -359,7 +375,7 @@ spec:
       restartPolicy: "Always"
 
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
-      serviceAccountName: "default"
+      serviceAccountName: "active-passive"
       {{- end }}
 
       terminationGracePeriodSeconds: 600

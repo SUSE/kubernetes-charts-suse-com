@@ -182,19 +182,29 @@ spec:
                   operator: "In"
                   values:
                   - "nfs-broker"
-              topologyKey: "beta.kubernetes.io/os"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
             weight: 100
         {{- if .Values.sizing.nfs_broker.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.nfs_broker.affinity.nodeAffinity }}
         {{- end }}
       containers:
+      {{- if not .Values.enable.eirini }}
       - env:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "DB_EXTERNAL_HOST"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_USER_HOST_SUFFIX"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | quote}}{{end}}{{else}}""{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -293,7 +303,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:588d26066ac6bb405c4f7fc7e1bc36ee2165c5cd"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-nfs-broker:fdbf98742036fd626f96fa27539b90bf43845fe3"
         lifecycle:
           preStop:
             exec:
@@ -335,6 +345,7 @@ spec:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}

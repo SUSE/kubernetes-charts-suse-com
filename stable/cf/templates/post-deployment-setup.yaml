@@ -52,20 +52,20 @@ spec:
     spec:
       containers:
       - env:
-        {{- if .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
-        - name: "AUTOSCALER_UAA_CLIENT_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "autoscaler-uaa-client-secret"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
         - name: "AUTOSCALER_UAA_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "autoscaler-uaa-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.AUTOSCALER_UAA_CLIENT_SECRET }}
+        - name: "AUTOSCALER_UAA_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "autoscaler-uaa-client-secret"
+              name: "secrets"
         {{- end }}
 
         - name: "AZ_LABEL_NAME"
@@ -79,6 +79,11 @@ spec:
             secretKeyRef:
               key: "cluster-admin-password"
               name: "secrets"
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
         - name: "DB_EXTERNAL_DRIVER"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_DRIVER) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_DRIVER | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_DRIVER | quote}}{{end}}{{else}}""{{end}}
         - name: "DB_EXTERNAL_HOST"
@@ -94,6 +99,8 @@ spec:
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_SSL_MODE) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_SSL_MODE) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_SSL_MODE | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_SSL_MODE | quote}}{{end}}{{else}}""{{end}}
         - name: "DB_EXTERNAL_USER"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_USER) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_USER) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_USER | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_USER | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_USER_HOST_SUFFIX"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | quote}}{{end}}{{else}}""{{end}}
 
         {{- if not .Values.secrets.EIRINI_PERSI_NFS_BROKER_PASSWORD }}
         - name: "EIRINI_PERSI_NFS_BROKER_PASSWORD"
@@ -165,20 +172,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
-        - name: "MYSQL_CCDB_ROLE_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-ccdb-role-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
         - name: "MYSQL_CCDB_ROLE_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_CF_USB_PASSWORD }}
@@ -213,14 +220,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
@@ -229,11 +228,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
-        - name: "MYSQL_DIEGO_PASSWORD"
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-diego-password"
+              key: "mysql-diego-locket-password"
               name: "secrets"
         {{- end }}
 
@@ -243,6 +242,14 @@ spec:
             secretKeyRef:
               key: "mysql-diego-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_PASSWORD }}
+        - name: "MYSQL_DIEGO_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-password"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
@@ -364,14 +371,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cc-service-key-client-secret"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
         - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
           valueFrom:
@@ -380,11 +379,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET"
+        {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-cf-smoke-tests-client-secret"
+              key: "uaa-clients-cc-service-key-client-secret"
               name: "secrets"
         {{- end }}
 
@@ -394,6 +393,14 @@ spec:
             secretKeyRef:
               key: "uaa-clients-cf-smoke-tests-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CF_SMOKE_TESTS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cf-smoke-tests-client-secret"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
@@ -428,14 +435,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CREDHUB_USER_CLI_SECRET }}
-        - name: "UAA_CLIENTS_CREDHUB_USER_CLI_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-credhub-user-cli-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_CREDHUB_USER_CLI_SECRET }}
         - name: "UAA_CLIENTS_CREDHUB_USER_CLI_SECRET"
           valueFrom:
@@ -444,12 +443,12 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET }}
-        - name: "UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_CREDHUB_USER_CLI_SECRET }}
+        - name: "UAA_CLIENTS_CREDHUB_USER_CLI_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-diego-ssh-proxy-secret"
-              name: "secrets"
+              key: "uaa-clients-credhub-user-cli-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET }}
@@ -460,11 +459,11 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
-        - name: "UAA_CLIENTS_DOPPLER_SECRET"
+        {{- if .Values.secrets.UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET }}
+        - name: "UAA_CLIENTS_DIEGO_SSH_PROXY_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-doppler-secret"
+              key: "uaa-clients-diego-ssh-proxy-secret"
               name: "secrets"
         {{- end }}
 
@@ -474,6 +473,14 @@ spec:
             secretKeyRef:
               key: "uaa-clients-doppler-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
+        - name: "UAA_CLIENTS_DOPPLER_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-doppler-secret"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_GOROUTER_SECRET }}
@@ -540,20 +547,20 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_TCP_ROUTER_SECRET }}
-        - name: "UAA_CLIENTS_TCP_ROUTER_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-tcp-router-secret"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.UAA_CLIENTS_TCP_ROUTER_SECRET }}
         - name: "UAA_CLIENTS_TCP_ROUTER_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-tcp-router-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_TCP_ROUTER_SECRET }}
+        - name: "UAA_CLIENTS_TCP_ROUTER_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-tcp-router-secret"
+              name: "secrets"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -564,7 +571,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:156bc6f3fadc9ceb3df23c47baa77178a48fae7d"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-post-deployment-setup:4d437fbe87dae722cfc235f75cc4f7774b335330"
         lifecycle:
           preStop:
             exec:

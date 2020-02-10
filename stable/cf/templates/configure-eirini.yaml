@@ -40,6 +40,7 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
       containers:
+      {{- if .Values.enable.eirini }}
       - env:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
@@ -110,13 +111,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.EIRINI_CLIENT_CRT }}
-        - name: "EIRINI_CLIENT_CRT"
+        - name: "CONFIGGIN_SA_TOKEN"
           valueFrom:
             secretKeyRef:
-              key: "eirini-client-crt"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
+              name: "configgin"
+              key: "token"
 
         {{- if .Values.secrets.EIRINI_CLIENT_CRT }}
         - name: "EIRINI_CLIENT_CRT"
@@ -124,6 +123,14 @@ spec:
             secretKeyRef:
               key: "eirini-client-crt"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.EIRINI_CLIENT_CRT }}
+        - name: "EIRINI_CLIENT_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "eirini-client-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.EIRINI_CLIENT_CRT_KEY }}
@@ -185,7 +192,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-configure-eirini:8b848eeb6fa2af1571584e463402428f76b26a10"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-configure-eirini:16243b323f8a90221d32c9fd1e40dea521dc2487"
         lifecycle:
           preStop:
             exec:
@@ -220,6 +227,7 @@ spec:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}

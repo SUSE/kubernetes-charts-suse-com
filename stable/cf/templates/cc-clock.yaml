@@ -111,7 +111,7 @@ spec:
                   operator: "In"
                   values:
                   - "cc-clock"
-              topologyKey: "beta.kubernetes.io/os"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
             weight: 100
         {{- if .Values.sizing.cc_clock.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.cc_clock.affinity.nodeAffinity }}
@@ -149,20 +149,20 @@ spec:
               key: "cc-db-encryption-keys"
               name: "secrets"
 
-        {{- if not .Values.secrets.CC_SERVER_CRT }}
-        - name: "CC_SERVER_CRT"
-          valueFrom:
-            secretKeyRef:
-              key: "cc-server-crt"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.CC_SERVER_CRT }}
         - name: "CC_SERVER_CRT"
           valueFrom:
             secretKeyRef:
               key: "cc-server-crt"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.CC_SERVER_CRT }}
+        - name: "CC_SERVER_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.CC_SERVER_CRT_KEY }}
@@ -183,6 +183,27 @@ spec:
 
         - name: "CDN_URI"
           value: {{if ne (typeOf .Values.env.CDN_URI) "<nil>"}}{{if has (kindOf .Values.env.CDN_URI) (list "map" "slice")}}{{.Values.env.CDN_URI | toJson | quote}}{{else}}{{.Values.env.CDN_URI | quote}}{{end}}{{else}}""{{end}}
+        - name: "CONFIGGIN_IMPORT_API_GROUP"
+          valueFrom:
+            secretKeyRef:
+              name: "api-group"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+
+        {{- if .Values.enable.credhub }}
+        - name: "CONFIGGIN_IMPORT_CREDHUB_USER"
+          valueFrom:
+            secretKeyRef:
+              name: "credhub-user"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        {{- end }}
+
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "DB_ENCRYPTION_KEY"
           valueFrom:
             secretKeyRef:
@@ -192,6 +213,8 @@ spec:
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "DB_EXTERNAL_PORT"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_PORT) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_PORT) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_PORT | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_USER_HOST_SUFFIX"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | quote}}{{end}}{{else}}""{{end}}
         - name: "DEFAULT_APP_DISK_IN_MB"
           value: {{if ne (typeOf .Values.env.DEFAULT_APP_DISK_IN_MB) "<nil>"}}{{if has (kindOf .Values.env.DEFAULT_APP_DISK_IN_MB) (list "map" "slice")}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | toJson | quote}}{{else}}{{.Values.env.DEFAULT_APP_DISK_IN_MB | quote}}{{end}}{{else}}{{fail "env.DEFAULT_APP_DISK_IN_MB has not been set"}}{{end}}
         - name: "DEFAULT_APP_MEMORY"
@@ -207,20 +230,20 @@ spec:
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
-        {{- if not .Values.secrets.INTERNAL_API_PASSWORD }}
-        - name: "INTERNAL_API_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "internal-api-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.INTERNAL_API_PASSWORD }}
         - name: "INTERNAL_API_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "internal-api-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.INTERNAL_API_PASSWORD }}
+        - name: "INTERNAL_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-api-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.INTERNAL_CA_CERT }}
@@ -252,14 +275,6 @@ spec:
         - name: "MAX_APP_DISK_IN_MB"
           value: {{if ne (typeOf .Values.env.MAX_APP_DISK_IN_MB) "<nil>"}}{{if has (kindOf .Values.env.MAX_APP_DISK_IN_MB) (list "map" "slice")}}{{.Values.env.MAX_APP_DISK_IN_MB | toJson | quote}}{{else}}{{.Values.env.MAX_APP_DISK_IN_MB | quote}}{{end}}{{else}}{{fail "env.MAX_APP_DISK_IN_MB has not been set"}}{{end}}
 
-        {{- if not .Values.secrets.MONIT_PASSWORD }}
-        - name: "MONIT_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "monit-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -268,11 +283,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
-        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+        {{- if not .Values.secrets.MONIT_PASSWORD }}
+        - name: "MONIT_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-ccdb-role-password"
+              key: "monit-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -282,6 +297,14 @@ spec:
             secretKeyRef:
               key: "mysql-ccdb-role-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CCDB_ROLE_PASSWORD }}
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -317,14 +340,6 @@ spec:
               key: "uaa-ca-cert"
               name: "secrets"
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
-        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cc-routing-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
         - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
@@ -333,11 +348,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
+        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-cc-service-dashboards-client-secret"
+              key: "uaa-clients-cc-routing-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -347,6 +362,14 @@ spec:
             secretKeyRef:
               key: "uaa-clients-cc-service-dashboards-client-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-service-dashboards-client-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -361,7 +384,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:67159550bec114a528dd4045065c4395a5a41fcd"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-cc-clock:5979bc5c9f23499889b870eee3a473dadf32c458"
         lifecycle:
           preStop:
             exec:
@@ -405,6 +428,18 @@ spec:
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
+        - name: "CONFIGGIN_IMPORT_DOPPLER"
+          valueFrom:
+            secretKeyRef:
+              name: "doppler"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "GARDEN_ROOTFS_DRIVER"
           value: {{if ne (typeOf .Values.env.GARDEN_ROOTFS_DRIVER) "<nil>"}}{{if has (kindOf .Values.env.GARDEN_ROOTFS_DRIVER) (list "map" "slice")}}{{.Values.env.GARDEN_ROOTFS_DRIVER | toJson | quote}}{{else}}{{.Values.env.GARDEN_ROOTFS_DRIVER | quote}}{{end}}{{else}}{{fail "env.GARDEN_ROOTFS_DRIVER has not been set"}}{{end}}
 
@@ -467,38 +502,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT }}
-        - name: "LOGGREGATOR_FORWARD_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
-        {{- if .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
-        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert-key"
-              name: "secrets"
-        {{- end }}
-
-        {{- if not .Values.secrets.LOGGREGATOR_FORWARD_CERT_KEY }}
-        - name: "LOGGREGATOR_FORWARD_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "loggregator-forward-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MONIT_PASSWORD }}
         - name: "MONIT_PASSWORD"
           valueFrom:
@@ -515,6 +518,70 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
+        {{- if .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_METRICS_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_METRICS_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-metrics-tls-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert-key"
+              name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.PROM_SCRAPER_SCRAPE_TLS_CERT_KEY }}
+        - name: "PROM_SCRAPER_SCRAPE_TLS_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "prom-scraper-scrape-tls-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "PZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "SCF_LOG_HOST"
@@ -527,7 +594,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:ae85a21790b381ddcdba5fc6ad5a2908c0582782"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-loggregator-agent:98a13dd53091f3cfc60126204d00aa5033ea7e1f"
         lifecycle:
           preStop:
             exec:

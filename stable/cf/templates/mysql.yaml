@@ -212,25 +212,25 @@ spec:
                   operator: "In"
                   values:
                   - "mysql"
-              topologyKey: "beta.kubernetes.io/os"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
             weight: 100
         {{- if .Values.sizing.mysql.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.mysql.affinity.nodeAffinity }}
         {{- end }}
       containers:
+      {{- if .Values.enable.mysql }}
       - env:
         - name: "AZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.AZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.AZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.AZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.AZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
         - name: "CATS_SUITES"
           value: {{if ne (typeOf .Values.env.CATS_SUITES) "<nil>"}}{{if has (kindOf .Values.env.CATS_SUITES) (list "map" "slice")}}{{.Values.env.CATS_SUITES | toJson | quote}}{{else}}{{.Values.env.CATS_SUITES | quote}}{{end}}{{else}}""{{end}}
-
-        {{- if not .Values.secrets.GALERA_SERVER_CERT }}
-        - name: "GALERA_SERVER_CERT"
+        - name: "CONFIGGIN_SA_TOKEN"
           valueFrom:
             secretKeyRef:
-              key: "galera-server-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
 
         {{- if .Values.secrets.GALERA_SERVER_CERT }}
         - name: "GALERA_SERVER_CERT"
@@ -238,6 +238,14 @@ spec:
             secretKeyRef:
               key: "galera-server-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.GALERA_SERVER_CERT }}
+        - name: "GALERA_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "galera-server-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.GALERA_SERVER_CERT_KEY }}
@@ -332,14 +340,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
-        - name: "MYSQL_CF_USB_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-cf-usb-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_CF_USB_PASSWORD }}
         - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
@@ -348,12 +348,12 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
-        - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
+        {{- if .Values.secrets.MYSQL_CF_USB_PASSWORD }}
+        - name: "MYSQL_CF_USB_PASSWORD"
           valueFrom:
             secretKeyRef:
-              key: "mysql-cluster-health-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+              key: "mysql-cf-usb-password"
+              name: "secrets"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
@@ -362,6 +362,14 @@ spec:
             secretKeyRef:
               key: "mysql-cluster-health-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_CLUSTER_HEALTH_PASSWORD }}
+        - name: "MYSQL_CLUSTER_HEALTH_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-cluster-health-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_CREDHUB_USER_PASSWORD }}
@@ -380,20 +388,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
-        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-diego-locket-password"
-              name: "secrets"
-        {{- end }}
-
         {{- if not .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
         - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-diego-locket-password"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.MYSQL_DIEGO_LOCKET_PASSWORD }}
+        - name: "MYSQL_DIEGO_LOCKET_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-diego-locket-password"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.MYSQL_DIEGO_PASSWORD }}
@@ -428,20 +436,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
-        - name: "MYSQL_PERSI_NFS_PASSWORD"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-persi-nfs-password"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
         - name: "MYSQL_PERSI_NFS_PASSWORD"
           valueFrom:
             secretKeyRef:
               key: "mysql-persi-nfs-password"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_PERSI_NFS_PASSWORD }}
+        - name: "MYSQL_PERSI_NFS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-persi-nfs-password"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.MYSQL_ROUTING_API_PASSWORD }}
@@ -476,20 +484,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.MYSQL_SERVER_CERT_KEY }}
-        - name: "MYSQL_SERVER_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "mysql-server-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.MYSQL_SERVER_CERT_KEY }}
         - name: "MYSQL_SERVER_CERT_KEY"
           valueFrom:
             secretKeyRef:
               key: "mysql-server-cert-key"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.MYSQL_SERVER_CERT_KEY }}
+        - name: "MYSQL_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "PZ_LABEL_NAME"
@@ -521,7 +529,7 @@ spec:
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:6c2421f2299709e5826ad67ec8496b4f92a5e63b"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-mysql:d7e00908f08c51769925d5fbaee039ea9282705f"
         lifecycle:
           preStop:
             exec:
@@ -576,6 +584,7 @@ spec:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}

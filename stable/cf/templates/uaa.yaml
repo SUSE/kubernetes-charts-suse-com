@@ -128,11 +128,7 @@ kind: "List"
 # - global-uaa-properties: Dummy BOSH job used to host global parameters that
 #   are required to configure SCF / fissile
 #
-# - wait-for-database: This is a pre-start job to delay starting the rest of the
-#   role until a database connection is ready. Currently it only checks that a
-#   response can be obtained from the server, and not that it responds
-#   intelligently.
-#
+# - authorize-internal-ca: Install both internal and UAA CA certificates
 #
 # - uaa: The UAA is the identity management service for Cloud Foundry. It's
 #   primary role is as an OAuth2 provider, issuing tokens for client
@@ -141,6 +137,14 @@ kind: "List"
 #   an SSO service using those credentials (or others). It has endpoints for
 #   managing user accounts and for registering OAuth2 clients, as well as
 #   various other management functions.
+#
+# - wait-for-database: This is a pre-start job to delay starting the rest of the
+#   role until a database connection is ready. Currently it only checks that a
+#   response can be obtained from the server, and not that it responds
+#   intelligently.
+#
+#
+# Also: bpm
 {{- if .Values.enable.uaa }}
 
 {{- if and (ne (typeOf .Values.sizing.uaa.count) "<nil>") (gt (int .Values.sizing.uaa.count) 65535) }}
@@ -230,10 +234,22 @@ spec:
         {{- end }}
     spec:
       affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "app.kubernetes.io/component"
+                  operator: "In"
+                  values:
+                  - "uaa"
+              topologyKey: {{if eq (typeOf .Values.kube.podAntiAffinityTopologyKey) "<nil>"}}kubernetes.io/hostname{{else}}{{.Values.kube.podAntiAffinityTopologyKey}}{{end}}
+            weight: 100
         {{- if .Values.sizing.uaa.affinity.nodeAffinity }}
         nodeAffinity: {{ toJson .Values.sizing.uaa.affinity.nodeAffinity }}
         {{- end }}
       containers:
+      {{- if .Values.enable.uaa }}
       - env:
         - name: "AEK_PASSWORD"
           valueFrom:
@@ -268,10 +284,24 @@ spec:
             secretKeyRef:
               key: "cluster-admin-password"
               name: "secrets"
+        - name: "CONFIGGIN_IMPORT_ROUTER"
+          valueFrom:
+            secretKeyRef:
+              name: "router"
+              key: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
+        - name: "CONFIGGIN_SA_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "configgin"
+              key: "token"
+        - name: "CONFIGGIN_VERSION_TAG"
+          value: {{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}
         - name: "DB_EXTERNAL_HOST"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_HOST) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_HOST) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_HOST | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_HOST | quote}}{{end}}{{else}}""{{end}}
         - name: "DB_EXTERNAL_PORT"
           value: {{if ne (typeOf .Values.env.DB_EXTERNAL_PORT) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_PORT) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_PORT | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_PORT | quote}}{{end}}{{else}}""{{end}}
+        - name: "DB_EXTERNAL_USER_HOST_SUFFIX"
+          value: {{if ne (typeOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) "<nil>"}}{{if has (kindOf .Values.env.DB_EXTERNAL_USER_HOST_SUFFIX) (list "map" "slice")}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | toJson | quote}}{{else}}{{.Values.env.DB_EXTERNAL_USER_HOST_SUFFIX | quote}}{{end}}{{else}}""{{end}}
         - name: "DOMAIN"
           value: {{if ne (typeOf .Values.env.DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.DOMAIN) (list "map" "slice")}}{{.Values.env.DOMAIN | toJson | quote}}{{else}}{{.Values.env.DOMAIN | quote}}{{end}}{{else}}{{fail "env.DOMAIN has not been set"}}{{end}}
         - name: "GARDEN_ROOTFS_DRIVER"
@@ -371,20 +401,20 @@ spec:
         - name: "PZ_LABEL_NAME"
           value: {{if ne (typeOf .Values.env.PZ_LABEL_NAME) "<nil>"}}{{if has (kindOf .Values.env.PZ_LABEL_NAME) (list "map" "slice")}}{{.Values.env.PZ_LABEL_NAME | toJson | quote}}{{else}}{{.Values.env.PZ_LABEL_NAME | quote}}{{end}}{{else}}""{{end}}
 
-        {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
-        - name: "SAML_SERVICEPROVIDER_CERT"
-          valueFrom:
-            secretKeyRef:
-              key: "saml-serviceprovider-cert"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
         - name: "SAML_SERVICEPROVIDER_CERT"
           valueFrom:
             secretKeyRef:
               key: "saml-serviceprovider-cert"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT }}
+        - name: "SAML_SERVICEPROVIDER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "saml-serviceprovider-cert"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.SAML_SERVICEPROVIDER_CERT_KEY }}
@@ -440,10 +470,17 @@ spec:
               name: "secrets"
         {{- end }}
 
+        - name: "UAADB_TLS"
+          value: {{if ne (typeOf .Values.env.UAADB_TLS) "<nil>"}}{{if has (kindOf .Values.env.UAADB_TLS) (list "map" "slice")}}{{.Values.env.UAADB_TLS | toJson | quote}}{{else}}{{.Values.env.UAADB_TLS | quote}}{{end}}{{else}}""{{end}}
         - name: "UAA_ADMIN_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-admin-client-secret"
+              name: "secrets"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
               name: "secrets"
 
         {{- if .Values.secrets.UAA_CLIENTS_CC_ROUTING_SECRET }}
@@ -462,20 +499,20 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cc-service-dashboards-client-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
         - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cc-service-dashboards-client-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-service-dashboards-client-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET }}
@@ -510,20 +547,20 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
-        - name: "UAA_CLIENTS_CF_USB_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-cf-usb-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
         - name: "UAA_CLIENTS_CF_USB_SECRET"
           valueFrom:
             secretKeyRef:
               key: "uaa-clients-cf-usb-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_CF_USB_SECRET }}
+        - name: "UAA_CLIENTS_CF_USB_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cf-usb-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if .Values.secrets.UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET }}
@@ -574,14 +611,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
-        - name: "UAA_CLIENTS_DOPPLER_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-doppler-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
         - name: "UAA_CLIENTS_DOPPLER_SECRET"
           valueFrom:
@@ -590,11 +619,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_GOROUTER_SECRET }}
-        - name: "UAA_CLIENTS_GOROUTER_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_DOPPLER_SECRET }}
+        - name: "UAA_CLIENTS_DOPPLER_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-gorouter-secret"
+              key: "uaa-clients-doppler-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -606,12 +635,12 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if .Values.secrets.UAA_CLIENTS_ROUTING_API_CLIENT_SECRET }}
-        - name: "UAA_CLIENTS_ROUTING_API_CLIENT_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_GOROUTER_SECRET }}
+        - name: "UAA_CLIENTS_GOROUTER_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-routing-api-client-secret"
-              name: "secrets"
+              key: "uaa-clients-gorouter-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_ROUTING_API_CLIENT_SECRET }}
@@ -620,6 +649,14 @@ spec:
             secretKeyRef:
               key: "uaa-clients-routing-api-client-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
+        {{- if .Values.secrets.UAA_CLIENTS_ROUTING_API_CLIENT_SECRET }}
+        - name: "UAA_CLIENTS_ROUTING_API_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-routing-api-client-secret"
+              name: "secrets"
         {{- end }}
 
         {{- if not .Values.secrets.UAA_CLIENTS_SCF_AUTO_CONFIG_SECRET }}
@@ -638,14 +675,6 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_TCP_EMITTER_SECRET }}
-        - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-clients-tcp-emitter-secret"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_CLIENTS_TCP_EMITTER_SECRET }}
         - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
           valueFrom:
@@ -654,11 +683,11 @@ spec:
               name: "secrets"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_CLIENTS_TCP_ROUTER_SECRET }}
-        - name: "UAA_CLIENTS_TCP_ROUTER_SECRET"
+        {{- if not .Values.secrets.UAA_CLIENTS_TCP_EMITTER_SECRET }}
+        - name: "UAA_CLIENTS_TCP_EMITTER_SECRET"
           valueFrom:
             secretKeyRef:
-              key: "uaa-clients-tcp-router-secret"
+              key: "uaa-clients-tcp-emitter-secret"
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
@@ -668,6 +697,14 @@ spec:
             secretKeyRef:
               key: "uaa-clients-tcp-router-secret"
               name: "secrets"
+        {{- end }}
+
+        {{- if not .Values.secrets.UAA_CLIENTS_TCP_ROUTER_SECRET }}
+        - name: "UAA_CLIENTS_TCP_ROUTER_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-tcp-router-secret"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
         - name: "UAA_HOST"
@@ -693,14 +730,6 @@ spec:
               name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
         {{- end }}
 
-        {{- if not .Values.secrets.UAA_SERVER_CERT_KEY }}
-        - name: "UAA_SERVER_CERT_KEY"
-          valueFrom:
-            secretKeyRef:
-              key: "uaa-server-cert-key"
-              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
-        {{- end }}
-
         {{- if .Values.secrets.UAA_SERVER_CERT_KEY }}
         - name: "UAA_SERVER_CERT_KEY"
           valueFrom:
@@ -709,11 +738,19 @@ spec:
               name: "secrets"
         {{- end }}
 
+        {{- if not .Values.secrets.UAA_SERVER_CERT_KEY }}
+        - name: "UAA_SERVER_CERT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-server-cert-key"
+              name: "secrets-{{ .Chart.Version }}-{{ .Values.kube.secrets_generation_counter }}"
+        {{- end }}
+
         - name: "VCAP_HARD_NPROC"
           value: {{ .Values.kube.limits.nproc.hard | quote }}
         - name: "VCAP_SOFT_NPROC"
           value: {{ .Values.kube.limits.nproc.soft | quote }}
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-uaa:b7c9a0a1e501213c9748e03fee1ccbcbef95524a"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/scf-uaa:c2c5e587774a14e04c429288d10b9a84a42d48c4"
         lifecycle:
           preStop:
             exec:
@@ -732,7 +769,7 @@ spec:
           exec:
             command:
             - "/opt/fissile/readiness-probe.sh"
-            - "curl --resolve uaa.${DOMAIN}:8443:$(getent hosts ${HOSTNAME} | awk '{ print $1 }') --fail -H \"Host: uaa.${DOMAIN}\" -H 'Accept: application/json' https://uaa.${DOMAIN}:8443/info"
+            - "curl --resolve uaa.${DOMAIN}:8443:$(getent hosts ${HOSTNAME} | awk '{ print $1 }') --fail -H \\\"Host: uaa.${DOMAIN}\\\" -H 'Accept: application/json' https://uaa.${DOMAIN}:8443/info\n"
         resources:
           requests:
             {{- if and .Values.config.memory.requests .Values.sizing.uaa.memory.request }}
@@ -753,14 +790,16 @@ spec:
             {{- end }}
 
         securityContext:
-          allowPrivilegeEscalation: false
+          allowPrivilegeEscalation: true
           capabilities:
             add:
             - "AUDIT_WRITE"
+          privileged: true
         volumeMounts:
         - mountPath: "/opt/fissile/config"
           name: "deployment-manifest"
           readOnly: true
+      {{- end }}
       dnsPolicy: "ClusterFirst"
 
       {{- if ne .Values.kube.registry.username "" }}
