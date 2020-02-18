@@ -152,10 +152,7 @@ This version requires Helm >= 2.12.0.
 | `rbac.extraRoleRules`                     | Additional rules to add to the Role                                                                     | [] |
 | `rbac.extraClusterRoleRules`              | Additional rules to add to the ClusterRole                                                              | [] |
 | `command`                     | Define command to be executed by grafana container at startup  | `nil` |
-| `testFramework.enabled`                   | Whether to create test-related resources       | `true`                                                 |
-| `testFramework.image`                     | `test-framework` image repository.             | `dduportal/bats`                                       |
-| `testFramework.tag`                       | `test-framework` image tag.                    | `0.4.0`                                                |
-| `testFramework.securityContext`           | `test-framework` securityContext                | `{}`                                                   |
+| `testFramework.enabled`                   | Whether to create test-related resources       | `false`                                                |
 | `downloadDashboards.env`                  | Environment variables to be passed to the `download-dashboards` container | `{}`                                                   |
 
 

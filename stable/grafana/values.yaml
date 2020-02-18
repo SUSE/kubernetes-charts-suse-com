@@ -62,9 +62,6 @@ image:
 
 testFramework:
   enabled: false
-  image: "dduportal/bats"
-  tag: "0.4.0"
-  securityContext: {}
 
 securityContext:
   runAsUser: 472
