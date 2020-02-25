@@ -56,8 +56,8 @@ This version requires Helm >= 2.12.0.
 | `readinessProbe`                          | Readiness Probe settings                      | `{ "httpGet": { "path": "/api/health", "port": 3000 } }`|
 | `securityContext`                         | Deployment securityContext                    | `{"runAsUser": 472, "fsGroup": 472}`                    |
 | `priorityClassName`                       | Name of Priority Class to assign pods         | `nil`                                                   |
-| `image.repository`                        | Image repository                              | `grafana/grafana`                                       |
-| `image.tag`                               | Image tag (`Must be >= 5.0.0`)                | `6.3.5`                                                 |
+| `image.repository`                        | Image repository                              | `registry.suse.com/caasp/v4/grafana`                    |
+| `image.tag`                               | Image tag (`Must be >= 5.0.0`)                | `6.2.5`                                                 |
 | `image.pullPolicy`                        | Image pull policy                             | `IfNotPresent`                                          |
 | `image.pullSecrets`                       | Image pull secrets                            | `{}`                                                    |
 | `service.type`                            | Kubernetes service type                       | `ClusterIP`                                             |
@@ -82,7 +82,7 @@ This version requires Helm >= 2.12.0.
 | `extraContainers`                         | Sidecar containers to add to the grafana pod  | `{}` |
 | `schedulerName`                           | Name of the k8s scheduler (other than default) | `nil`                                                  |
 | `persistence.enabled`                     | Use persistent volume to store data           | `false`                                                 |
-| `persistence.type`                        | Type of persistence (`pvc` or `statefulset`)  | `false`                                                 |
+| `persistence.type`                        | Type of persistence (`pvc` or `statefulset`)  | `pvc`                                                   |
 | `persistence.size`                        | Size of persistent volume claim               | `10Gi`                                                  |
 | `persistence.existingClaim`               | Use an existing PVC to persist data           | `nil`                                                   |
 | `persistence.storageClassName`            | Type of persistent volume claim               | `nil`                                                   |
@@ -110,7 +110,7 @@ This version requires Helm >= 2.12.0.
 | `dashboards`                              | Dashboards to import                          | `{}`                                                    |
 | `dashboardsConfigMaps`                    | ConfigMaps reference that contains dashboards | `{}`                                                    |
 | `grafana.ini`                             | Grafana's primary configuration               | `{}`                                                    |
-| `ldap_enabled`                            | Enable LDAP authentication                    | `false`                                                 |
+| `ldap.enabled`                            | Enable LDAP authentication                    | `false`                                                 |
 | `ldap.existingSecret`                     | The name of an existing secret containing the `ldap.toml` file, this must have the key `ldap-toml`. | `""` |
 | `ldap.config  `                           | Grafana's LDAP configuration                  | `""`                                                    |
 | `annotations`                             | Deployment annotations                        | `{}`                                                    |

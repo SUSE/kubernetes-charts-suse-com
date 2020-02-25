@@ -10,7 +10,7 @@ dashboards:
               "type": "grafana",
               "id": "grafana",
               "name": "Grafana",
-              "version": "6.3.5"
+              "version": "6.2.5"
             }
           ],
           "annotations": {
