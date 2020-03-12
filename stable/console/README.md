@@ -22,7 +22,7 @@ Check the repository was successfully added by searching for the `console`, for 
 ```
 helm search console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	3.0.0           3.0.0      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	3.0.0           2.0.0      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Commands shown in this document are for Helm version 3. For Helm version 2, when installing, instead of supplying the name via the `--name` flag, it is supplied as the first argument, before the chart name.
