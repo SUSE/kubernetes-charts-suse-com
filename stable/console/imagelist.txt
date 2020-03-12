@@ -1,4 +1,7 @@
-stratos-console:2.7.0-35f5964bd-cap
-stratos-jetstream:2.7.0-35f5964bd-cap
-stratos-mariadb:2.7.0-35f5964bd-cap
-stratos-postflight-job:2.7.0-35f5964bd-cap
+stratos-chartsync:3.0.0-8fbc06b06-cap
+stratos-config-init:3.0.0-8fbc06b06-cap
+stratos-console:3.0.0-8fbc06b06-cap
+stratos-fdbdoclayer:3.0.0-8fbc06b06-cap
+stratos-fdbserver:3.0.0-8fbc06b06-cap
+stratos-jetstream:3.0.0-8fbc06b06-cap
+stratos-mariadb:3.0.0-8fbc06b06-cap
