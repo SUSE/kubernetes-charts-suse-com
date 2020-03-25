@@ -62,9 +62,6 @@ image:
 
 testFramework:
   enabled: false
-  image: "dduportal/bats"
-  tag: "0.4.0"
-  securityContext: {}
 
 securityContext:
   runAsUser: 472
@@ -88,8 +85,8 @@ extraEmptyDirMounts: []
 # priorityClassName:
 
 downloadDashboardsImage:
-  repository: appropriate/curl
-  tag: latest
+  repository: registry.suse.com/caasp/v4/curl
+  tag: "7.60.0"
   pullPolicy: IfNotPresent
 
 downloadDashboards:
@@ -206,8 +203,8 @@ initChownData:
   ## initChownData container image
   ##
   image:
-    repository: busybox
-    tag: "1.30"
+    repository: registry.suse.com/caasp/v4/busybox
+    tag: "1.26.2"
     pullPolicy: IfNotPresent
 
   ## initChownData resource requests and limits
@@ -419,7 +416,7 @@ smtp:
 ## Sidecars that collect the configmaps with specified label and stores the included files them into the respective folders
 ## Requires at least Grafana 5 to work and can't be used together with parameters dashboardProviders, datasources and dashboards
 sidecar:
-  image: kiwigrid/k8s-sidecar:0.1.20
+  image: registry.suse.com/caasp/v4/k8s-sidecar:0.1.75
   imagePullPolicy: IfNotPresent
   resources: {}
 #   limits:

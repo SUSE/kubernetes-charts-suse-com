@@ -91,8 +91,8 @@ This version requires Helm >= 2.12.0.
 | `persistence.finalizers`                  | PersistentVolumeClaim finalizers              | `[ "kubernetes.io/pvc-protection" ]`                    |
 | `persistence.subPath`                     | Mount a sub dir of the persistent volume      | `nil`                                                   |
 | `initChownData.enabled`                   | If false, don't reset data ownership at startup | true                                                  |
-| `initChownData.image.repository`          | init-chown-data container image repository    | `busybox`                                               |
-| `initChownData.image.tag`                 | init-chown-data container image tag           | `latest`                                                |
+| `initChownData.image.repository`          | init-chown-data container image repository    | `registry.suse.com/caasp/v4/busybox`                    |
+| `initChownData.image.tag`                 | init-chown-data container image tag           | `1.26.2`                                                |
 | `initChownData.image.pullPolicy`          | init-chown-data container image pull policy   | `IfNotPresent`                                          |
 | `initChownData.resources`                 | init-chown-data pod resource requests & limits | `{}`                                                   |
 | `schedulerName`                           | Alternate scheduler name                      | `nil`                                                   |
@@ -118,7 +118,7 @@ This version requires Helm >= 2.12.0.
 | `podAnnotations`                          | Pod annotations                               | `{}`                                                    |
 | `podLabels`                               | Pod labels                                    | `{}`                                                    |
 | `podPortName`                             | Name of the grafana port on the pod           | `grafana`                                               |
-| `sidecar.image`                           | Sidecar image                                 | `kiwigrid/k8s-sidecar:0.1.20`                           |
+| `sidecar.image`                           | Sidecar image                                 | `registry.suse.com/caasp/v4/k8s-sidecar:0.1.75`         |
 | `sidecar.imagePullPolicy`                 | Sidecar image pull policy                     | `IfNotPresent`                                          |
 | `sidecar.resources`                       | Sidecar resources                             | `{}`                                                    |
 | `sidecar.dashboards.enabled`              | Enables the cluster wide search for dashboards and adds/updates/deletes them in grafana | `false`       |
@@ -152,10 +152,7 @@ This version requires Helm >= 2.12.0.
 | `rbac.extraRoleRules`                     | Additional rules to add to the Role                                                                     | [] |
 | `rbac.extraClusterRoleRules`              | Additional rules to add to the ClusterRole                                                              | [] |
 | `command`                     | Define command to be executed by grafana container at startup  | `nil` |
-| `testFramework.enabled`                   | Whether to create test-related resources       | `true`                                                 |
-| `testFramework.image`                     | `test-framework` image repository.             | `dduportal/bats`                                       |
-| `testFramework.tag`                       | `test-framework` image tag.                    | `0.4.0`                                                |
-| `testFramework.securityContext`           | `test-framework` securityContext                | `{}`                                                   |
+| `testFramework.enabled`                   | Whether to create test-related resources       | `false`                                                |
 | `downloadDashboards.env`                  | Environment variables to be passed to the `download-dashboards` container | `{}`                                                   |
 
 
