@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "cert-exporter.fullname" . }}-nodes
+  labels:
+    helm.sh/chart: {{ include "cert-exporter.chart" . }}
+    app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      volumes:
+        - name: kubelet-pki
+          hostPath:
+            path: /var/lib/kubelet/pki
+            type: Directory
+        - name: kube-pki
+          hostPath:
+            path: /etc/kubernetes
+            type: Directory
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["./app"]
+          args:
+            - --include-kubeconfig-glob=/etc/kubernetes/*.conf
+            - --exclude-kubeconfig-glob=/etc/kubernetes/kubelet.conf
+            - --include-cert-glob=/etc/kubernetes/pki/*.crt
+            - --include-cert-glob=/etc/kubernetes/pki/etcd/*.crt
+            - --include-cert-glob=/var/lib/kubelet/pki/*.crt
+            - --alsologtostderr
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/lib/kubelet/pki
+              name: kubelet-pki
+              readOnly: true
+            - mountPath: /etc/kubernetes
+              name: kube-pki
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
