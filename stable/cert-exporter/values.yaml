@@ -2,8 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
-
 image:
   repository: registry.suse.com/caasp/v4/cert-exporter
   tag: 2.2.0
@@ -30,4 +28,8 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+replicaCount: 1
+
 nodeSelector: {}
+
+affinity: {}

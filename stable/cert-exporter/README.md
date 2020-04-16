@@ -40,7 +40,8 @@ The following table lists the configurable parameters of the cert-exporter chart
 | `                       |
 | `resources`             | Pod resource requests & limits                                                                                             | `{}`                                       |
 | `replicaCount`          | Desired number of cert-exporter Deployment pods                                                                            | `1`                                        |
-| `nodeSelector`          | node labels for cert-exporter Deployment pod assignment                                                                    | `{}`                                       |
+| `nodeSelector`          | Node labels for cert-exporter Deployment pod assignment                                                                    | `{}`                                       |
+| `affinity`              | Affinity settings for cert-exporter Deployment pod assignment                                                              | `{}`                                       |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
