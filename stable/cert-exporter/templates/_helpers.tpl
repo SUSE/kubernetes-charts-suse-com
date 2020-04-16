@@ -36,10 +36,8 @@ Common labels
 */}}
 {{- define "cert-exporter.labels" -}}
 app: {{ include "cert-exporter.name" . }}
+appVersion: {{ .Chart.AppVersion }}
 chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-heritage: {{ .Release.Name }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-release: {{ .Release.Service }}
+heritage: {{ .Release.Service }}
+release: {{ .Release.Name }}
 {{- end -}}

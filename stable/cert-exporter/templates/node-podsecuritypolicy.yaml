@@ -1,13 +1,10 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: {{ include "cert-exporter.fullname" . }}-nodes
+  name: {{ include "cert-exporter.fullname" . }}-node
   namespace: {{ .Release.Namespace }}
   labels:
-    chart: {{ include "cert-exporter.chart" . }}
-    app: {{ include "cert-exporter.name" . }}
-    heritage: {{ .Release.Name }}
-    release: {{ .Release.Service }}
+{{- include "cert-exporter.labels" . | nindent 4 }}  
 spec:
   seLinux:
     rule: RunAsAny

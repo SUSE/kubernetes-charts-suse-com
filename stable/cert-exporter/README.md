@@ -28,18 +28,16 @@ The command removes all the Kubernetes components associated with the chart and 
 
 The following table lists the configurable parameters of the cert-exporter chart and their default values.
 
-| Parameter               | Description                                                                                                                | Default                                    |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `image.repository`      | The image repository to pull from                                                                                          | `registry.suse.com/caasp/v4/cert-exporter` |
-| `image.tag`             | The image tag to pull                                                                                                      | `2.2.0`                                    |
-| `image.pullPolicy`      | Image pull policy                                                                                                          | `IfNotPresent`                             |
-| `imagePullSecrets`      | Name of Secret resource containing private registry credentials                                                            | `[]`                                       |
-| `serviceAccount.create` | if `true`, create a service account                                                                                        | `true`                                     |
-| `serviceAccount.name`   | The name of the service account to use. If not set and `create` is `true`, a name is generated using the fullname template | `""`                                       |
-| `resources`             | Pod resource requests & limits                                                                                             | `{}`                                       |
-| `replicaCount`          | Desired number of cert-exporter Deployment pods                                                                            | `1`                                        |
-| `nodeSelector`          | Node labels for cert-exporter Deployment pod assignment                                                                    | `{}`                                       |
-| `affinity`              | Affinity settings for cert-exporter Deployment pod assignment                                                              | `{}`                                       |
+| Parameter          | Description                                                     | Default                                    |
+| ------------------ | --------------------------------------------------------------- | ------------------------------------------ |
+| `image.repository` | The image repository to pull from                               | `registry.suse.com/caasp/v4/cert-exporter` |
+| `image.tag`        | The image tag to pull                                           | `2.2.0`                                    |
+| `image.pullPolicy` | Image pull policy                                               | `IfNotPresent`                             |
+| `imagePullSecrets` | Name of Secret resource containing private registry credentials | `[]`                                       |
+| `resources`        | Pod resource requests & limits                                  | `{}`                                       |
+| `replicaCount`     | Desired number of cert-exporter Deployment pods                 | `1`                                        |
+| `nodeSelector`     | Node labels for cert-exporter Deployment pod assignment         | `{}`                                       |
+| `affinity`         | Affinity settings for cert-exporter Deployment pod assignment   | `{}`                                       |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
