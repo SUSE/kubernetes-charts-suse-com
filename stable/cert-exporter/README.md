@@ -36,7 +36,6 @@ The following table lists the configurable parameters of the cert-exporter chart
 | `imagePullSecrets`      | Name of Secret resource containing private registry credentials                                                            | `[]`                                       |
 | `serviceAccount.create` | if `true`, create a service account                                                                                        | `true`                                     |
 | `serviceAccount.name`   | The name of the service account to use. If not set and `create` is `true`, a name is generated using the fullname template | `""`                                       |
-| `securityContext`       | DaemonSet securityContext                                                                                                  | `{"runAsUser": 0}`                         |
 | `resources`             | Pod resource requests & limits                                                                                             | `{}`                                       |
 | `replicaCount`          | Desired number of cert-exporter Deployment pods                                                                            | `1`                                        |
 | `nodeSelector`          | Node labels for cert-exporter Deployment pod assignment                                                                    | `{}`                                       |

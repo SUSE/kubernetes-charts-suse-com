@@ -1,8 +1,28 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "cert-exporter.fullname" . }}-secret-reader
+  name: {{ include "cert-exporter.fullname" . }}-nodes
+  namespace: {{ .Release.Namespace }}
 rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["get", "list"]
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - {{ include "cert-exporter.fullname" . }}-nodes
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cert-exporter.fullname" . }}-secret
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: 
+  - ""
+  resources:
+  - "secrets"
+  verbs:
+  - "get"
+  - "list"

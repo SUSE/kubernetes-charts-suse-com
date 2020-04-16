@@ -35,22 +35,11 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "cert-exporter.labels" -}}
-app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-helm.sh/chart: {{ include "cert-exporter.chart" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app: {{ include "cert-exporter.name" . }}
+chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+heritage: {{ .Release.Name }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end -}}
-
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "cert-exporter.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create -}}
-    {{ default (include "cert-exporter.fullname" .) .Values.serviceAccount.name }}
-{{- else -}}
-    {{ default "default" .Values.serviceAccount.name }}
-{{- end -}}
+release: {{ .Release.Service }}
 {{- end -}}

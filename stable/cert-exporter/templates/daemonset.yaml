@@ -2,29 +2,31 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "cert-exporter.fullname" . }}-nodes
+  namespace: {{ .Release.Namespace }}
   labels:
-    helm.sh/chart: {{ include "cert-exporter.chart" . }}
-    app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app: {{ include "cert-exporter.name" . }}
+    heritage: {{ .Release.Name }}
+    release: {{ .Release.Service }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      app: {{ include "cert-exporter.name" . }}
+      heritage: {{ .Release.Name }}
   template:
     metadata:
       annotations:
         prometheus.io/port: "8080"
         prometheus.io/scrape: "true"
       labels:
-        app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
+        app: {{ include "cert-exporter.name" . }}
+        heritage: {{ .Release.Name }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      serviceAccountName: {{ template "cert-exporter.fullname" . }}-nodes
       tolerations:
         - key: node-role.kubernetes.io/master
           effect: NoSchedule
@@ -39,8 +41,6 @@ spec:
             type: Directory
       containers:
         - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["./app"]
@@ -67,5 +67,7 @@ spec:
             - mountPath: /etc/kubernetes
               name: kube-pki
               readOnly: true
+          securityContext:
+            runAsUser: 0
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

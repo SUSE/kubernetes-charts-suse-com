@@ -1,0 +1,27 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ include "cert-exporter.fullname" . }}-nodes
+  namespace: {{ .Release.Namespace }}
+  labels:
+    chart: {{ include "cert-exporter.chart" . }}
+    app: {{ include "cert-exporter.name" . }}
+    heritage: {{ .Release.Name }}
+    release: {{ .Release.Service }}
+spec:
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  volumes:
+    - "hostPath"
+  privileged: false
+  allowedHostPaths:
+    - pathPrefix: /var/lib/kubelet/pki
+      readOnly: true
+    - pathPrefix: /etc/kubernetes
+      readOnly: true

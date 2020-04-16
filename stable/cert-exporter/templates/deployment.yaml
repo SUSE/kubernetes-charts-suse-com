@@ -2,35 +2,34 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "cert-exporter.fullname" . }}-secret
+  namespace: {{ .Release.Namespace }}
   labels: 
-    helm.sh/chart: {{ include "cert-exporter.chart" . }}
-    app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app: {{ include "cert-exporter.name" . }}
+    heritage: {{ .Release.Name }}
+    release: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+      app: {{ include "cert-exporter.name" . }}
+      heritage: {{ .Release.Name }}
   template:
     metadata:
       annotations:
         prometheus.io/port: "8080"
         prometheus.io/scrape: "true"
       labels:
-        app.kubernetes.io/name: {{ include "cert-exporter.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
+        app: {{ include "cert-exporter.name" . }}
+        heritage: {{ .Release.Name }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      serviceAccountName: {{ template "cert-exporter.serviceAccountName" . }}
+      serviceAccountName: {{ template "cert-exporter.fullname" . }}-secret
       containers:
         - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["./app"]
