@@ -1,6 +1,0 @@
-dependencies:
-- name: prometheus
-  repository: https://kubernetes-charts.suse.com
-  version: 9.3.3
-digest: sha256:8b688bba6196d7b2f31f351ead9af57ab5782370cb5da53e03f95f0c9ee2e2aa
-generated: "2020-04-16T09:52:58.711694993+08:00"
