@@ -15,10 +15,8 @@ spec:
   fsGroup:
     rule: RunAsAny
   volumes:
-    - configMap
     - secret
     - hostPath
-  privileged: false
   allowedHostPaths:
     - pathPrefix: /var/lib/kubelet/pki
       readOnly: true
