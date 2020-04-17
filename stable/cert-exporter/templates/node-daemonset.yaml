@@ -40,7 +40,8 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["cert-exporter"]
+          command:
+            - cert-exporter
           args:
             - --include-kubeconfig-glob=/etc/kubernetes/*.conf
             - --exclude-kubeconfig-glob=/etc/kubernetes/kubelet.conf
