@@ -35,7 +35,6 @@ The following table lists the configurable parameters of the cert-exporter chart
 | `image.pullPolicy` | Image pull policy                                               | `IfNotPresent`                             |
 | `imagePullSecrets` | Name of Secret resource containing private registry credentials | `[]`                                       |
 | `resources`        | Pod resource requests & limits                                  | `{}`                                       |
-| `replicaCount`     | Desired number of cert-exporter Deployment pods                 | `1`                                        |
 | `nodeSelector`     | Node labels for cert-exporter Deployment pod assignment         | `{}`                                       |
 | `affinity`         | Affinity settings for cert-exporter Deployment pod assignment   | `{}`                                       |
 
@@ -44,6 +43,6 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 ```bash
 $ helm install \
     --name my-release \
-    --set replicaCount=2 \
+    --set image.pullPolicy=Always \
     suse/cert-exporter
 ```

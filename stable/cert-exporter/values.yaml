@@ -18,8 +18,6 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
-replicaCount: 1
-
 nodeSelector: {}
 
 affinity: {}
