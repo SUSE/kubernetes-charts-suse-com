@@ -1,10 +1,10 @@
 # cert-exporter
 
-[cert-exporter](https://github.com/joe-elliott/cert-exporter) is a Prometheus exporter that publishes cert expirations on disk and in Kubernetes secrets.
+[cert-exporter](https://github.com/joe-elliott/cert-exporter) is a Prometheus exporter that exports the metrics of cert expirations on hosts and in Kubernetes secrets.
 
 ## Introduction
 
-This chart deploys a cert-exporter DaemonSet to publishes cert expirations on disk and deploys a cert-exporter Deployment to publishes cert expirations in Kubernets secrets.
+This chart deploys a DaemonSet to export the metrics of cert expiration on hosts and a Deployment to export the metrics of cert expiration in Kubernetes secrets.
 
 ## Installing the Chart
 
