@@ -44,7 +44,6 @@ spec:
             - cert-exporter
           args:
             - --include-kubeconfig-glob=/etc/kubernetes/*.conf
-            - --exclude-kubeconfig-glob=/etc/kubernetes/kubelet.conf
             - --include-cert-glob=/etc/kubernetes/pki/*.crt
             - --include-cert-glob=/etc/kubernetes/pki/etcd/*.crt
             - --include-cert-glob=/var/lib/kubelet/pki/*.crt
