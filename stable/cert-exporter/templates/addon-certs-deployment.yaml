@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "cert-exporter.fullname" . }}-secret
+  name: {{ include "cert-exporter.fullname" . }}-addon
   namespace: {{ .Release.Namespace }}
   labels: 
 {{- include "cert-exporter.labels" . | nindent 4 }}  
@@ -24,7 +24,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      serviceAccountName: {{ template "cert-exporter.fullname" . }}-secret
+      serviceAccountName: {{ template "cert-exporter.fullname" . }}-addon
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
@@ -33,7 +33,7 @@ spec:
             - cert-exporter
           args:
             - --secrets-namespace=kube-system
-            - --secrets-label-selector=caasp.suse.com/skuba-addon
+            - --secrets-label-selector=caasp.suse.com/skuba-addon=true
             - --secrets-include-glob=*.crt
             - --alsologtostderr
           ports:
@@ -42,11 +42,11 @@ spec:
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.addon.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.addon.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}

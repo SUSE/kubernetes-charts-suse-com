@@ -18,6 +18,24 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
-nodeSelector: {}
+addon:
+  nodeSelector: {}
+  affinity: {}
 
-affinity: {}
+customSecret:
+  enabled: false
+  # Kubernetes namespace to list secrets.
+  namespace:
+  # Secret globs to include when looking for secret data keys.
+  includeKeys: []
+  # Secret globs to exclude when looking for secret data keys.
+  excludeKeys: []
+  # Label selector to find secrets to publish as metrics.
+  # Annotation selector to find secrets to publish as metrics.
+  # If both labelSelector and annotationSelector configured, the cert-exporter
+  # search secrets with AND operation, which means the secrets are the intersects
+  # of labelSelector and annotationSelector.
+  labelSelector: []
+  annotationSelector: []
+  nodeSelector: {}
+  affinity: {}
