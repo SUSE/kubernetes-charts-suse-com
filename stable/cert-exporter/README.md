@@ -55,5 +55,5 @@ helm install \
     --set customSecret.enabled=true \
     --set customSecret.namespace=cert-manager-test \
     --set customSecret.includeKeys="{ca.crt,tls.crt}" \
-    --set customSecret.annotationSelector="{cert-manager.io/certificate-name}
+    --set customSecret.annotationSelector="{cert-manager.io/certificate-name}"
 ```
