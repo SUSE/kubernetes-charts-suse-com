@@ -47,13 +47,22 @@ The following table lists the configurable parameters of the cert-exporter chart
 | `customSecret.affinity`           | Affinity settings for cert-exporter custom secrets Deployment pod assignment | `{}`                                       |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
-For example, monitor cert-manager issues certificates in cert-managert-test namespace.
 
-```bash
-helm install \
-    --name my-release \
-    --set customSecret.enabled=true \
-    --set customSecret.namespace=cert-manager-test \
-    --set customSecret.includeKeys="{ca.crt,tls.crt}" \
-    --set customSecret.annotationSelector="{cert-manager.io/certificate-name}"
-```
+For example:
+1. monitor cert-manager issues certificates in cert-managert-test namespace.
+   ```bash
+   helm install \
+       --name my-release \
+       --set customSecret.enabled=true \
+       --set customSecret.namespace=cert-manager-test \
+       --set customSecret.includeKeys="{ca.crt,tls.crt}" \
+       --set customSecret.annotationSelector="{cert-manager.io/certificate-name}"
+   ```
+2. monitor certificates in all namespaces filtered by label selector.
+   ```bash
+   helm install \
+       --name my-release \
+       --set customSecret.enabled=true \
+       --set customSecret.includeKeys="{ca.crt,tls.crt}" \
+       --set customSecret.labelSelector="{key=value}"
+   ```

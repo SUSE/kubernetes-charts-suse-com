@@ -18,24 +18,35 @@ resources:
   #   cpu: 100m
   #   memory: 128Mi
 
+# Deploy a DaemonSet to monitors on disk certificates
+node:
+  enabled: true
+
+# Deploy a Deployment to monitors the addon secret certificates
 addon:
+  enabled: true
   nodeSelector: {}
   affinity: {}
 
+# Deploy the Deployment(s) to monitors the custom secret certificates
 customSecret:
   enabled: false
-  # Kubernetes namespace to list secrets.
-  namespace:
-  # Secret globs to include when looking for secret data keys.
-  includeKeys: []
-  # Secret globs to exclude when looking for secret data keys.
-  excludeKeys: []
-  # Label selector to find secrets to publish as metrics.
-  # Annotation selector to find secrets to publish as metrics.
-  # If both labelSelector and annotationSelector configured, the cert-exporter
-  # search secrets with AND operation, which means the secrets are the intersects
-  # of labelSelector and annotationSelector.
-  labelSelector: []
-  annotationSelector: []
-  nodeSelector: {}
-  affinity: {}
+  # Name of the custom secret to create the Deployment resource.
+  # If you have multiple custom secret to monitoring, copy the below
+  # section and differs in name
+  - name: default
+    # Kubernetes namespace to list secrets (optional).
+    namespace:
+    # Secret globs to include when looking for secret data keys (optional).
+    includeKeys: []
+    # Secret globs to exclude when looking for secret data keys (optional).
+    excludeKeys: []
+    # Label selector to find secrets to publish as metrics (optional).
+    # Annotation selector to find secrets to publish as metrics (optional).
+    # If both labelSelector and annotationSelector configured, the cert-exporter
+    # search secrets with AND operation, which means the secrets are the intersects
+    # of labelSelector and annotationSelector.
+    labelSelector: []
+    annotationSelector: []
+    nodeSelector: {}
+    affinity: {}

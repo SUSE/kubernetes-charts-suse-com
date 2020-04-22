@@ -1,3 +1,4 @@
+{{- if .Values.node.enabled }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -68,3 +69,4 @@ spec:
             runAsUser: 0
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}
