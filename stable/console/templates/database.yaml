@@ -51,7 +51,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:3.0.0-8fbc06b06-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:3.1.0-0d657242b-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: MYSQL_ROOT_PASSWORD

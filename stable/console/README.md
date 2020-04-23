@@ -22,7 +22,7 @@ Check the repository was successfully added by searching for the `console`, for 
 ```
 helm search console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	3.0.0           2.0.0      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	3.0.0           3.0.0      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Commands shown in this document are for Helm version 3. For Helm version 2, when installing, instead of supplying the name via the `--name` flag, it is supplied as the first argument, before the chart name.
@@ -73,6 +73,8 @@ The following table lists the configurable parameters of the SUSE Stratos Consol
 |console.templatesConfigMapName|Name of config map that provides the template files for user invitation emails||
 |console.userInviteSubject|Email subject of the user invitation message||
 |console.techPreview|Enable/disable Tech Preview features|false|
+|console.ui.listMaxSize|Override the default maximum number of entities that a configured list can fetch. When a list meets this amount additional pages are not fetched||
+|console.ui.listAllowLoadMaxed|If the maximum list size is met give the user the option to fetch all results|false|
 |console.localAdminPassword|Use local admin user instead of UAA - set to a password to enable||
 |console.tlsSecretName|Secret containing TLS certificate to use for the Console||
 |console.mariadb.external|Use an external database instead of the built-in MariaDB|false|
