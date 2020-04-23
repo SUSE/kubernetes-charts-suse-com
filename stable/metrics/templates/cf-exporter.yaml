@@ -12,6 +12,11 @@ metadata:
   name: "{{ .Release.Name }}-cf-exporter"
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: "stratos-metrics"
@@ -27,7 +32,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.1.2-85daaa2-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.image}}:1.2.0-bc511c9-cap
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         name: cf-exporter
         env:
@@ -56,7 +61,7 @@ spec:
      {{- end }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.1.2-85daaa2-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.cfExporter.initContainerImage}}:1.2.0-bc511c9-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION

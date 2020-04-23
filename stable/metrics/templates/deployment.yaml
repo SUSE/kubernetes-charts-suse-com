@@ -10,6 +10,11 @@ metadata:
   name: "{{ .Release.Name }}-nginx"
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name:  "stratos-metrics"
@@ -25,7 +30,7 @@ spec:
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.1.2-85daaa2-cap
+      - image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.nginx.image}}:1.2.0-bc511c9-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: nginx
         env:
@@ -39,6 +44,10 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-metrics-credentials
               key: password
+        - name: RELEASE_NAME
+          value: "{{ .Release.Name }}"
+        - name: NAMESPACE
+          value: "{{ .Release.Namespace }}"              
         ports:
         - containerPort: 443
           name: https
@@ -52,7 +61,7 @@ spec:
   {{- if .Values.firehoseExporter.enabled }}
       initContainers:
       - name: setup-uaa
-        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.1.2-85daaa2-cap 
+        image: {{.Values.dockerRepository}}/{{.Values.dockerOrganization}}/{{.Values.firehoseExporter.initContainerImage}}:1.2.0-bc511c9-cap 
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: SKIP_SSL_VALIDATION
@@ -133,6 +142,11 @@ metadata:
   name: "{{ $releaseName }}-firehose-exporters-{{ . }}"
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name:  "stratos-metrics"
@@ -148,7 +162,7 @@ spec:
         helm.sh/chart: "{{ $helmChartName }}-{{ $helmChartVersion | replace "+" "_" }}"
     spec:
       containers:
-      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.1.2-85daaa2-cap
+      - image: {{$values.dockerRepository}}/{{$values.dockerOrganization}}/{{$values.firehoseExporter.image}}:1.2.0-bc511c9-cap
         imagePullPolicy: {{ $values.imagePullPolicy }}
         name: firehose-exporter
         env:
