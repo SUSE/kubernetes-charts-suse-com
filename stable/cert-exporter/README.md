@@ -71,10 +71,25 @@ For example:
        --set customSecret.certs[0].includeKeys="{ca.crt,tls.crt}" \
        --set customSecret.certs[0].labelSelector="{key=value}"
    ```
-3. Deploy both 1. and 2. together
+3. Deploy both 1. and 2. together.
    ```bash
    helm install \
        --name my-release \
+       --set customSecret.enabled=true \
+       --set customSecret.certs[0].name=cert-manager \
+       --set customSecret.certs[0].namespace=cert-manager-test \
+       --set customSecret.certs[0].includeKeys="{ca.crt,tls.crt}" \
+       --set customSecret.certs[0].annotationSelector="{cert-manager.io/certificate-name}" \
+       --set customSecret.certs[1].name=self-signed-cert \
+       --set customSecret.certs[1].includeKeys="{ca.crt,tls.crt}" \
+       --set customSecret.certs[1].labelSelector="{key=value}"
+   ```
+4. Monitor custom certificates only without monitor node and addon certificates.
+   ```bash
+   helm install \
+       --name my-release \
+       --set node.enabled=false \
+       --set addon.enabled=false \
        --set customSecret.enabled=true \
        --set customSecret.certs[0].name=cert-manager \
        --set customSecret.certs[0].namespace=cert-manager-test \
