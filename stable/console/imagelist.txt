@@ -1,7 +1,7 @@
-stratos-chartsync:3.0.0-8fbc06b06-cap
-stratos-config-init:3.0.0-8fbc06b06-cap
-stratos-console:3.0.0-8fbc06b06-cap
-stratos-fdbdoclayer:3.0.0-8fbc06b06-cap
-stratos-fdbserver:3.0.0-8fbc06b06-cap
-stratos-jetstream:3.0.0-8fbc06b06-cap
-stratos-mariadb:3.0.0-8fbc06b06-cap
+stratos-chartsync:3.1.0-0d657242b-cap
+stratos-config-init:3.1.0-0d657242b-cap
+stratos-console:3.1.0-0d657242b-cap
+stratos-fdbdoclayer:3.1.0-0d657242b-cap
+stratos-fdbserver:3.1.0-0d657242b-cap
+stratos-jetstream:3.1.0-0d657242b-cap
+stratos-mariadb:3.1.0-0d657242b-cap
