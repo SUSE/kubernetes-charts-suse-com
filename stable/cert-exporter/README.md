@@ -31,7 +31,7 @@ The following table lists the configurable parameters of the cert-exporter chart
 | Parameter                            | Description                                                                       | Default                                    |
 | ------------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------ |
 | `image.repository`                   | The image repository to pull from                                                 | `registry.suse.com/caasp/v4/cert-exporter` |
-| `image.tag`                          | The image tag to pull                                                             | `2.2.0`                                    |
+| `image.tag`                          | The image tag to pull                                                             | `2.3.0`                                    |
 | `image.pullPolicy`                   | Image pull policy                                                                 | `IfNotPresent`                             |
 | `imagePullSecrets`                   | Name of Secret resource containing private registry credentials                   | `[]`                                       |
 | `resources`                          | Pod resource requests & limits                                                    | `{}`                                       |

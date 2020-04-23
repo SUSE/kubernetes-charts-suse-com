@@ -4,7 +4,7 @@
 
 image:
   repository: registry.suse.com/caasp/v4/cert-exporter
-  tag: 2.2.0
+  tag: 2.3.0
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
