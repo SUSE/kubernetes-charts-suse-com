@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "cf-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: cf-operator
+  template:
+    metadata:
+      labels:
+        name: cf-operator
+    spec:
+      serviceAccountName: {{ template "cf-operator.serviceAccountName" . }}
+      containers:
+        - name: cf-operator
+          image: "{{ .Values.image.org }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+          - containerPort: 60000
+            name: metrics
+          - containerPort: 2999
+            name: webhook
+          command:
+          - cf-operator
+          imagePullPolicy: {{ .Values.global.image.pullPolicy | quote }}
+          env:
+            - name: APPLY_CRD
+              value: "{{ .Values.applyCRD }}"
+            - name: BOSH_DNS_DOCKER_IMAGE
+              value: "{{ .Values.operator.boshDNSDockerImage }}"
+            {{- if .Values.cluster.domain }}
+            - name: CLUSTER_DOMAIN
+              value: {{ .Values.cluster.domain | quote }}
+            {{- end }}
+            - name: LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
+            - name: WATCH_NAMESPACE
+              value: "{{ .Values.global.operator.watchNamespace }}"
+            - name: CF_OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CTX_TIMEOUT
+              value: "{{ .Values.global.contextTimeout }}"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "cf-operator"
+            - name: DOCKER_IMAGE_ORG
+              value: "{{ .Values.image.org }}"
+            - name: DOCKER_IMAGE_REPOSITORY
+              value: "{{ .Values.image.repository }}"
+            - name: DOCKER_IMAGE_TAG
+              value: "{{ .Values.image.tag }}"
+            - name: DOCKER_IMAGE_PULL_POLICY
+              value: "{{ .Values.global.image.pullPolicy }}"
+            {{- if and .Values.operator.webhook.host (not .Values.operator.webhook.useServiceReference) }}
+            - name: CF_OPERATOR_WEBHOOK_SERVICE_HOST
+              value: {{ .Values.operator.webhook.host | quote }}
+            {{- end }}
+            - name: CF_OPERATOR_WEBHOOK_SERVICE_PORT
+              value: {{ .Values.operator.webhook.port | quote }}
+            {{- if .Values.global.operator.webhook.useServiceReference  }}
+            - name: CF_OPERATOR_WEBHOOK_USE_SERVICE_REFERENCE
+              value: "{{ .Values.global.operator.webhook.useServiceReference }}"
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 2999
+              scheme: "HTTPS"
+            initialDelaySeconds: 2
