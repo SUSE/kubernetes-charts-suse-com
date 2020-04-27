@@ -1,3 +1,4 @@
+apiVersion: v1
 description: A minibroker for your minikube
 name: minibroker
 version: 0.3.1
