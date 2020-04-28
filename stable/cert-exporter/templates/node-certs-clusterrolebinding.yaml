@@ -5,7 +5,7 @@ metadata:
   name: {{ include "cert-exporter.fullname" . }}-node
 roleRef:
   kind: ClusterRole
-  name: {{ template "cert-exporter.name" . }}-node
+  name: {{ template "cert-exporter.fullname" . }}-node
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
