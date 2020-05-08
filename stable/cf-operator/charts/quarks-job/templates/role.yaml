@@ -1,0 +1,86 @@
+{{- if .Values.global.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: {{ template "quarks-job.fullname" . }}
+  namespace: {{ .Values.global.operator.watchNamespace }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - delete
+  - get
+  - list
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - quarksjobs
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - quarksjobs/status
+  verbs:
+  - update
+
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+{{- end }}

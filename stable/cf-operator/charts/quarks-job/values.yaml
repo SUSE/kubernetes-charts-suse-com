@@ -1,0 +1,50 @@
+## Default values for Quarks Job Helm Chart.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
+
+
+# applyCRD is a boolean to control the installation of CRD's.
+applyCRD: true
+
+# createWatchNamespace is a boolean to control creation of watchnamespace.
+createWatchNamespace: true
+
+# fullnameOverride overrides the release name
+fullnameOverride: ""
+
+# image is the docker image of quarks job.
+image:
+  # repository that provides the operator docker image.
+  repository: quarks-job
+  # organization that provides the operator docker image.
+  org: registry.suse.com/cap
+  # tag of the operator docker image
+  tag: v0.0.86
+
+# logLevel defines from which level the logs should be printed.
+logLevel: debug
+
+# maxWorkers is the count of workers concurrently running the controller.
+maxWorkers: 1
+
+# nameOverride overrides the chart name part of the release name
+nameOverride: ""
+
+serviceAccount:
+  # create is a boolean to control the creation of service account name.
+  create: true
+  # name of the service account.
+  name:
+
+global:
+  # contextTimeout is the timeout value for each K8's API request in seconds.
+  contextTimeout: 30
+  rbac:
+    # create is a boolean to control the installation of rbac resources.
+    create: true
+  image:
+    # pullPolicy defines the policy used for pulling docker images.
+    pullPolicy: IfNotPresent
+  operator:
+    # watchNamespace is the namespace to watch for BOSH deployments.
+    watchNamespace: default
