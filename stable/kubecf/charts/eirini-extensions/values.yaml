@@ -10,7 +10,7 @@ namespace: eirini
 loggregator-bridge:
   replicaCount: 1
   image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-0.gfd70cac
     pullPolicy: IfNotPresent
   resources: {}
@@ -26,7 +26,7 @@ loggregator-bridge:
 persi:
   replicaCount: 1
   image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-67.ge68b3d3
     pullPolicy: IfNotPresent
   resources: {}
@@ -37,11 +37,11 @@ persi:
 persi-broker:
   replicaCount: 1
   image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-g47355df
     pullPolicy: IfNotPresent
   setup-image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-ge2799d8
     pullPolicy: IfNotPresent
   resources: {}
@@ -69,7 +69,7 @@ persi-broker:
 ssh:
   replicaCount: 1
   image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-0.ge2ed1ab
     pullPolicy: IfNotPresent
   resources: {}
@@ -83,11 +83,11 @@ ssh:
 ssh-proxy:
   replicaCount: 1
   image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-0.ge2ed1ab
     pullPolicy: IfNotPresent
   setup-image:
-    repository: registry.suse.com/cap
+    repository: splatform
     tag: v0.0.0-ge2799d8
     pullPolicy: IfNotPresent
   resources: {}

@@ -21,7 +21,7 @@ image:
   # repository that provides the operator docker image.
   repository: cf-operator
   # org that provides the operator docker image.
-  org: registry.suse.com/cap
+  org: cfcontainerization
   # tag of the operator docker image
   tag: v4.5.6-0.gffc6f942
 
@@ -41,7 +41,7 @@ operator:
     # port the webhook server listens on
     port: "2999"
   # boshDNSDockerImage is the docker image used for emulating bosh DNS (a CoreDNS image).
-  boshDNSDockerImage: "registry.suse.com/cap/coredns:0.1.0-1.6.7-bp152.1.2"
+  boshDNSDockerImage: "cfcontainerization/coredns:0.1.0-1.6.7-bp152.1.2"
 
 # nameOverride overrides the chart name part of the release name
 nameOverride: ""
