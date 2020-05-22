@@ -5,4 +5,4 @@ icon: https://raw.githubusercontent.com/SUSE/stratos-metrics/master/icon.svg
 name: metrics
 sources:
 - https://github.com/SUSE/stratos-metrics
-version: 1.2.0
+version: 1.2.1
