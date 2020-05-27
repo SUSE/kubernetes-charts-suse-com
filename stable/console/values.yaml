@@ -79,7 +79,6 @@ console:
   tlsSecretName:
 
   # URL of a Cloud Foundry to use for authentication and to auto-register on login
-  # Deprecated
   autoRegisterCF: ~
 
   # Custom annotations to apply to Stateful sets
