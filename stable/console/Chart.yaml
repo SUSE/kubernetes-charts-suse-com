@@ -5,4 +5,4 @@ icon: https://raw.githubusercontent.com/SUSE/stratos/custom-src/deploy/kubernete
 name: console
 sources:
 - https://github.com/SUSE/stratos
-version: 3.1.0
+version: 3.2.0
