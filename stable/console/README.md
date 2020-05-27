@@ -284,9 +284,6 @@ Create a yaml file with the content below and and update according to your envir
 ```
 uaa:
   url: https://uaa.cf-dev.io:2793
-  protocol: https://
-  port: 2793
-  host: uaa.cf-dev.io
   consoleClient:  cf
   consoleClientSecret: 
   consoleAdminIdentifier: cloud_controller.admin 
