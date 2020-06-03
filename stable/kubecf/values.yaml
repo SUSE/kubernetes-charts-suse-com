@@ -39,15 +39,20 @@ releases:
   bits-service:
     version: 2.28.0
   brain-tests:
-    version: v0.0.11
+    version: v0.0.12
     stemcell:
       os: SLE_15_SP1
-      version: 23.24-7.0.0_374.gb8e8e6af
+      version: 25.1-7.0.0_374.gb8e8e6af
   cf-acceptance-tests:
     version: 0.0.13
     stemcell:
       os: SLE_15_SP1
       version: 23.21-7.0.0_374.gb8e8e6af
+  cf-smoke-tests:
+    version: 40.0.128
+    stemcell:
+      os: SLE_15_SP1
+      version: 25.2-7.0.0_374.gb8e8e6af
   # pxc is not a BOSH release.
   pxc:
     image:
@@ -232,6 +237,7 @@ settings:
 
 features:
   eirini:
+    # When eirini is enabled, both suse_default_stack and suse_buildpacks must be enabled as well.
     enabled: false
     registry:
       service:
@@ -244,6 +250,8 @@ features:
       key: ~
     annotations: {}
     labels: {}
+  suse_default_stack:
+    enabled:  true
   suse_buildpacks:
     enabled: true
   autoscaler:
