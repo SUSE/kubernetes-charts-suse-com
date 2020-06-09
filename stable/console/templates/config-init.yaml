@@ -126,7 +126,7 @@ spec:
           value: "/{{ .Release.Name }}-encryption-key-volume/console.crt"
         - name: CONSOLE_PROXY_CERT_KEY_PATH
           value: "/{{ .Release.Name }}-encryption-key-volume/console.key"
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:3.2.0-76049dc49-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:3.2.1-566e233b1-cap
         command: ["/config-init.sh"]
         imagePullPolicy: {{.Values.imagePullPolicy}}
         livenessProbe: ~
@@ -190,7 +190,7 @@ spec:
           value: "{{ .Release.Revision }}"
         - name: "RELEASE_VERSION"
           value: "{{ .Chart.AppVersion }}"
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:3.2.0-76049dc49-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:3.2.1-566e233b1-cap
         command: ["/config-init.sh", "--delete"]
         imagePullPolicy: {{.Values.imagePullPolicy}}
         livenessProbe: ~

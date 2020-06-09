@@ -49,7 +49,7 @@ spec:
 {{- end }}
       containers:
       - name: fdbdoclayer
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.fdbdoclayer}}:3.2.0-76049dc49-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.fdbdoclayer}}:3.2.1-566e233b1-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: FDB_COORDINATOR
@@ -85,7 +85,7 @@ spec:
           mountPath: "/etc/secrets"
           readOnly: true
       - name: fdbserver
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.fdbserver}}:3.2.0-76049dc49-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.fdbserver}}:3.2.1-566e233b1-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: FDB_COORDINATOR

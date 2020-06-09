@@ -22,7 +22,7 @@ Check the repository was successfully added by searching for the `console`, for 
 ```
 helm search console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	3.2.0           3.2.0      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	3.1.0           3.1.0      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Version numbers will depend on the version of SUSE Stratos Console available from the Helm repository
@@ -284,6 +284,9 @@ Create a yaml file with the content below and and update according to your envir
 ```
 uaa:
   url: https://uaa.cf-dev.io:2793
+  protocol: https://
+  port: 2793
+  host: uaa.cf-dev.io
   consoleClient:  cf
   consoleClientSecret: 
   consoleAdminIdentifier: cloud_controller.admin 

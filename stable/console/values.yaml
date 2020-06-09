@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 3.2.0-76049dc49-cap
+consoleVersion: 3.2.1-566e233b1-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -79,6 +79,7 @@ console:
   tlsSecretName:
 
   # URL of a Cloud Foundry to use for authentication and to auto-register on login
+  # Deprecated
   autoRegisterCF: ~
 
   # Custom annotations to apply to Stateful sets
