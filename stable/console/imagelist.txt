@@ -1,0 +1,7 @@
+stratos-chartsync:3.2.1-566e233b1-cap
+stratos-config-init:3.2.1-566e233b1-cap
+stratos-console:3.2.1-566e233b1-cap
+stratos-fdbdoclayer:3.2.1-566e233b1-cap
+stratos-fdbserver:3.2.1-566e233b1-cap
+stratos-jetstream:3.2.1-566e233b1-cap
+stratos-mariadb:3.2.1-566e233b1-cap
