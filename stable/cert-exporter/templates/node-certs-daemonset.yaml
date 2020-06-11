@@ -1,0 +1,177 @@
+{{- if .Values.node.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "cert-exporter.fullname" . }}-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "cert-exporter.labels" . | nindent 4 }}  
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "cert-exporter.name" . }}
+      heritage: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+      labels:
+        app: {{ include "cert-exporter.name" . }}
+        heritage: {{ .Release.Name }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ template "cert-exporter.fullname" . }}-node
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      volumes:
+        - name: kubelet-ca
+          hostPath:
+            path: /var/lib/kubelet/pki/kubelet-ca.crt
+            type: FileOrCreate
+        - name: kubelet
+          hostPath:
+            path: /var/lib/kubelet/pki/kubelet.crt
+            type: FileOrCreate
+        - name: admin-conf
+          hostPath:
+            path: /etc/kubernetes/admin.conf
+            type: FileOrCreate
+        - name: controller-manager-conf
+          hostPath:
+            path: /etc/kubernetes/controller-manager.conf
+            type: FileOrCreate
+        - name: kubelet-conf
+          hostPath:
+            path: /etc/kubernetes/kubelet.conf
+            type: FileOrCreate
+        - name: scheduler-conf
+          hostPath:
+            path: /etc/kubernetes/scheduler.conf
+            type: FileOrCreate
+        - name: kube-ca
+          hostPath:
+            path: /etc/kubernetes/pki/ca.crt
+            type: FileOrCreate
+        - name: kube-apiserver
+          hostPath:
+            path: /etc/kubernetes/pki/apiserver.crt
+            type: FileOrCreate
+        - name: kube-apiserver-etcd-client
+          hostPath:
+            path: /etc/kubernetes/pki/apiserver-etcd-client.crt
+            type: FileOrCreate
+        - name: kube-apiserver-kubelet-client
+          hostPath:
+            path: /etc/kubernetes/pki/apiserver-kubelet-client.crt
+            type: FileOrCreate
+        - name: front-proxy-ca
+          hostPath:
+            path: /etc/kubernetes/pki/front-proxy-ca.crt
+            type: FileOrCreate
+        - name: front-proxy-client
+          hostPath:
+            path: /etc/kubernetes/pki/front-proxy-client.crt
+            type: FileOrCreate
+        - name: etcd
+          hostPath:
+            path: /etc/kubernetes/pki/etcd
+            type: DirectoryOrCreate
+        - name: etcd-ca
+          hostPath:
+            path: /etc/kubernetes/pki/etcd/ca.crt
+            type: FileOrCreate
+        - name: etcd-healthcheck-client
+          hostPath:
+            path: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+            type: FileOrCreate
+        - name: etcd-peer
+          hostPath:
+            path: /etc/kubernetes/pki/etcd/peer.crt
+            type: FileOrCreate
+        - name: etcd-server
+          hostPath:
+            path: /etc/kubernetes/pki/etcd/server.crt
+            type: FileOrCreate
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - cert-exporter
+          args:
+            - --include-kubeconfig-glob=/etc/kubernetes/*.conf
+            - --include-cert-glob=/etc/kubernetes/pki/*.crt
+            - --include-cert-glob=/etc/kubernetes/pki/etcd/*.crt
+            - --include-cert-glob=/var/lib/kubelet/pki/*.crt
+            - --alsologtostderr
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/lib/kubelet/pki/kubelet-ca.crt
+              name: kubelet-ca
+              readOnly: true
+            - mountPath: /var/lib/kubelet/pki/kubelet.crt
+              name: kubelet
+              readOnly: true
+            - mountPath: /etc/kubernetes/admin.conf
+              name: admin-conf
+              readOnly: true
+            - mountPath: /etc/kubernetes/controller-manager.conf
+              name: controller-manager-conf
+              readOnly: true
+            - mountPath: /etc/kubernetes/kubelet.conf
+              name: kubelet-conf
+              readOnly: true
+            - mountPath: /etc/kubernetes/scheduler.conf
+              name: scheduler-conf
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/ca.crt
+              name: kube-ca
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/apiserver.crt
+              name: kube-apiserver
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/apiserver-etcd-client.crt
+              name: kube-apiserver-etcd-client
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/apiserver-kubelet-client.crt
+              name: kube-apiserver-kubelet-client
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/front-proxy-ca.crt
+              name: front-proxy-ca
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/front-proxy-client.crt
+              name: front-proxy-client
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/etcd
+              name: etcd
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/etcd/ca.crt
+              name: etcd-ca
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+              name: etcd-healthcheck-client
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/etcd/peer.crt
+              name: etcd-peer
+              readOnly: true
+            - mountPath: /etc/kubernetes/pki/etcd/server.crt
+              name: etcd-server
+              readOnly: true
+          securityContext:
+            runAsUser: 0
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}

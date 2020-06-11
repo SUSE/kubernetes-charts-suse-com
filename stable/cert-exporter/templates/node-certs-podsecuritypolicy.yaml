@@ -1,0 +1,26 @@
+{{- if .Values.node.enabled }}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ include "cert-exporter.fullname" . }}-node
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "cert-exporter.labels" . | nindent 4 }}  
+spec:
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  volumes:
+    - secret
+    - hostPath
+  allowedHostPaths:
+    - pathPrefix: /var/lib/kubelet/pki
+      readOnly: true
+    - pathPrefix: /etc/kubernetes
+      readOnly: true
+{{- end }}
