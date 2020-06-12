@@ -65,8 +65,7 @@ data:
     #
     # Rule
     #
-
-    ruleset(name="forward_host_audit_logs") {        
+    ruleset(name="forward_host_audit_logs") {
         call setup_host_os_logforward
 
         if ( $!do_forward_host_os_logs != "true" ) then { stop }
@@ -255,6 +254,57 @@ data:
         {{- end }}
     }
 
+    ruleset(name="forward_k8s_audit_logs") {
+        call setup_k8s_audit_logforward
+
+        if ( $!do_forward_k8s_audit_logs != "true" ) then { stop }
+
+        set $!custom_protocol_version = exec_template("protocol_version");
+
+        if $!custom_protocol_version == "0" then {
+            set $!custom_protocol_version = "1";
+        }
+
+        set $.nodename = getenv("NODENAME");
+
+        {{- if (eq .Values.server.protocol "tcp" ) }}
+        action(type="omfwd"
+               name="tcp_fwd_k8s_audit_logs"
+               template="k8s_audit_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="tcp"
+               {{- if ( eq .Values.server.tls.enabled true ) }}
+               streamDriver="gtls"
+               streamDriverMode="1"
+                  {{- if and (.Values.server.tls.rootCa) (.Values.server.tls.permittedPeer) }}
+               streamDriverAuthMode="x509/name"
+               streamDriverPermittedPeers={{ .Values.server.tls.permittedPeer | quote }}
+                  {{- else if (.Values.server.tls.rootCa) }}
+               streamDriverAuthMode="x509/certvalid"
+                  {{- else }}
+               streamDriverAuthMode="anon"
+                  {{- end }}
+               {{- else }}
+               streamDriverMode="0"
+               streamDriverAuthMode="anon"
+               {{- end }}
+               action.resumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.resumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
+               queue.type="Direct")
+        {{- else }}
+        action(type="omfwd"
+               name="udp_fwd_k8s_audit_logs"
+               template="k8s_audit_rfc5424"
+               target={{ .Values.server.host | quote }}
+               port={{ .Values.server.port | quote }}
+               protocol="udp"
+               action.ResumeInterval={{ .Values.resumeInterval | default "30" | quote }}
+               action.ResumeRetryCount={{ .Values.resumeRetryCount | default "0" | quote }}
+               queue.type="Direct")
+        {{- end }}
+    }
+
     ruleset(name="forward_host_journal_logs") {
         {{- if (eq .Values.server.protocol "tcp" ) }}
         action(type="omfwd"
@@ -311,6 +361,10 @@ data:
             {{- end }}) {
        if ( $syslogtag == "kubernetes" ) then {
             call forward_k8s_container_logs
+            stop
+
+        } else if ( $syslogtag == "kubernetesAudit" ) then {
+            call forward_k8s_audit_logs
             stop
 
         } else if ( $syslogtag == "audit" ) then {
@@ -412,6 +466,13 @@ data:
     )
     {{- end }}
 
+    {{- if ( eq .Values.logs.kubernetesAudit.enabled true ) }}
+    input(type="imfile"
+          file="{{ .Values.logs.kubernetesAudit.logPath }}"
+          tag="kubernetesAudit"
+          ruleset="forward_logs")
+    {{- end }}
+
     {{- if ( eq .Values.logs.osSystem.enabled true ) }}
     input(type="imfile"
           file="/var/log/audit/audit.log"
@@ -450,6 +511,11 @@ data:
         # Enable Kubernetes log-forward
         set $!do_forward_k8s_cp_logs = {{ .Values.logs.kubernetesControlPlane.enabled | quote }};
         set $!do_forward_k8s_ns_logs = {{ .Values.logs.kubernetesUserNamespaces.enabled | quote }};
+    }
+
+    ruleset(name="setup_k8s_audit_logforward") {
+        # Enable Kubernetes audit log-forward.
+        set $!do_forward_k8s_audit_logs = {{ .Values.logs.kubernetesAudit.enabled | quote }};
     }
 
   all.template: |-
@@ -566,6 +632,29 @@ data:
         property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
         constant(value=" ")
         property(name="$!custom_k8s_sd")
+        constant(value=" ")
+        property(name="MSG" droplastlf="on")
+        constant(value="\n")
+    }
+
+  kubernetesAudit.template: |-
+    template(name="k8s_audit_rfc5424" type="list") {
+        constant(value="<")
+        property(name="PRI")
+        constant(value=">")
+        property(name="$!custom_protocol_version")
+        constant(value=" ")
+        property(name="TIMESTAMP" dateFormat="rfc3339" date.inUTC="on")
+        constant(value=" ")
+        property(name="$.nodename")
+        constant(value=" ")
+        constant(value="k8s/audit")
+        constant(value=" ")
+        property(name="PROCID" position.from="1" position.to="255" caseConversion="lower")
+        constant(value=" ")
+        property(name="MSGID" position.from="1" position.to="48" caseConversion="lower")
+        constant(value=" ")
+        property(name="STRUCTURED-DATA")
         constant(value=" ")
         property(name="MSG" droplastlf="on")
         constant(value="\n")
