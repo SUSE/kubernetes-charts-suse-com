@@ -68,8 +68,8 @@ spec:
         - name: var-docker-log
           mountPath: /var/lib/docker/containers
           readOnly: true
-        - name: kube-apiserver-audit-log
-          mountPath: /var/log/kube-apiserver/audit.log
+        - name: kube-apiserver-audit-log-dir
+          mountPath: /tmp/kube-apiserver
           readOnly: true
       terminationGracePeriodSeconds: 600
       volumes:
@@ -104,6 +104,7 @@ spec:
       - name: var-docker-log
         hostPath:
           path: /var/lib/docker/containers
-      - name: kube-apiserver-audit-log
+      - name: kube-apiserver-audit-log-dir
         hostPath:
-          path: {{ .Values.logs.kubernetesAudit.logPath }}
+          path: {{ .Values.logs.kubernetesAudit.logDir }}
+          type: DirectoryOrCreate

@@ -468,7 +468,7 @@ data:
 
     {{- if ( eq .Values.logs.kubernetesAudit.enabled true ) }}
     input(type="imfile"
-          file="{{ .Values.logs.kubernetesAudit.logPath }}"
+          file="{{ .Values.logs.kubernetesAudit.logDir }}/{{ .Values.logs.kubernetesAudit.logFile }}"
           tag="kubernetesAudit"
           ruleset="forward_logs")
     {{- end }}
