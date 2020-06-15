@@ -80,4 +80,5 @@ logs:
 
   kubernetesAudit:
     enabled: false
-    logPath: "/var/log/kube-apiserver/audit.log"
+    logDir: "/var/log/kube-apiserver"
+    logFile: "audit.log"
