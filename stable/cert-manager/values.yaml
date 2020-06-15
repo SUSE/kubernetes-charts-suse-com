@@ -39,10 +39,10 @@ strategy: {}
 featureGates: ""
 
 image:
-  repository: quay.io/jetstack/cert-manager-controller
+  repository: registry.suse.com/caasp/v5/cert-manager-controller
   # Override the image tag to deploy by setting this variable.
   # If no value is set, the chart's appVersion will be used.
-  # tag: canary
+  tag: 0.15.1
   pullPolicy: IfNotPresent
 
 # Override the namespace used to store DNS provider credentials etc. for ClusterIssuer
@@ -190,10 +190,10 @@ webhook:
   tolerations: []
 
   image:
-    repository: quay.io/jetstack/cert-manager-webhook
+    repository: registry.suse.com/caasp/v5/cert-manager-webhook
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
-    # tag: canary
+    tag: 0.15.1
     pullPolicy: IfNotPresent
 
   serviceAccount:
@@ -245,10 +245,10 @@ cainjector:
   tolerations: []
 
   image:
-    repository: quay.io/jetstack/cert-manager-cainjector
+    repository: registry.suse.com/caasp/v5/cert-manager-cainjector
     # Override the image tag to deploy by setting this variable.
     # If no value is set, the chart's appVersion will be used.
-    # tag: canary
+    tag: 0.15.1
     pullPolicy: IfNotPresent
 
   serviceAccount:

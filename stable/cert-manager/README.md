@@ -15,28 +15,11 @@ to renew certificates at an appropriate time before expiry.
 Full installation instructions, including details on how to configure extra
 functionality in cert-manager can be found in the [installation docs](https://cert-manager.io/docs/installation/kubernetes/).
 
-Before installing the chart, you must first install the cert-manager CustomResourceDefinition resources.
-This is performed in a separate step to allow you to easily uninstall and reinstall cert-manager without deleting your installed custom resources.
-
-```bash
-# Kubernetes 1.15+
-$ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-
-# Kubernetes <1.15
-$ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager-legacy.crds.yaml
-```
-
-> **Note**: If you're using a Kubernetes version below `v1.15` you will need to install the legacy version of the custom resource definitions.
-> This version does not have API version conversion enabled and only supports `cert-manager.io/v1alpha2` API resources.
-
 To install the chart with the release name `my-release`:
 
 ```console
-## Add the Jetstack Helm repository
-$ helm repo add jetstack https://charts.jetstack.io
-
 ## Install the cert-manager helm chart
-$ helm install --name my-release --namespace cert-manager jetstack/cert-manager
+$ helm install --name my-release --namespace cert-manager suse/cert-manager --set installCRDs=true
 ```
 
 In order to begin issuing certificates, you will need to set up a ClusterIssuer
@@ -63,20 +46,7 @@ are documented in our full [upgrading guide](https://cert-manager.io/docs/instal
 To uninstall/delete the `my-release` deployment:
 
 ```console
-$ helm delete my-release
-```
-
-The command removes all the Kubernetes components associated with the chart and deletes the release.
-
-If you want to completely uninstall cert-manager from your cluster, you will also need to
-delete the previously installed CustomResourceDefinition resources:
-
-```console
-# Kubernetes 1.15+
-$ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager.crds.yaml
-
-# Kubernetes <1.15
-$ kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/{{RELEASE_VERSION}}/cert-manager-legacy.crds.yaml
+$ helm delete my-release --purge
 ```
 
 ## Configuration
@@ -92,8 +62,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.podSecurityPolicy.useAppArmor` | If `true`, use Apparmor seccomp profile in PSP | `true` |
 | `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
 | `installCRDs` | If true, CRD resources will be installed as part of the Helm chart. If enabled, when uninstalling CRD resources will be deleted causing all installed custom resources to be DELETED | `false` |
-| `image.repository` | Image repository | `quay.io/jetstack/cert-manager-controller` |
-| `image.tag` | Image tag | `{{RELEASE_VERSION}}` |
+| `image.repository` | Image repository | `registry.suse.com/caasp/v5/cert-manager-controller` |
+| `image.tag` | Image tag | `0.15.1` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
 | `clusterResourceNamespace` | Override the namespace used to store DNS provider credentials etc. for ClusterIssuer resources | Same namespace as cert-manager pod |
@@ -141,8 +111,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
 | `webhook.tolerations` | Node tolerations for webhook pod assignment | `[]` |
-| `webhook.image.repository` | Webhook image repository | `quay.io/jetstack/cert-manager-webhook` |
-| `webhook.image.tag` | Webhook image tag | `{{RELEASE_VERSION}}` |
+| `webhook.image.repository` | Webhook image repository | `registry.suse.com/caasp/v5/cert-manager-webhook` |
+| `webhook.image.tag` | Webhook image tag | `0.15.1` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
 | `webhook.securityContext` | Security context for webhook pod assignment | `{}` |
@@ -158,8 +128,8 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
 | `cainjector.tolerations` | Node tolerations for cainjector pod assignment | `[]` |
-| `cainjector.image.repository` | cainjector image repository | `quay.io/jetstack/cert-manager-cainjector` |
-| `cainjector.image.tag` | cainjector image tag | `{{RELEASE_VERSION}}` |
+| `cainjector.image.repository` | cainjector image repository | `registry.suse.com/caasp/v5/cert-manager-cainjector` |
+| `cainjector.image.tag` | cainjector image tag | `0.15.1` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |
 
@@ -170,8 +140,3 @@ Alternatively, a YAML file that specifies the values for the above parameters ca
 ```console
 $ helm install --name my-release -f values.yaml .
 ```
-> **Tip**: You can use the default [values.yaml](https://github.com/jetstack/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml)
-
-## Contributing
-
-This chart is maintained at [github.com/jetstack/cert-manager](https://github.com/jetstack/cert-manager/tree/master/deploy/charts/cert-manager).
