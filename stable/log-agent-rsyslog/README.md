@@ -56,11 +56,14 @@ The following table lists the configurable parameters of the log-agent-rsyslog c
 | `queue.maxDiskSpace` | Rsyslog queue max disk space in byte | `2147483648` |
 | `kubernetesPodLabelsEnabled` | Enable kubernetes meta labels in pod logs | `false` |
 | `kubernetesPodAnnotationsEnabled` | Enable kubernetes meta annotations in pod logs | `false` |
-| `logs.osSystem.enable` | Enable fowarding os system logs (auditd, kernel, wicked*, zypper) | `true` |
-| `logs.kubernetesSystem.enable` | Enable fowarding kubernetes system logs (kubelet, crio) | `true` |
-| `logs.kubernetesControlPlane` | Enable fowarding kubernetes control plane logs | `true` |
-| `logs.kubernetesUserNamespaces.enable` | Enable fowarding kubernetes user namespaces logs | `false` |
-| `logs.kubernetesUserNamespaces.exclude` | Exclude fowarding kubernetes logs for specific namespaces | `- ""` |
+| `logs.osSystem.enable` | Enable forwarding os system logs (auditd, kernel, wicked*, zypper) | `true` |
+| `logs.kubernetesSystem.enable` | Enable forwarding kubernetes system logs (kubelet, crio) | `true` |
+| `logs.kubernetesControlPlane` | Enable forwarding kubernetes control plane logs | `true` |
+| `logs.kubernetesUserNamespaces.enable` | Enable forwarding kubernetes user namespaces logs | `false` |
+| `logs.kubernetesUserNamespaces.exclude` | Exclude forwarding kubernetes logs for specific namespaces | `- ""` |
+| `logs.kubernetesAudit.enabled` | Enables forwarding kubernetes audit logs | `false` |
+| `logs.kubernetesAudit.logDir` | Kubernetes audit log directory | `/var/log/kube-apiserver` |
+| `logs.kubernetesAudit.logFile` | Kubernetes audit log filename | `audit.log` |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
