@@ -53,6 +53,6 @@ logs:
       - ""
 
   kubernetesAudit:
-    enabled: false
+    enabled: true
     logDir: "/var/log/kube-apiserver"
     logFile: "audit.log"
