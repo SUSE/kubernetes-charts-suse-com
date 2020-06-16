@@ -61,7 +61,7 @@ The following table lists the configurable parameters of the log-agent-rsyslog c
 | `logs.kubernetesControlPlane.enabled` | Enable forwarding kubernetes control plane logs | `true` |
 | `logs.kubernetesUserNamespaces.enabled` | Enable forwarding kubernetes user namespaces logs | `false` |
 | `logs.kubernetesUserNamespaces.exclude` | Exclude forwarding kubernetes logs for specific namespaces | `- ""` |
-| `logs.kubernetesAudit.enabled` | Enables forwarding kubernetes audit logs | `false` |
+| `logs.kubernetesAudit.enabled` | Enables forwarding kubernetes audit logs | `true` |
 | `logs.kubernetesAudit.logDir` | Kubernetes audit log directory | `/var/log/kube-apiserver` |
 | `logs.kubernetesAudit.logFile` | Kubernetes audit log filename | `audit.log` |
 
