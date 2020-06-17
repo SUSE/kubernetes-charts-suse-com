@@ -71,6 +71,9 @@ spec:
         - name: kube-apiserver-audit-log-dir
           mountPath: {{ .Values.logs.kubernetesAudit.logDir }}
           readOnly: true
+        - name: kube-apiserver-audit-log
+          mountPath: {{ .Values.logs.kubernetesAudit.logDir }}/{{ .Values.logs.kubernetesAudit.logFile }}
+          readOnly: true
       terminationGracePeriodSeconds: 600
       volumes:
       - name: rsyslog-config-volume
@@ -108,3 +111,7 @@ spec:
         hostPath:
           path: {{ .Values.logs.kubernetesAudit.logDir }}
           type: DirectoryOrCreate
+      - name: kube-apiserver-audit-log
+        hostPath:
+          path: {{ .Values.logs.kubernetesAudit.logDir }}/{{ .Values.logs.kubernetesAudit.logFile }}
+          type: FileOrCreate
