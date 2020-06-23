@@ -26,7 +26,7 @@ console:
     externalIPs: []
     loadBalancerIP:
     loadBalancerSourceRanges: []
-    servicePort: 443
+    servicePort: 4433
     # nodePort: 30000
     type: ClusterIP
     externalName:
