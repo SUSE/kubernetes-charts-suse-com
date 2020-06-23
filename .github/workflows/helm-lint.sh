@@ -5,7 +5,7 @@ set -euo pipefail
 EXIT_CODE=0
 
 # List of directories which contains modified helm charts.
-DIRS=($(git diff --dirstat=files,1 origin/master -- stable/ | sed 's/^[ 0-9.]\+% //g'))
+DIRS=($(git diff --dirstat=files,1 origin/master -- stable/ | sed 's/^[ 0-9.]\+% //g' | cut -f1,2 -d'/'))
 
 if [ "${#DIRS[@]}" -eq 0 ]; then
     echo "No charts were modified."
@@ -22,7 +22,7 @@ done
 
 set_helm_args() {
     helm_args=""
-    if [[ "${1}" == "stable/cf/" ]]; then
+    if [[ "${1}" == "stable/cf" ]]; then
         helm_args=(
             "--values=$(realpath .github/workflows/scf-config-values.yaml)"
         )
