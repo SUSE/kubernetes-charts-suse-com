@@ -37,6 +37,10 @@ spec:
           hostPath:
             path: /var/lib/kubelet/pki/kubelet.crt
             type: FileOrCreate
+        - name: kubelet-client-current
+          hostPath:
+            path: /var/lib/kubelet/pki/kubelet-client-current.pem
+            type: FileOrCreate
         - name: admin-conf
           hostPath:
             path: /etc/kubernetes/admin.conf
@@ -108,6 +112,7 @@ spec:
             - --include-cert-glob=/etc/kubernetes/pki/*.crt
             - --include-cert-glob=/etc/kubernetes/pki/etcd/*.crt
             - --include-cert-glob=/var/lib/kubelet/pki/*.crt
+            - --include-cert-glob=/var/lib/kubelet/pki/*.pem
             - --alsologtostderr
           env:
             - name: NODE_NAME
@@ -124,6 +129,9 @@ spec:
               readOnly: true
             - mountPath: /var/lib/kubelet/pki/kubelet.crt
               name: kubelet
+              readOnly: true
+            - mountPath: /var/lib/kubelet/pki/kubelet-client-current.pem
+              name: kubelet-client-current
               readOnly: true
             - mountPath: /etc/kubernetes/admin.conf
               name: admin-conf
