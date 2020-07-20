@@ -31,3 +31,5 @@ spec:
         readOnly: true
       - pathPrefix: /run
         readOnly: true
+      - pathPrefix: {{ .Values.logs.kubernetesAudit.logDir }}
+        readOnly: true

@@ -51,3 +51,8 @@ logs:
     enabled: false
     exclude:
       - ""
+
+  kubernetesAudit:
+    enabled: true
+    logDir: "/var/log/kube-apiserver"
+    logFile: "audit.log"
