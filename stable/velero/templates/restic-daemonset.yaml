@@ -50,13 +50,20 @@ spec:
         {{- end }}
       containers:
         - name: restic
+        {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+        {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /velero
           args:
             - restic
             - server
+            {{- with .Values.configuration.features }}
+            - --features={{ . }}
+            {{- end }}
           volumeMounts:
             {{- if .Values.credentials.useSecret }}
             - name: cloud-credentials
@@ -73,8 +80,8 @@ spec:
           env:
             {{- with .Values.configuration.extraEnvVars }}
             {{- range $key, $value := . }}
-            - name: {{ default "none" $key }}
-              value: {{ default "none" $value }}
+            - name: {{ default "none" $key | quote }}
+              value: {{ default "none" $value | quote }}
             {{- end }}
             {{- end }}
             - name: VELERO_NAMESPACE
@@ -101,6 +108,21 @@ spec:
             - name: ALIBABA_CLOUD_CREDENTIALS_FILE
               value: /credentials/cloud
             {{- end }}
+          {{- end }}
+          {{- with .Values.configuration.extraEnvVars }}
+          {{- range $key, $value := . }}
+            - name: {{ default "none" $key | quote }}
+              value: {{ default "none" $value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.credentials.extraEnvVars }}
+          {{- range $key, $value := . }}
+            - name: {{ default "none" $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "velero.fullname" $ }}
+                  key: {{ default "none" $key }}
+          {{- end }}
           {{- end }}
           securityContext:
             privileged: {{ .Values.restic.privileged }}
