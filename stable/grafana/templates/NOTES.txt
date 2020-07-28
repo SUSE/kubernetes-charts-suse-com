@@ -8,7 +8,7 @@
 {{ if .Values.ingress.enabled }}
    From outside the cluster, the server URL(s) are:
 {{- range .Values.ingress.hosts }}
-     http://{{ . }}
+     https://{{ . }}
 {{- end }}
 {{ else }}
    Get the Grafana URL to visit by running these commands in the same shell:
