@@ -4,15 +4,11 @@ Velero is an open source tool to safely backup and restore, perform disaster rec
 
 Velero has two main components: a CLI, and a server-side Kubernetes deployment.
 
-## Installing the Velero CLI
-
-See the different options for installing the [Velero CLI](https://velero.io/docs/v1.4/basic-install/#install-the-cli).
-
 ## Installing the Velero server
 
 ### Velero version
 
-This helm chart installs Velero version v1.4.0 https://github.com/vmware-tanzu/velero/tree/v1.4.0. See the [#Upgrading](#upgrading) section for information on how to upgrade from other versions.
+This helm chart installs Velero version 1.3.1.
 
 ### Provider credentials
 
@@ -21,9 +17,6 @@ When installing using the Helm chart, the provider's credential information will
 ### Installing
 
 The default configuration values for this chart are listed in values.yaml.
-
-See Velero's full [official documentation](https://velero.io/docs/v1.4/basic-install/). More specifically, find your provider in the Velero list of [supported providers](https://velero.io/docs/v1.4/supported-providers/) for specific configuration information and examples.
-
 
 #### Using Helm 3
 
@@ -34,19 +27,16 @@ First, create the namespace: `kubectl create namespace <YOUR NAMESPACE>`
 Specify the necessary values using the --set key=value[,key=value] argument to helm install. For example,
 
 ```bash
-helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE> \
---set-file <FULL PATH TO FILE> \
+helm install suse/velero --namespace <YOUR NAMESPACE> \
+--set-file credentials.secretContents.cloud=<FULL PATH TO FILE> \
 --set configuration.provider=aws \
 --set configuration.backupStorageLocation.name=<PROVIDER NAME> \
 --set configuration.backupStorageLocation.bucket=<BUCKET NAME> \
 --set configuration.backupStorageLocation.config.region=<REGION> \
 --set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
---set image.repository=velero/velero \
---set image.tag=v1.4.0 \
---set image.pullPolicy=IfNotPresent \
 --set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=velero/velero-plugin-for-aws:v1.1.0 \
+--set initContainers[0].image=registry.suse.com/caasp/v4/velero-plugin-for-aws:1.0.1 \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
 --set initContainers[0].volumeMounts[0].name=plugins \
 --generate-name
@@ -57,14 +47,14 @@ helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE> \
 Add/update the necessary values by changing the values.yaml from this repository, then run:
 
 ```bash
-helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE>  -f values.yaml --generate-name
+helm install suse/velero --namespace <YOUR NAMESPACE> -f values.yaml --generate-name
 ```
 ##### Upgrade the configuration
 
 If a value needs to be added or changed, you may do so with the `upgrade` command. An example:
 
 ```bash
-helm upgrade vmware-tanzu/velero <RELEASE NAME> --namespace <YOUR NAMESPACE> --reuse-values --set configuration.provider=<NEW PROVIDER>
+helm upgrade suse/velero <RELEASE NAME> --namespace <YOUR NAMESPACE> --reuse-values --set configuration.provider=<NEW PROVIDER>
 ```
 
 #### Using Helm 2
@@ -74,9 +64,9 @@ helm upgrade vmware-tanzu/velero <RELEASE NAME> --namespace <YOUR NAMESPACE> --r
 A service account and the role binding prerequisite must be added to Tiller when configuring Helm to install Velero:
 
 ```
-kubectl create sa -n kube-system tiller
-kubectl create clusterrolebinding tiller-cluster-admin --clusterrole cluster-admin --serviceaccount kube-system:tiller
-helm init --service-account=tiller --wait --upgrade
+kubectl create serviceaccount --namespace kube-system tiller
+kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+helm init --tiller-image registry.suse.com/caasp/v4/helm-tiller:2.16.1 --service-account tiller
 ```
 
 ##### Option 1) CLI commands
@@ -84,21 +74,18 @@ helm init --service-account=tiller --wait --upgrade
 Specify the necessary values using the --set key=value[,key=value] argument to helm install. For example,
 
 ```bash
-helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE> \
---set-file <FULL PATH TO FILE> \
+helm install suse/velero --namespace <YOUR NAMESPACE> \
+--set-file credentials.secretContents.cloud=<FULL PATH TO FILE> \
 --set configuration.provider=aws \
 --set configuration.backupStorageLocation.name=<PROVIDER NAME> \
 --set configuration.backupStorageLocation.bucket=<BUCKET NAME> \
 --set configuration.backupStorageLocation.config.region=<REGION> \
 --set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
---set image.repository=velero/velero \
---set image.tag=v1.4.0 \
---set image.pullPolicy=IfNotPresent \
 --set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=velero/velero-plugin-for-aws:v1.1.0 \
+--set initContainers[0].image=registry.suse.com/caasp/v4/velero-plugin-for-aws:1.0.1 \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
---set initContainers[0].volumeMounts[0].name=plugins 
+--set initContainers[0].volumeMounts[0].name=plugins
 ```
 
 ##### Option 2) YAML file
@@ -106,7 +93,7 @@ helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE> \
 Add/update the necessary values by changing the values.yaml from this repository, then run:
 
 ```bash
-helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE>  -f values.yaml
+helm install suse/velero --namespace <YOUR NAMESPACE> -f values.yaml
 ```
 
 ##### Upgrade the configuration
@@ -114,31 +101,20 @@ helm install vmware-tanzu/velero --namespace <YOUR NAMESPACE>  -f values.yaml
 If a value needs to be added or changed, you may do so with the `upgrade` command. An example:
 
 ```bash
-helm upgrade vmware-tanzu/velero <RELEASE NAME> --reuse-values --set configuration.provider=<NEW PROVIDER> 
+helm upgrade suse/velero <RELEASE NAME> --reuse-values --set configuration.provider=<NEW PROVIDER>
 ```
-
-## Upgrading
-
-### Upgrading to v1.4.0
-
-The [instructions found here](https://velero.io/docs/v1.4/upgrade-to-1.4/) will assist you in upgrading from version v1.3.x to v1.4.0.
-
-
-### Upgrading to v1.3.1
-
-The [instructions found here](https://velero.io/docs/v1.3.1/upgrade-to-1.3/) will assist you in upgrading from version v1.2.0 or v1.3.0 to v1.3.1.
-
-### Upgrading to v1.2.0
-
-The [instructions found here](https://velero.io/docs/v1.2.0/upgrade-to-1.2/) will assist you in upgrading from version v1.0.0 or v1.1.0 to v1.2.0.
-
-### Upgrading to v1.1.0
-
-The [instructions found here](https://velero.io/docs/v1.1.0/upgrade-to-1.1/) will assist you in upgrading from version v1.0.0 to v1.1.0.
 
 ## Uninstall Velero
 
 Note: when you uninstall the Velero server, all backups remain untouched.
+
+#### Using Helm 3
+
+```bash
+helm delete <RELEASE NAME> --namespace <YOUR NAMESPACE>
+```
+
+#### Using Helm 2
 
 ```bash
 helm delete <RELEASE NAME> --purge
