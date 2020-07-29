@@ -7,8 +7,8 @@ metadata:
     chart: {{ template "nginx-ingress.chart" . }}
     component: "{{ .Values.controller.name }}"
     heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    release: {{ template "nginx-ingress.releaseLabel" . }}
   name: {{ template "nginx-ingress.fullname" . }}-tcp
 data:
-{{ toYaml .Values.tcp | indent 2 }}
+{{ tpl (toYaml .Values.tcp) . | indent 2 }}
 {{- end }}
