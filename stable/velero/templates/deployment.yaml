@@ -40,7 +40,11 @@ spec:
       {{- end }}
       containers:
         - name: velero
+      {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+      {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.metrics.enabled }}
           ports:
@@ -63,6 +67,9 @@ spec:
             {{- end }}
             {{- with .restoreResourcePriorities }}
             - --restore-resource-priorities={{ . }}
+            {{- end }}
+            {{- with .features }}
+            - --features={{ . }}
             {{- end }}
             {{- with .logLevel }}
             - --log-level={{ . }}
@@ -95,6 +102,8 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.namespace
+            - name: LD_LIBRARY_PATH
+              value: /plugins
           {{- if .Values.credentials.useSecret }}
             {{- if eq $provider "aws" }}
             - name: AWS_SHARED_CREDENTIALS_FILE
@@ -112,8 +121,17 @@ spec:
           {{- end }}
           {{- with .Values.configuration.extraEnvVars }}
           {{- range $key, $value := . }}
+            - name: {{ default "none" $key | quote }}
+              value: {{ default "none" $value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.credentials.extraEnvVars }}
+          {{- range $key, $value := . }}
             - name: {{ default "none" $key }}
-              value: {{ default "none" $value }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "velero.fullname" $ }}
+                  key: {{ default "none" $key }}
           {{- end }}
           {{- end }}
 {{- if .Values.initContainers }}
