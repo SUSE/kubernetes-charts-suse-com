@@ -62,7 +62,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `global.podSecurityPolicy.useAppArmor` | If `true`, use Apparmor seccomp profile in PSP | `true` |
 | `global.leaderElection.namespace` | Override the namespace used to store the ConfigMap for leader election | `kube-system` |
 | `installCRDs` | If true, CRD resources will be installed as part of the Helm chart. If enabled, when uninstalling CRD resources will be deleted causing all installed custom resources to be DELETED | `false` |
-| `image.repository` | Image repository | `registry.suse.com/caasp/v5/cert-manager-controller` |
+| `image.repository` | Image repository | `registry.suse.com/caasp/v4.5/cert-manager-controller` |
 | `image.tag` | Image tag | `0.15.1` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount`  | Number of cert-manager replicas  | `1` |
@@ -111,7 +111,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `webhook.nodeSelector` | Node labels for webhook pod assignment | `{}` |
 | `webhook.affinity` | Node affinity for webhook pod assignment | `{}` |
 | `webhook.tolerations` | Node tolerations for webhook pod assignment | `[]` |
-| `webhook.image.repository` | Webhook image repository | `registry.suse.com/caasp/v5/cert-manager-webhook` |
+| `webhook.image.repository` | Webhook image repository | `registry.suse.com/caasp/v4.5/cert-manager-webhook` |
 | `webhook.image.tag` | Webhook image tag | `0.15.1` |
 | `webhook.image.pullPolicy` | Webhook image pull policy | `IfNotPresent` |
 | `webhook.securePort` | The port that the webhook should listen on for requests. | `10250` |
@@ -128,7 +128,7 @@ The following table lists the configurable parameters of the cert-manager chart 
 | `cainjector.nodeSelector` | Node labels for cainjector pod assignment | `{}` |
 | `cainjector.affinity` | Node affinity for cainjector pod assignment | `{}` |
 | `cainjector.tolerations` | Node tolerations for cainjector pod assignment | `[]` |
-| `cainjector.image.repository` | cainjector image repository | `registry.suse.com/caasp/v5/cert-manager-cainjector` |
+| `cainjector.image.repository` | cainjector image repository | `registry.suse.com/caasp/v4.5/cert-manager-cainjector` |
 | `cainjector.image.tag` | cainjector image tag | `0.15.1` |
 | `cainjector.image.pullPolicy` | cainjector image pull policy | `IfNotPresent` |
 | `cainjector.securityContext` | Security context for cainjector pod assignment | `{}` |

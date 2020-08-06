@@ -46,7 +46,7 @@ reloader:
       group: com.stakater.platform
       version: 0.0.58
     image:
-      name: registry.suse.com/caasp/v5/reloader
+      name: registry.suse.com/caasp/v4.5/reloader
       tag: "0.0.58"
       pullPolicy: IfNotPresent
     # Support for extra environment variables.
