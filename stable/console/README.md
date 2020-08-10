@@ -20,9 +20,9 @@ helm repo add suse https://registry.suse.com
 Check the repository was successfully added by searching for the `console`, for example:
 
 ```
-helm search console
+helm search repo console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	3.2.1           3.2.1      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	3.2.0           3.2.0      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Version numbers will depend on the version of SUSE Stratos Console available from the Helm repository
@@ -155,10 +155,8 @@ helm repo update
 To update an instance, the following assumes your instance is called `my-console`:
 
 ```
-helm upgrade my-console suse/console   --recreate-pods
+helm upgrade my-console suse/console  
 ```
-
-> Note: You *must* use the `--recreate-pods` flag when upgrading
 
 After the upgrade, perform a `helm list` to ensure your console is the latest version.
 
@@ -312,7 +310,7 @@ helm install my-console suse/console   --namespace=console --set console.localAd
 
 In some scenarios it is useful to be able to add custom annotations and/or labels to the Kubernetes resources that the SUSE Stratos Console Helm chart creates.
 
-The SUSE Stratos Console Helm chart exposes a number of Helm chart values that cabe specified in order to do this - they are:
+The SUSE Stratos Console Helm chart exposes a number of Helm chart values that can be specified in order to do this - they are:
 
 |Parameter|Description|Default|
 |----|---|---|

@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 3.2.1-566e233b1-cap
+consoleVersion: 4.0.0-f2e1d4d13-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -8,7 +8,7 @@ dockerRegistrySecret: regsecret
 #noProxy: localhost
 #ftpProxy: proxy.corp.net
 #socksProxy: sock-proxy.corp.net
-imagePullPolicy: IfNotPresent
+imagePullPolicy: Always
 
 console:
   cookieDomain:
@@ -56,6 +56,7 @@ console:
       enabled: false
       servicePort: 80
       # nodePort: 30001
+
 
   # Name of config map that provides the template files for user invitation emails
   templatesConfigMapName:
@@ -108,6 +109,15 @@ console:
 
   # Node Selector for console Pod
   nodeSelector: {}
+
+  # Download link when installing the Kubernetes Dashboard in a targetted Kube Endpoint
+  kubeDashboardImage:
+
+  # Size for analysis reports volume
+  reportsVolumeSize: 1Gi
+
+  # Do not use a persistent volume for analysis reports
+  reportsVolumeDisabled: false
   
 images:
   console: stratos-console
@@ -117,6 +127,7 @@ images:
   fdbserver: stratos-fdbserver
   fdbdoclayer: stratos-fdbdoclayer
   chartsync: stratos-chartsync
+  analyzers: stratos-analyzers
 
 # Specify which storage class should be used for PVCs
 #storageClass: default

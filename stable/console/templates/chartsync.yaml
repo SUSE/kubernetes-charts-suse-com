@@ -30,10 +30,13 @@ spec:
     spec:
       containers:
       - name: chartsync
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{ default "stratos-chartsync" .Values.images.chartsync}}:3.2.1-566e233b1-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{ default "stratos-chartsync" .Values.images.chartsync}}:4.0.0-f2e1d4d13-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         command: ["/chartrepo"]
         args: ["serve", "--doclayer-url=mongodb://{{ .Release.Name }}-fdbdoclayer:27016", "--cafile=/etc/certs/ca.crt", "--certfile=/etc/certs/tls.crt", "--keyfile=/etc/certs/tls.key"]
+        env:
+        - name: STRATOS_IMAGE_REF
+          value: "4.0.0-f2e1d4d13-cap:{{ .Release.Revision }}"
         ports:
         - name: endpoint
           containerPort: 8080
