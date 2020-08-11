@@ -6,3 +6,4 @@ stratos-fdbserver:4.0.0-f2e1d4d13-cap
 stratos-jetstream:4.0.0-f2e1d4d13-cap
 stratos-mariadb:4.0.0-f2e1d4d13-cap
 stratos-kube-terminal:4.0.0-f2e1d4d13-cap
+stratos-analyzers:4.0.0-f2e1d4d13-cap
