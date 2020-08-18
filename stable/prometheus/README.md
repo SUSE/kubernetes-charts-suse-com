@@ -5,7 +5,7 @@ resides with the default values used at deployment time: a supported SLE
 images is being used.
 
 **Note for updates:** The upstream version is at
-[github helm repo]https://github.com/helm/charts/tree/master/stable/prometheus
+[github helm repo](https://github.com/helm/charts/tree/master/stable/prometheus)
 
 # Prometheus
 
