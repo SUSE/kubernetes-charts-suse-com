@@ -3,4 +3,4 @@ dependencies:
   repository: https://cloudfoundry-incubator.github.io/quarks-helm
   version: v0.0.86
 digest: sha256:2771ce78d1d00ea5ab5fb42753b6b5dea6b9c42e6964725e0258c9ad0e67f2c7
-generated: "2020-05-07T20:31:30.135718635Z"
+generated: "2020-08-12T02:33:18.240586913Z"
