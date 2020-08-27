@@ -23,7 +23,7 @@ spec:
       serviceAccountName: {{ include "velero.serverServiceAccount" . }}
       containers:
         - name: kubectl
-          image: registry.suse.com/caasp/v4/kubernetes-client:1.16.2
+          image: registry.suse.com/caasp/v4.5/kubernetes-client:1.18.6
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
