@@ -1,5 +1,5 @@
----
 {{- if .Values.console.techPreview }}
+---
 {{- if semverCompare ">=1.16" (printf "%s.%s" .Capabilities.KubeVersion.Major (trimSuffix "+" .Capabilities.KubeVersion.Minor) )}}
 apiVersion: apps/v1
 {{- else }}
@@ -38,14 +38,14 @@ spec:
     spec:
       containers:
       - name: analyzers
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.0.0-f2e1d4d13-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.0.1-97ac8e623-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         ports:
         - name: api
           containerPort: 8090
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.0.0-f2e1d4d13-cap:{{ .Release.Revision }}"
+          value: "4.0.1-97ac8e623-cap:{{ .Release.Revision }}"
         - name: ANALYSIS_SCRIPTS_DIR
           value: "/scripts"
         - name: ANALYSIS_REPORTS_DIR

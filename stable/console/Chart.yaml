@@ -5,4 +5,4 @@ icon: https://raw.githubusercontent.com/SUSE/stratos/master/deploy/kubernetes/cu
 name: console
 sources:
 - https://github.com/SUSE/stratos
-version: 4.0.0
+version: 4.0.1
