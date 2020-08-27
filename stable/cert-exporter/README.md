@@ -52,7 +52,7 @@ The following table lists the configurable parameters of the cert-exporter chart
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
 For example:
-1. monitor cert-manager issues certificates in cert-managert-test namespace.
+1. Monitor cert-manager issues certificates in cert-managert-test namespace.
    ```bash
    helm install \
        --name my-release \
@@ -62,7 +62,7 @@ For example:
        --set customSecret.certs[0].includeKeys="{ca.crt,tls.crt}" \
        --set customSecret.certs[0].annotationSelector="{cert-manager.io/certificate-name}"
    ```
-2. monitor certificates in all namespaces filtered by label selector.
+2. Monitor certificates in all namespaces filtered by label selector.
    ```bash
    helm install \
        --name my-release \
