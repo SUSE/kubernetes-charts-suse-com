@@ -56,7 +56,7 @@ This version requires Helm >= 2.12.0.
 | `readinessProbe`                          | Readiness Probe settings                      | `{ "httpGet": { "path": "/api/health", "port": 3000 } }`|
 | `securityContext`                         | Deployment securityContext                    | `{"runAsUser": 472, "fsGroup": 472}`                    |
 | `priorityClassName`                       | Name of Priority Class to assign pods         | `nil`                                                   |
-| `image.repository`                        | Image repository                              | `registry.suse.com/caasp/v4/grafana`                    |
+| `image.repository`                        | Image repository                              | `registry.suse.com/caasp/v4.5/grafana`                    |
 | `image.tag`                               | Image tag (`Must be >= 5.0.0`)                | `6.2.5`                                                 |
 | `image.pullPolicy`                        | Image pull policy                             | `IfNotPresent`                                          |
 | `image.pullSecrets`                       | Image pull secrets                            | `{}`                                                    |
@@ -91,7 +91,7 @@ This version requires Helm >= 2.12.0.
 | `persistence.finalizers`                  | PersistentVolumeClaim finalizers              | `[ "kubernetes.io/pvc-protection" ]`                    |
 | `persistence.subPath`                     | Mount a sub dir of the persistent volume      | `nil`                                                   |
 | `initChownData.enabled`                   | If false, don't reset data ownership at startup | true                                                  |
-| `initChownData.image.repository`          | init-chown-data container image repository    | `registry.suse.com/caasp/v4/busybox`                    |
+| `initChownData.image.repository`          | init-chown-data container image repository    | `registry.suse.com/caasp/v4.5/busybox`                    |
 | `initChownData.image.tag`                 | init-chown-data container image tag           | `1.26.2`                                                |
 | `initChownData.image.pullPolicy`          | init-chown-data container image pull policy   | `IfNotPresent`                                          |
 | `initChownData.resources`                 | init-chown-data pod resource requests & limits | `{}`                                                   |
@@ -118,7 +118,7 @@ This version requires Helm >= 2.12.0.
 | `podAnnotations`                          | Pod annotations                               | `{}`                                                    |
 | `podLabels`                               | Pod labels                                    | `{}`                                                    |
 | `podPortName`                             | Name of the grafana port on the pod           | `grafana`                                               |
-| `sidecar.image`                           | Sidecar image                                 | `registry.suse.com/caasp/v4/k8s-sidecar:0.1.75`         |
+| `sidecar.image`                           | Sidecar image                                 | `registry.suse.com/caasp/v4.5/k8s-sidecar:0.1.75`         |
 | `sidecar.imagePullPolicy`                 | Sidecar image pull policy                     | `IfNotPresent`                                          |
 | `sidecar.resources`                       | Sidecar resources                             | `{}`                                                    |
 | `sidecar.dashboards.enabled`              | Enables the cluster wide search for dashboards and adds/updates/deletes them in grafana | `false`       |
