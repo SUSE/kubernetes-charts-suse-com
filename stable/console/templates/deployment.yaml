@@ -4,12 +4,13 @@ apiVersion: apps/v1
 {{- else }}
 apiVersion: apps/v1beta1
 {{- end }}
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: stratos
-{{- if .Values.console.statefulSetAnnotations }}
+{{- if .Values.console.deploymentAnnotations }}
   annotations:
-{{ toYaml .Values.console.statefulSetAnnotations | indent 4 }}
+    checksum/config: {{ default (randAlphaNum 5 | quote) .Values.console.checksum }}
+{{ toYaml .Values.console.deploymentAnnotations | indent 4 }}
 {{- end }}
   labels:
     app.kubernetes.io/name: "stratos"
@@ -19,12 +20,16 @@ metadata:
     helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: "{{ .Release.Name }}"
     component: stratos
-{{- if .Values.console.statefulSetExtraLabels }}
-{{ toYaml .Values.console.statefulSetExtraLabels | indent 4 }}
+{{- if .Values.console.deploymentExtraLabels }}
+{{ toYaml .Values.console.deploymentExtraLabels | indent 4 }}
 {{- end }}
 spec:
-  serviceName: stratos
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1  
   selector:
     matchLabels:
       app.kubernetes.io/name: "stratos"
@@ -54,7 +59,7 @@ spec:
 {{- end }}
 {{- end }}
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.0.0-f2e1d4d13-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.0.1-97ac8e623-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         ports:
@@ -66,19 +71,23 @@ spec:
           protocol: TCP
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.0.0-f2e1d4d13-cap:{{ .Release.Revision }}"
+          value: "4.0.1-97ac8e623-cap:{{ .Release.Revision }}"
         - name: CONSOLE_CERT_PATH
           value: "/{{ .Release.Name }}-cert-volume"
+        - name: SSL_PROTOCOLS
+          value: "{{ .Values.console.sslProtocols }}"
+        - name: SSL_CIPHERS
+          value: "{{ .Values.console.sslCiphers }}"
         volumeMounts:
         - mountPath: "/{{ .Release.Name }}-cert-volume"
           name: "{{ .Release.Name }}-cert-volume"
           readOnly: true
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.0.0-f2e1d4d13-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.0.1-97ac8e623-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.0.0-f2e1d4d13-cap:{{ .Release.Revision }}"
+          value: "4.0.1-97ac8e623-cap:{{ .Release.Revision }}"
         - name: STRATOS_HELM_RELEASE
           value: "{{ .Release.Name }}"
         - name: DB_USER
