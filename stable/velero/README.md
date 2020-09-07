@@ -8,7 +8,7 @@ Velero has two main components: a CLI, and a server-side Kubernetes deployment.
 
 ### Velero version
 
-This helm chart installs Velero version 1.3.1.
+This helm chart installs Velero version v1.4.2 https://github.com/vmware-tanzu/velero/tree/v1.4.2.
 
 ### Provider credentials
 
@@ -18,25 +18,33 @@ When installing using the Helm chart, the provider's credential information will
 
 The default configuration values for this chart are listed in values.yaml.
 
+See Velero's full [official documentation](https://velero.io/docs/v1.4/basic-install/). More specifically, find your provider in the Velero list of [supported providers](https://velero.io/docs/v1.4/supported-providers/) for specific configuration information and examples.
+
+
 #### Using Helm 3
 
 First, create the namespace: `kubectl create namespace <YOUR NAMESPACE>`
 
 ##### Option 1) CLI commands
 
+Note: you may add the flag `--set installCRDs=false` if you don't want to install the CRDs.
+
 Specify the necessary values using the --set key=value[,key=value] argument to helm install. For example,
 
 ```bash
 helm install suse/velero --namespace <YOUR NAMESPACE> \
 --set-file credentials.secretContents.cloud=<FULL PATH TO FILE> \
---set configuration.provider=aws \
---set configuration.backupStorageLocation.name=<PROVIDER NAME> \
+--set configuration.provider=<PROVIDER NAME> \
+--set configuration.backupStorageLocation.name=<BACKUP STORAGE LOCATION NAME> \
 --set configuration.backupStorageLocation.bucket=<BUCKET NAME> \
 --set configuration.backupStorageLocation.config.region=<REGION> \
---set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
+--set configuration.volumeSnapshotLocation.name=<VOLUME SNAPSHOT LOCATION NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
---set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-aws:1.0.1 \
+--set image.repository=registry.suse.com/caasp/v4.5/velero \
+--set image.tag=1.4.2 \
+--set image.pullPolicy=IfNotPresent \
+--set initContainers[0].name=velero-plugin-for-<PROVIDER NAME> \
+--set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-<PROVIDER NAME>:<PROVIDER PLUGIN TAG> \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
 --set initContainers[0].volumeMounts[0].name=plugins \
 --generate-name
@@ -64,26 +72,31 @@ helm upgrade suse/velero <RELEASE NAME> --namespace <YOUR NAMESPACE> --reuse-val
 A service account and the role binding prerequisite must be added to Tiller when configuring Helm to install Velero:
 
 ```
-kubectl create serviceaccount --namespace kube-system tiller
-kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-helm init --tiller-image registry.suse.com/caasp/v4.5/helm-tiller:2.16.1 --service-account tiller
+kubectl create sa -n kube-system tiller
+kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount kube-system:tiller
+helm init --tiller-image registry.suse.com/caasp/v4.5/helm-tiller:2.16.9 --service-account tiller --wait --upgrade
 ```
 
 ##### Option 1) CLI commands
+
+Note: you may add the flag `--set installCRDs=false` if you don't want to install the CRDs.
 
 Specify the necessary values using the --set key=value[,key=value] argument to helm install. For example,
 
 ```bash
 helm install suse/velero --namespace <YOUR NAMESPACE> \
 --set-file credentials.secretContents.cloud=<FULL PATH TO FILE> \
---set configuration.provider=aws \
---set configuration.backupStorageLocation.name=<PROVIDER NAME> \
+--set configuration.provider=<PROVIDER NAME> \
+--set configuration.backupStorageLocation.name=<BACKUP STORAGE LOCATION NAME> \
 --set configuration.backupStorageLocation.bucket=<BUCKET NAME> \
 --set configuration.backupStorageLocation.config.region=<REGION> \
---set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
+--set configuration.volumeSnapshotLocation.name=<VOLUME SNAPSHOT LOCATION NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
---set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-aws:1.0.1 \
+--set image.repository=registry.suse.com/caasp/v4.5/velero \
+--set image.tag=1.4.2 \
+--set image.pullPolicy=IfNotPresent \
+--set initContainers[0].name=velero-plugin-for-<PROVIDER NAME> \
+--set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-<PROVIDER NAME>:<PROVIDER PLUGIN TAG> \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
 --set initContainers[0].volumeMounts[0].name=plugins
 ```
@@ -108,14 +121,14 @@ helm upgrade suse/velero <RELEASE NAME> --reuse-values --set configuration.provi
 
 Note: when you uninstall the Velero server, all backups remain untouched.
 
-#### Using Helm 3
-
-```bash
-helm delete <RELEASE NAME> --namespace <YOUR NAMESPACE>
-```
-
-#### Using Helm 2
+### Using Helm 2
 
 ```bash
 helm delete <RELEASE NAME> --purge
+```
+
+### Using Helm 3
+
+```bash
+helm delete <RELEASE NAME> -n <YOUR NAMESPACE>
 ```

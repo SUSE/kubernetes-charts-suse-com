@@ -1,10 +1,9 @@
-{{- if .Values.rbac.create }}
+{{- if and .Values.rbac.create .Values.rbac.clusterAdministrator }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: {{ include "velero.fullname" . }}-server
   labels:
-    app.kubernetes.io/component: server
     app.kubernetes.io/name: {{ include "velero.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -14,7 +13,7 @@ subjects:
     namespace: {{ .Release.Namespace }}
     name: {{ include "velero.serverServiceAccount" . }}
 roleRef:
-  kind: Role
-  name: {{ include "velero.fullname" . }}-server
+  kind: ClusterRole
+  name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

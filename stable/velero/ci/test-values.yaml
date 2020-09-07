@@ -16,7 +16,7 @@ configuration:
 
 # Set a service account so that the CRD clean up job has proper permissions to delete CRDs
 serviceAccount:
-  server:
+  crds:
     name: velero
 
 # Whether or not to clean up CustomResourceDefintions when deleting a release.

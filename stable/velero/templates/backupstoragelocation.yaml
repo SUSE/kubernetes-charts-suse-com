@@ -5,7 +5,7 @@ metadata:
   name: {{ include "velero.backupStorageLocation.name" . }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-delete-policy": "before-hook-creation"
+    "helm.sh/hook-delete-policy": before-hook-creation
   labels:
     app.kubernetes.io/name: {{ include "velero.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
@@ -18,6 +18,9 @@ spec:
     bucket: {{ .bucket  }}
     {{- with .prefix }}
     prefix: {{ . }}
+    {{- end }}
+    {{- with .caCert }}
+    caCert: {{ . }}
     {{- end }}
 {{- with .config }}
   config:
