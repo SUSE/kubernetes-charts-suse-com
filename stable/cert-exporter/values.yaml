@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: registry.suse.com/caasp/v4/cert-exporter
+  repository: registry.suse.com/caasp/v4.5/cert-exporter
   tag: 2.3.0
   pullPolicy: IfNotPresent
 

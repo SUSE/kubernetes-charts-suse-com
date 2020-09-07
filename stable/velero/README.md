@@ -36,7 +36,7 @@ helm install suse/velero --namespace <YOUR NAMESPACE> \
 --set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
 --set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=registry.suse.com/caasp/v4/velero-plugin-for-aws:1.0.1 \
+--set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-aws:1.0.1 \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
 --set initContainers[0].volumeMounts[0].name=plugins \
 --generate-name
@@ -66,7 +66,7 @@ A service account and the role binding prerequisite must be added to Tiller when
 ```
 kubectl create serviceaccount --namespace kube-system tiller
 kubectl create clusterrolebinding tiller --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-helm init --tiller-image registry.suse.com/caasp/v4/helm-tiller:2.16.1 --service-account tiller
+helm init --tiller-image registry.suse.com/caasp/v4.5/helm-tiller:2.16.1 --service-account tiller
 ```
 
 ##### Option 1) CLI commands
@@ -83,7 +83,7 @@ helm install suse/velero --namespace <YOUR NAMESPACE> \
 --set configuration.volumeSnapshotLocation.name=<PROVIDER NAME> \
 --set configuration.volumeSnapshotLocation.config.region=<REGION> \
 --set initContainers[0].name=velero-plugin-for-aws \
---set initContainers[0].image=registry.suse.com/caasp/v4/velero-plugin-for-aws:1.0.1 \
+--set initContainers[0].image=registry.suse.com/caasp/v4.5/velero-plugin-for-aws:1.0.1 \
 --set initContainers[0].volumeMounts[0].mountPath=/target \
 --set initContainers[0].volumeMounts[0].name=plugins
 ```
