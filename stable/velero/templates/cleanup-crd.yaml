@@ -1,6 +1,6 @@
+{{- if and .Values.installCRDs .Values.cleanUpCRDs  }}
 # This job is meant primarily for cleaning up on CI systems.
 # Using this on production systems, especially those that have multiple releases of Velero, will be destructive.
-{{- if and .Values.installCRDs .Values.cleanUpCRDs  }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -23,7 +23,7 @@ spec:
       serviceAccountName: {{ include "velero.serverServiceAccount" . }}
       containers:
         - name: kubectl
-          image: registry.suse.com/caasp/v4/kubernetes-client:1.16.2
+          image: registry.suse.com/caasp/v4.5/kubernetes-client:1.18.6
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
