@@ -1,6 +1,6 @@
 ---
 image:
-  repository: registry.suse.com/caasp/v4/rsyslog
+  repository: registry.suse.com/caasp/v4.5/rsyslog
   tag: 8.39.0
 
 server:

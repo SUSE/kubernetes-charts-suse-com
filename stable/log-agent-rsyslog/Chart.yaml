@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: 8.39.0
 description: Log Agent for forwarding logs of K8s control plane, namespaces, operating system to Rsyslog
 name: log-agent-rsyslog
-version: 1.0.3
+version: 1.0.4
