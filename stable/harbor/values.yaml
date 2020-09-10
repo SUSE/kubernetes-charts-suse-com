@@ -1,3 +1,9 @@
+suse:
+  # distributed under the SUSE(R) End User License Agreement for Beta Software
+  # please review + accept:
+  # https://documentation.suse.com/beta/eula
+  AcceptBetaEULA:
+
 expose:
   # Set the way how to expose the service. Set the type as "ingress",
   # "clusterIP", "nodePort" or "loadBalancer" and fill the information
