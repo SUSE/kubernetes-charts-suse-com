@@ -1,26 +1,68 @@
 # Default values for the minibroker
 # Image to use
-image: minibroker:1b8db9db6bd9b20448599d81dee0ebcd896c1c43
+image: registry.suse.com/cap-staging/minibroker:1.0.0-rc4
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
 imagePullPolicy: IfNotPresent
 deploymentPolicy: RollingUpdate
 # Certificate details to use for TLS. Leave blank to not use TLS
 tls:
   # base-64 encoded PEM data for the TLS certificate
-  cert:
+  cert: ~
   # base-64 encoded PEM data for the private key matching the certificate
-  key:
+  key: ~
+
+# The service broker server configuration.
+broker:
+  # The service configuration.
+  service:
+    # A port for the service broker HTTP API.
+    port: 80
 
 # The logging level to use; higher values emit more information
-logLevel: 5
+logLevel: 3
 
 serviceCatalogEnabledOnly: true
 
-deployServiceCatalog: false
+deployServiceCatalog: true
 
-kube:
-  registry:
-    hostname: registry.suse.com
-    username: ""
-    password: ""
-  organization: cap
+# A default namespace where Minibroker deploys service instances.
+defaultNamespace: ~
+
+rbac:
+  create: true
+  namespaced:
+    # Whether Minibroker will be namespaced or not. When enabled, Minibroker will only be able to
+    # manage resources in the whitelisted namespaces.
+    enabled: false
+    # A list of namespaces Minibroker can use to deploy service instances. The namespaces are
+    # expected to be created ahead of time.
+    whitelist: []
+  serviceAccount:
+    create: true
+    name: minibroker
+    annotations: {}
+    labels: {}
+
+# Optional override parameters for each of the supported service classes.
+# If defined, user-provided parameters during provisioning are ignored and
+# these overrides are used.
+# Example:
+#
+# provisioning:
+#   rabbitmq:
+#     replicas: 1
+#     ingress:
+#       enabled: false
+provisioning:
+  mariadb:
+    overrideParams: ~
+  mongodb:
+    overrideParams: ~
+  mysql:
+    overrideParams: ~
+  postgresql:
+    overrideParams: ~
+  rabbitmq:
+    overrideParams: ~
+  redis:
+    overrideParams: ~
