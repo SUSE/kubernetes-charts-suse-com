@@ -107,7 +107,7 @@ Parameter | Description | Default
 --------- | ----------- | -------
 `alertmanager.enabled` | If true, create alertmanager | `true`
 `alertmanager.name` | alertmanager container name | `alertmanager`
-`alertmanager.image.repository` | alertmanager container image repository | `registry.suse.com/caasp/v4/prometheus-alertmanager`
+`alertmanager.image.repository` | alertmanager container image repository | `registry.suse.com/caasp/v4.5/prometheus-alertmanager`
 `alertmanager.image.tag` | alertmanager container image tag | `0.16.2`
 `alertmanager.image.pullPolicy` | alertmanager container image pull policy | `IfNotPresent`
 `alertmanager.prefixURL` | The prefix slug at which the server can be accessed | ``
@@ -155,7 +155,7 @@ Parameter | Description | Default
 `alertmanager.service.type` | type of alertmanager service to create | `ClusterIP`
 `alertmanagerFiles.alertmanager.yml` | Prometheus alertmanager configuration | example configuration
 `configmapReload.name` | configmap-reload container name | `configmap-reload`
-`configmapReload.image.repository` | configmap-reload container image repository | `registry.suse.com/caasp/v4/configmap-reload`
+`configmapReload.image.repository` | configmap-reload container image repository | `registry.suse.com/caasp/v4.5/configmap-reload`
 `configmapReload.image.tag` | configmap-reload container image tag | `0.3.0`
 `configmapReload.image.pullPolicy` | configmap-reload container image pull policy | `IfNotPresent`
 `configmapReload.extraArgs` | Additional configmap-reload container arguments | `{}`
@@ -164,8 +164,8 @@ Parameter | Description | Default
 `configmapReload.resources` | configmap-reload pod resource requests & limits | `{}`
 `kubeStateMetrics.enabled` | If true, create kube-state-metrics | `true`
 `kubeStateMetrics.name` | kube-state-metrics container name | `kube-state-metrics`
-`kubeStateMetrics.image.repository` | kube-state-metrics container image repository| `registry.suse.com/caasp/v4/kube-state-metrics`
-`kubeStateMetrics.image.tag` | kube-state-metrics container image tag | `1.9.3`
+`kubeStateMetrics.image.repository` | kube-state-metrics container image repository| `registry.suse.com/caasp/v4.5/kube-state-metrics`
+`kubeStateMetrics.image.tag` | kube-state-metrics container image tag | `1.9.5`
 `kubeStateMetrics.image.pullPolicy` | kube-state-metrics container image pull policy | `IfNotPresent`
 `kubeStateMetrics.args` | kube-state-metrics container arguments | `{}`
 `kubeStateMetrics.nodeSelector` | node labels for kube-state-metrics pod assignment | `{}`
@@ -186,8 +186,8 @@ Parameter | Description | Default
 `kubeStateMetrics.service.type` | type of kube-state-metrics service to create | `ClusterIP`
 `nodeExporter.enabled` | If true, create node-exporter | `true`
 `nodeExporter.name` | node-exporter container name | `node-exporter`
-`nodeExporter.image.repository` | node-exporter container image repository| `registry.suse.com/caasp/v4/prometheus-node-exporter`
-`nodeExporter.image.tag` | node-exporter container image tag | `0.17.0`
+`nodeExporter.image.repository` | node-exporter container image repository| `registry.suse.com/caasp/v4.5/prometheus-node-exporter`
+`nodeExporter.image.tag` | node-exporter container image tag | `0.18.1`
 `nodeExporter.image.pullPolicy` | node-exporter container image pull policy | `IfNotPresent`
 `nodeExporter.extraArgs` | Additional node-exporter container arguments | `{}`
 `nodeExporter.extraHostPathMounts` | Additional node-exporter hostPath mounts | `[]`
@@ -214,7 +214,7 @@ Parameter | Description | Default
 `podSecurityPolicy.enabled` | If true, create & use pod security policies resources | `true`
 `pushgateway.enabled` | If true, create pushgateway | `false`
 `pushgateway.name` | pushgateway container name | `pushgateway`
-`pushgateway.image.repository` | pushgateway container image repository | `registry.suse.com/caasp/v4/prometheus-pushgateway`
+`pushgateway.image.repository` | pushgateway container image repository | `registry.suse.com/caasp/v4.5/prometheus-pushgateway`
 `pushgateway.image.tag` | pushgateway container image tag | `0.6.0`
 `pushgateway.image.pullPolicy` | pushgateway container image pull policy | `IfNotPresent`
 `pushgateway.extraArgs` | Additional pushgateway container arguments | `{}`
@@ -248,8 +248,8 @@ Parameter | Description | Default
 `rbac.create` | If true, create & use RBAC resources | `true`
 `server.enabled` | If false, Prometheus server will not be created | `true`
 `server.name` | Prometheus server container name | `server`
-`server.image.repository` | Prometheus server container image repository | `registry.suse.com/caasp/v4/prometheus-server`
-`server.image.tag` | Prometheus server container image tag | `2.7.1`
+`server.image.repository` | Prometheus server container image repository | `registry.suse.com/caasp/v4.5/prometheus-server`
+`server.image.tag` | Prometheus server container image tag | `2.18.0`
 `server.image.pullPolicy` | Prometheus server container image pull policy | `IfNotPresent`
 `server.enableAdminApi` |  If true, Prometheus administrative HTTP API will be enabled. Please note, that you should take care of administrative API access protection (ingress or some frontend Nginx with auth) before enabling it. | `false`
 `server.skipTSDBLock` |  If true, Prometheus skip TSDB locking. | `false`
