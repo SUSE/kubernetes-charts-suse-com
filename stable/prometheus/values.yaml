@@ -38,7 +38,7 @@ alertmanager:
   ## alertmanager container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/prometheus-alertmanager
+    repository: registry.suse.com/caasp/v4.5/prometheus-alertmanager
     tag: "0.16.2"
     pullPolicy: IfNotPresent
 
@@ -283,7 +283,7 @@ configmapReload:
   ## configmap-reload container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/configmap-reload
+    repository: registry.suse.com/caasp/v4.5/configmap-reload
     tag: "0.3.0"
     pullPolicy: IfNotPresent
 
@@ -322,8 +322,8 @@ kubeStateMetrics:
   ## kube-state-metrics container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/kube-state-metrics
-    tag: "1.9.3"
+    repository: registry.suse.com/caasp/v4.5/kube-state-metrics
+    tag: "1.9.5"
     pullPolicy: IfNotPresent
 
   ## kube-state-metrics priorityClassName
@@ -427,8 +427,8 @@ nodeExporter:
   ## node-exporter container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/prometheus-node-exporter
-    tag: "0.17.0"
+    repository: registry.suse.com/caasp/v4.5/prometheus-node-exporter
+    tag: "0.18.1"
     pullPolicy: IfNotPresent
 
   ## Specify if a Pod Security Policy for node-exporter must be created
@@ -542,8 +542,8 @@ server:
   ## Prometheus server container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/prometheus-server
-    tag: "2.7.1"
+    repository: registry.suse.com/caasp/v4.5/prometheus-server
+    tag: "2.18.0"
     pullPolicy: IfNotPresent
 
   ## prometheus server priorityClassName
@@ -859,7 +859,7 @@ pushgateway:
   ## pushgateway container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/prometheus-pushgateway
+    repository: registry.suse.com/caasp/v4.5/prometheus-pushgateway
     tag: "0.6.0"
     pullPolicy: IfNotPresent
 
