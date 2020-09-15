@@ -49,8 +49,8 @@ livenessProbe:
 # schedulerName: "default-scheduler"
 
 image:
-  repository: registry.suse.com/caasp/v4/grafana
-  tag: "6.2.5"
+  repository: registry.suse.com/caasp/v4.5/grafana
+  tag: "7.0.3"
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -85,8 +85,8 @@ extraEmptyDirMounts: []
 # priorityClassName:
 
 downloadDashboardsImage:
-  repository: registry.suse.com/caasp/v4/curl
-  tag: "7.60.0"
+  repository: registry.suse.com/caasp/v4.5/curl
+  tag: "7.66.0"
   pullPolicy: IfNotPresent
 
 downloadDashboards:
@@ -203,7 +203,7 @@ initChownData:
   ## initChownData container image
   ##
   image:
-    repository: registry.suse.com/caasp/v4/busybox
+    repository: registry.suse.com/caasp/v4.5/busybox
     tag: "1.26.2"
     pullPolicy: IfNotPresent
 
@@ -416,7 +416,7 @@ smtp:
 ## Sidecars that collect the configmaps with specified label and stores the included files them into the respective folders
 ## Requires at least Grafana 5 to work and can't be used together with parameters dashboardProviders, datasources and dashboards
 sidecar:
-  image: registry.suse.com/caasp/v4/k8s-sidecar:0.1.75
+  image: registry.suse.com/caasp/v4.5/k8s-sidecar:0.1.75
   imagePullPolicy: IfNotPresent
   resources: {}
 #   limits:
