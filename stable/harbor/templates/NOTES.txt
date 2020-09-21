@@ -1,2 +1,6 @@
+{{- $eula := required "Please review https://documentation.suse.com/beta/eula and to accept, add --set suse.AcceptBetaEULA=yes to your helm invocation" .Values.suse.AcceptBetaEULA }}
+{{- if and (ne "yes" $eula) $eula }}
+{{- fail "EULA was not accepted." }}
+{{- end }}
 Please wait for several minutes for Harbor deployment to complete.
 Then you should be able to visit the Harbor portal at {{ .Values.externalURL }}

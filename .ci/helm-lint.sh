@@ -31,6 +31,7 @@ set_helm_args() {
 
 # helm lint test
 for dir in "${DIRS[@]}"; do
+  [[ "$dir"  == "stable/rook-ceph" ]] && continue
   echo "Linting chart ${dir}..."
   set_helm_args "${dir}"
   pushd "${dir}"
