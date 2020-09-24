@@ -1,3 +1,4 @@
+{{- $_ := include "_config.load" $ }}
 {{- $root := . }}
 {{- if .Values.features.ingress.enabled }}
 {{- if and .Values.features.ingress.tls.crt .Values.features.ingress.tls.key }}
@@ -82,16 +83,8 @@ spec:
   - secretName: {{ .Release.Name }}-ingress-tls
     hosts:
     - "*.{{ .Values.system_domain }}"
-    - "{{ .Values.system_domain }}"
   rules:
     - host: "*.{{ .Values.system_domain }}"
-      http:
-        paths:
-          - path: "/"
-            backend:
-              serviceName: router
-              servicePort: 443
-    - host: "{{ .Values.system_domain }}"
       http:
         paths:
           - path: "/"
@@ -125,7 +118,6 @@ spec:
   selector:
     app.kubernetes.io/component: router
     app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
-    app.kubernetes.io/version: {{ default $root.Chart.Version $root.Chart.AppVersion | quote }}
   ports:
   - name: http
     protocol: TCP
@@ -169,7 +161,6 @@ spec:
   selector:
     app.kubernetes.io/component: ssh-proxy
     app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
-    app.kubernetes.io/version: {{ default $root.Chart.Version $root.Chart.AppVersion | quote }}
   ports:
   - name: ssh
     protocol: TCP
@@ -209,7 +200,6 @@ spec:
   selector:
     app.kubernetes.io/component: tcp-router
     app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
-    app.kubernetes.io/version: {{ default $root.Chart.Version $root.Chart.AppVersion | quote }}
   ports:
   - name: healthcheck
     protocol: TCP

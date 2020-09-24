@@ -1,6 +1,6 @@
 ---
 name: cf
-manifest_version: v12.36.0
+manifest_version: v13.17.0
 update:
   canaries: 1
   canary_watch_time: 30000-1200000
@@ -52,6 +52,36 @@ addons:
         key: "((forwarder_agent_metrics_tls.private_key))"
         server_name: forwarder_agent_metrics
 
+- name: loggr-syslog-agent
+  include:
+    stemcell:
+    - os: ubuntu-trusty
+    - os: ubuntu-xenial
+  exclude:
+    jobs:
+    - name: smoke_tests
+      release: cf-smoke-tests
+  jobs:
+  - name: loggr-syslog-agent
+    release: loggregator-agent
+    properties:
+      port: 3460
+      tls:
+        ca_cert: "((loggregator_tls_agent.ca))"
+        cert: "((loggregator_tls_agent.certificate))"
+        key: "((loggregator_tls_agent.private_key))"
+      cache:
+        tls:
+          ca_cert: "((syslog_agent_api_tls.ca))"
+          cert: "((syslog_agent_api_tls.certificate))"
+          key: "((syslog_agent_api_tls.private_key))"
+          cn: "binding-cache"
+      metrics:
+        ca_cert: "((syslog_agent_metrics_tls.ca))"
+        cert: "((syslog_agent_metrics_tls.certificate))"
+        key: "((syslog_agent_metrics_tls.private_key))"
+        server_name: syslog_agent_metrics
+
 - name: prom_scraper
   include:
     stemcell:
@@ -75,6 +105,55 @@ addons:
         key: "((prom_scraper_metrics_tls.private_key))"
         server_name: prom_scraper_metrics
 
+- name: metrics-discovery-registrar
+  exclude:
+    jobs:
+    - name: smoke_tests
+      release: cf-smoke-tests
+  include:
+    stemcell:
+    - os: ubuntu-trusty
+    - os: ubuntu-xenial
+  jobs:
+  - name: metrics-discovery-registrar
+    properties:
+      metrics:
+        ca_cert: ((metrics_discovery_metrics_tls.ca))
+        cert: ((metrics_discovery_metrics_tls.certificate))
+        key: ((metrics_discovery_metrics_tls.private_key))
+        server_name: metrics_discovery_metrics
+      nats_client:
+        cert: ((nats_client_cert.certificate))
+        key: ((nats_client_cert.private_key))
+    release: metrics-discovery
+
+- name: metrics-agent
+  exclude:
+    jobs:
+    - name: smoke_tests
+      release: cf-smoke-tests
+  include:
+    stemcell:
+    - os: ubuntu-xenial
+  jobs:
+  - name: metrics-agent
+    properties:
+      grpc:
+        ca_cert: ((loggregator_tls_agent.ca))
+        cert: ((loggregator_tls_agent.certificate))
+        key: ((loggregator_tls_agent.private_key))
+      metrics:
+        ca_cert: ((metrics_agent_tls.ca))
+        cert: ((metrics_agent_tls.certificate))
+        key: ((metrics_agent_tls.private_key))
+        server_name: metrics_agent
+      scrape:
+        tls:
+          ca_cert: ((prom_scraper_scrape_tls.ca))
+          cert: ((prom_scraper_scrape_tls.certificate))
+          key: ((prom_scraper_scrape_tls.private_key))
+    release: metrics-discovery
+
 - name: bpm
   include:
     stemcell:
@@ -92,21 +171,6 @@ addons:
         targets:
         - query: '_'
           instance_group: diego-cell
-          deployment: cf
-          network: default
-          domain: bosh
-        - query: '_'
-          instance_group: windows2012R2-cell
-          deployment: cf
-          network: default
-          domain: bosh
-        - query: '_'
-          instance_group: windows2016-cell
-          deployment: cf
-          network: default
-          domain: bosh
-        - query: '_'
-          instance_group: windows1803-cell
           deployment: cf
           network: default
           domain: bosh
@@ -131,13 +195,6 @@ addons:
         targets:
         - query: 'q-s4'
           instance_group: diego-api
-          deployment: cf
-          network: default
-          domain: bosh
-      - domain: bits.service.cf.internal
-        targets:
-        - query: '*'
-          instance_group: bits
           deployment: cf
           network: default
           domain: bosh
@@ -260,6 +317,21 @@ addons:
           deployment: cf
           network: default
           domain: bosh
+      - domain: nats.service.cf.internal
+        targets:
+        - query: '*'
+          instance_group: nats
+          deployment: cf
+          network: default
+          domain: bosh
+      - domain: _.nats.service.cf.internal
+        targets:
+        - query: '_'
+          instance_group: nats
+          deployment: cf
+          network: default
+          domain: bosh
+
 
 instance_groups:
 - name: smoke-tests
@@ -269,8 +341,6 @@ instance_groups:
   instances: 1
   vm_type: minimal
   stemcell: default
-  update:
-    serial: true
   networks:
   - name: default
   jobs:
@@ -288,7 +358,7 @@ instance_groups:
         space: cf_smoke_tests_space
         cf_dial_timeout_in_seconds: 300
         skip_ssl_validation: true
-  - name: cf-cli-6-linux
+  - name: cf-cli-7-linux
     release: cf-cli
 - name: nats
   azs:
@@ -306,34 +376,38 @@ instance_groups:
       nats: {as: nats, shared: true}
     properties:
       nats:
-        password: "((nats_password))"
+        hostname: nats.service.cf.internal
         user: nats
-- name: adapter
-  azs:
-  - z1
-  - z2
-  instances: 2
-  vm_type: minimal
-  stemcell: default
-  networks:
-  - name: default
-  jobs:
-  - name: adapter
-    release: cf-syslog-drain
+        password: "((nats_password))"
+        internal:
+          tls:
+            ca: "((nats_internal_cert.ca))"
+            certificate: "((nats_internal_cert.certificate))"
+            enabled: true
+            private_key: "((nats_internal_cert.private_key))"
+  - name: nats-tls
+    release: nats
+    provides:
+      nats-tls: {as: nats-tls, shared: true}
+    custom_provider_definitions:
+    - name: nats-tls-address
+      type: address
     properties:
-      scalablesyslog:
-        adapter:
+      nats:
+        hostname: nats.service.cf.internal
+        user: nats
+        password: "((nats_password))"
+        internal:
           tls:
-            ca: "((adapter_tls.ca))"
-            cert: "((adapter_tls.certificate))"
-            key: "((adapter_tls.private_key))"
-            cn: ss-adapter
-        adapter_rlp:
+            ca: "((nats_internal_cert.ca))"
+            private_key: "((nats_internal_cert.private_key))"
+            certificate: "((nats_internal_cert.certificate))"
+            enabled: true
+        external:
           tls:
-            ca: "((adapter_rlp_tls.ca))"
-            cert: "((adapter_rlp_tls.certificate))"
-            key: "((adapter_rlp_tls.private_key))"
-            cn: reverselogproxy
+            ca: "((nats_client_cert.ca))"
+            private_key: "((nats_server_cert.private_key))"
+            certificate: "((nats_server_cert.certificate))"
 - name: database
   migrated_from:
   - name: mysql
@@ -431,8 +505,6 @@ instance_groups:
   instances: 2
   vm_type: small
   stemcell: default
-  update:
-    serial: true
   networks:
   - name: default
   jobs:
@@ -628,7 +700,7 @@ instance_groups:
             scope: network.admin,network.write,cloud_controller.read,cloud_controller.write,openid,password.write,cloud_controller.admin,scim.read,scim.write,doppler.firehose,uaa.user,routing.router_groups.read,routing.router_groups.write,cloud_controller.admin_read_only,cloud_controller.global_auditor,perm.admin,clients.read
             secret: ''
           cf_smoke_tests:
-            authorities: cloud_controller.admin
+            authorities: cloud_controller.admin,clients.read
             authorized-grant-types: client_credentials
             secret: "((uaa_clients_cf_smoke_tests_secret))"
           cloud_controller_username_lookup:
@@ -764,8 +836,6 @@ instance_groups:
   vm_extensions:
   - 50GB_ephemeral_disk
   stemcell: default
-  update:
-    serial: true
   networks:
   - name: default
   jobs:
@@ -779,6 +849,8 @@ instance_groups:
       system_domain: "((system_domain))"
       app_domains:
       - "((system_domain))"
+      - name: apps.internal
+        internal: true
       app_ssh:
         host_key_fingerprint: "((diego_ssh_proxy_host_key.public_key_fingerprint))"
       routing_api: &routing_api
@@ -1091,8 +1163,6 @@ instance_groups:
   vm_extensions:
   - diego-ssh-proxy-network-properties
   stemcell: default
-  update:
-    serial: true
   networks:
   - name: default
   jobs:
@@ -1162,16 +1232,15 @@ instance_groups:
           ca_cert: "((cc_tls.ca))"
           private_key: "((cc_tls.private_key))"
           public_cert: "((cc_tls.certificate))"
-      ccdb:
-        databases:
-        - name: cloud_controller
-          tag: cc
-        db_scheme: mysql
-        port: 3306
-        roles:
-        - name: cloud_controller
-          password: ((cc_database_password))
-          tag: admin
+      ccdb: *ccdb
+  - name: service-discovery-controller
+    properties:
+      dnshttps:
+        client:
+          ca: ((cf_app_sd_server_tls.ca))
+        server:
+          tls: ((cf_app_sd_server_tls))
+    release: cf-networking
   - name: statsd_injector
     release: statsd-injector
     properties: *statsd_injector_properties
@@ -1215,24 +1284,26 @@ instance_groups:
       logging:
         format:
           timestamp: "rfc3339"
-  - name: scheduler
-    release: cf-syslog-drain
+  - name: loggr-syslog-binding-cache
+    release: loggregator-agent
     properties:
-      scalablesyslog:
-        scheduler:
-          api:
-            url: https://cloud-controller-ng.service.cf.internal:9023
-          tls:
-            client:
-              ca: "((scheduler_client_tls.ca))"
-              cert: "((scheduler_client_tls.certificate))"
-              key: "((scheduler_client_tls.private_key))"
-              adapter_cn: "ss-adapter"
-            api:
-              ca: "((scheduler_api_tls.ca))"
-              cert: "((scheduler_api_tls.certificate))"
-              key: "((scheduler_api_tls.private_key))"
-              cn: "cloud-controller-ng.service.cf.internal"
+      external_port: 9000
+      tls:
+        ca_cert: "((binding_cache_tls.ca))"
+        cert: "((binding_cache_tls.certificate))"
+        key: "((binding_cache_tls.private_key))"
+        cn: "binding-cache"
+      api:
+        tls:
+          ca_cert: "((cc_tls.ca))"
+          cert: "((binding_cache_api_tls.certificate))"
+          key: "((binding_cache_api_tls.private_key))"
+          cn: "cloud-controller-ng.service.cf.internal"
+      metrics:
+        ca_cert: "((loggr_syslog_binding_cache_metrics_tls.ca))"
+        cert: "((loggr_syslog_binding_cache_metrics_tls.certificate))"
+        key: "((loggr_syslog_binding_cache_metrics_tls.private_key))"
+        server_name: loggr_syslog_binding_cache_metrics
   - name: loggr-udp-forwarder
     release: loggregator-agent
     properties:
@@ -1440,6 +1511,15 @@ instance_groups:
   networks:
   - name: default
   jobs:
+  - name: bosh-dns-adapter
+    properties:
+      internal_domains: ["apps.internal."]
+      dnshttps:
+        client:
+          tls: ((cf_app_sd_client_tls))
+        server:
+          ca: ((cf_app_sd_client_tls.ca))
+    release: cf-networking
   - name: cflinuxfs3-rootfs-setup
     release: cflinuxfs3
     properties:
@@ -1507,6 +1587,11 @@ instance_groups:
       tls: *cfdot_tls_client_properties
   - name: route_emitter
     release: diego
+    consumes:
+      nats:
+        ip_addresses: false
+      nats-tls:
+        ip_addresses: false
     properties:
       bpm:
         enabled: true
@@ -1518,6 +1603,11 @@ instance_groups:
             ca_cert: "((diego_bbs_client.ca))"
             client_cert: "((diego_bbs_client.certificate))"
             client_key: "((diego_bbs_client.private_key))"
+          nats:
+            tls:
+              enabled: true
+              client_cert: "((nats_client_cert.certificate))"
+              client_key: "((nats_client_cert.private_key))"
       tcp:
         enabled: true
       uaa:
@@ -1526,6 +1616,8 @@ instance_groups:
       logging:
         format:
           timestamp: "rfc3339"
+      internal_routes:
+        enabled: true
   - name: garden-cni
     release: cf-networking
     properties:
@@ -1570,8 +1662,6 @@ instance_groups:
   instances: 2
   vm_type: minimal
   stemcell: default
-  update:
-    serial: true
   networks:
   - name: default
   jobs:
@@ -1741,6 +1831,25 @@ variables:
   type: password
 - name: cc_staging_upload_password
   type: password
+- name: cf_app_sd_ca
+  options:
+    common_name: service-discovery-controller.service.cf.internal
+    is_ca: true
+  type: certificate
+- name: cf_app_sd_client_tls
+  options:
+    ca: cf_app_sd_ca
+    common_name: service-discovery-controller.service.cf.internal
+    extended_key_usage:
+    - client_auth
+  type: certificate
+- name: cf_app_sd_server_tls
+  options:
+    ca: cf_app_sd_ca
+    common_name: service-discovery-controller.service.cf.internal
+    extended_key_usage:
+    - server_auth
+  type: certificate
 - name: cf_mysql_mysql_admin_password
   type: password
 - name: cf_mysql_mysql_cluster_health_password
@@ -1823,8 +1932,6 @@ variables:
 - name: router_status_password
   type: password
 - name: cf_admin_password
-  type: password
-- name: cf_bosh_password
   type: password
 - name: router_route_services_secret
   type: password
@@ -1988,37 +2095,6 @@ variables:
   options:
     ca: loggregator_ca
     common_name: rlp_gateway
-    extended_key_usage:
-    - client_auth
-- name: adapter_rlp_tls
-  type: certificate
-  options:
-    ca: loggregator_ca
-    common_name: ss-adapter-rlp
-    extended_key_usage:
-    - client_auth
-    - server_auth
-- name: scheduler_api_tls
-  type: certificate
-  options:
-    ca: service_cf_internal_ca
-    common_name: ss-scheduler
-    extended_key_usage:
-    - client_auth
-    - server_auth
-- name: adapter_tls
-  type: certificate
-  options:
-    ca: loggregator_ca
-    common_name: ss-adapter
-    extended_key_usage:
-    - server_auth
-    - client_auth
-- name: scheduler_client_tls
-  type: certificate
-  options:
-    ca: loggregator_ca
-    common_name: ss-scheduler
     extended_key_usage:
     - client_auth
 - name: logs_provider
@@ -2269,6 +2345,28 @@ variables:
     is_ca: true
     common_name: metricScraperCA
 
+- name: metrics_agent_tls
+  options:
+    ca: metric_scraper_ca
+    common_name: metrics_agent
+    extended_key_usage:
+      - server_auth
+  type: certificate
+- name: metrics_discovery_metrics_tls
+  options:
+    ca: metric_scraper_ca
+    common_name: metrics_discovery_metrics
+    extended_key_usage:
+      - server_auth
+  type: certificate
+- name: scrape_config_generator_metrics_tls
+  options:
+    ca: metric_scraper_ca
+    common_name: scrape_config_generator_metrics
+    extended_key_usage:
+      - server_auth
+  type: certificate
+
 - name: log_cache_metrics_tls
   type: certificate
   options:
@@ -2317,6 +2415,46 @@ variables:
     extended_key_usage:
     - server_auth
 
+- name: syslog_agent_api_tls
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: syslog-agent
+    extended_key_usage:
+    - client_auth
+
+- name: binding_cache_api_tls
+  type: certificate
+  options:
+    ca: service_cf_internal_ca
+    common_name: binding-cache
+    extended_key_usage:
+    - client_auth
+
+- name: binding_cache_tls
+  type: certificate
+  options:
+    ca: loggregator_ca
+    common_name: binding-cache
+    extended_key_usage:
+    - server_auth
+
+- name: syslog_agent_metrics_tls
+  type: certificate
+  options:
+    ca: metric_scraper_ca
+    common_name: syslog_agent_metrics
+    extended_key_usage:
+    - server_auth
+
+- name: loggr_syslog_binding_cache_metrics_tls
+  type: certificate
+  options:
+    ca: metric_scraper_ca
+    common_name: loggr_syslog_binding_cache_metrics
+    extended_key_usage:
+    - server_auth
+
 - name: prom_scraper_scrape_tls
   type: certificate
   options:
@@ -2341,132 +2479,176 @@ variables:
     extended_key_usage:
     - server_auth
 
+- name: nats_internal_ca
+  type: certificate
+  options:
+    is_ca: true
+    common_name: nats_internal
+
+- name: nats_internal_cert
+  type: certificate
+  options:
+    ca: nats_internal_ca
+    common_name: "*.nats.service.cf.internal"
+    alternative_names:
+    - "*.nats.service.cf.internal"
+    - nats.service.cf.internal
+    extended_key_usage:
+    - client_auth
+    - server_auth
+
+- name: nats_ca
+  type: certificate
+  options:
+    is_ca: true
+    common_name: nats
+
+- name: nats_client_cert
+  type: certificate
+  options:
+    ca: nats_ca
+    common_name: "nats_client"
+    extended_key_usage:
+    - client_auth
+
+- name: nats_server_cert
+  type: certificate
+  options:
+    ca: nats_ca
+    common_name: nats.service.cf.internal
+    extended_key_usage:
+    - server_auth
+  consumes:
+    alternative_name:
+      from: nats-tls-address
+      properties: { wildcard: true }
+
 releases:
 - name: binary-buildpack
   url: https://bosh.io/d/github.com/cloudfoundry/binary-buildpack-release?v=1.0.36
   version: 1.0.36
   sha1: 0269a613be68f988682bbf56504b78477965b1c4
 - name: bpm
-  url: https://bosh.io/d/github.com/cloudfoundry/bpm-release?v=1.1.7
-  version: 1.1.7
-  sha1: e7d474c3a205fa4438ea5a60d3b59479939163aa
+  url: https://bosh.io/d/github.com/cloudfoundry/bpm-release?v=1.1.9
+  version: 1.1.9
+  sha1: dcf0582d838a73de29da273552ae79ac3098ee8b
 - name: capi
-  url: https://bosh.io/d/github.com/cloudfoundry/capi-release?v=1.91.0
-  version: 1.91.0
-  sha1: a1c6175eaf98e27d70562976cf82d09dec493e53
+  url: https://bosh.io/d/github.com/cloudfoundry/capi-release?v=1.98.0
+  version: 1.98.0
+  sha1: e4b0b8a1ef10b71da5b09248150c3295197ee0b6
 - name: cf-networking
-  url: https://bosh.io/d/github.com/cloudfoundry/cf-networking-release?v=2.28.0
-  version: 2.28.0
-  sha1: 683397ede8132bd343f83a4d8c85e943537151a8
+  url: https://bosh.io/d/github.com/cloudfoundry/cf-networking-release?v=2.33.0
+  version: 2.33.0
+  sha1: 0497597194cf22fcd474e949a9299336cca78e9e
 - name: cf-smoke-tests
-  url: https://bosh.io/d/github.com/cloudfoundry/cf-smoke-tests-release?v=40.0.127
-  version: 40.0.127
-  sha1: fa710d4fefd2bb03657cf6d889298a2b9dc682b4
-- name: cf-syslog-drain
-  url: https://bosh.io/d/github.com/cloudfoundry/cf-syslog-drain-release?v=10.2.11
-  version: 10.2.11
-  sha1: 4f4c86ff6e4ab8d398f3e9705c9e01d1cd46b896
+  url: https://bosh.io/d/github.com/cloudfoundry/cf-smoke-tests-release?v=41.0.1
+  version: 41.0.1
+  sha1: 0bbdb6970b594e7e4dde08937c39b80d8414f2ba
 - name: cflinuxfs3
-  url: https://bosh.io/d/github.com/cloudfoundry/cflinuxfs3-release?v=0.167.0
-  version: 0.167.0
-  sha1: 83ef2b1cf57a3c66d60b62828991506f71cc41f9
+  url: https://bosh.io/d/github.com/cloudfoundry/cflinuxfs3-release?v=0.203.0
+  version: 0.203.0
+  sha1: 447a855912fa735685d9fe18bc33682b90e061c7
 - name: credhub
-  url: https://bosh.io/d/github.com/pivotal-cf/credhub-release?v=2.5.11
-  version: 2.5.11
-  sha1: f1810c1e662a1c76f40911cffd1d159204c9a661
+  url: https://bosh.io/d/github.com/pivotal-cf/credhub-release?v=2.8.0
+  version: 2.8.0
+  sha1: 3a9732bab2fa80bb9431941193b6569ef29af491
 - name: diego
-  url: https://bosh.io/d/github.com/cloudfoundry/diego-release?v=2.44.0
-  version: 2.44.0
-  sha1: 53f3688ca65cd21fd4334b32c38b362bdaf4a2ca
+  url: https://bosh.io/d/github.com/cloudfoundry/diego-release?v=2.48.0
+  version: 2.48.0
+  sha1: fbf8ebfeda1f326f5d6834b9a621b88a548e06e3
 - name: dotnet-core-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/dotnet-core-buildpack-release?v=2.3.6
-  version: 2.3.6
-  sha1: 7f2b3c932b60fbe696abffc138aa28069b69059a
+  url: https://bosh.io/d/github.com/cloudfoundry/dotnet-core-buildpack-release?v=2.3.13
+  version: 2.3.13
+  sha1: 5c1f388a340c9c226d7c4feccf0a34a20e8d6de8
 - name: garden-runc
-  url: https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=1.19.10
-  version: 1.19.10
-  sha1: 6d3a30a5d90b0ab7bd89fddf7fa22b9a4cc08b0d
+  url: https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=1.19.16
+  version: 1.19.16
+  sha1: c5bb4211adb7e94750b56e81eda9bb8e09eab3a0
 - name: go-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/go-buildpack-release?v=1.9.7
-  version: 1.9.7
-  sha1: 3fbd1a0411ae1520c9166f3c0df2baa7b093f112
+  url: https://bosh.io/d/github.com/cloudfoundry/go-buildpack-release?v=1.9.16
+  version: 1.9.16
+  sha1: 2badebead2977b1f220abd0158677c3a55afcdbc
 - name: java-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/java-buildpack-release?v=4.26
-  version: "4.26"
-  sha1: 24e8c51cbf364fc38f40d0e261dd3bb663e145e3
+  url: https://bosh.io/d/github.com/cloudfoundry/java-buildpack-release?v=4.32.1
+  version: 4.32.1
+  sha1: 80433833d696c5219be4eadcf6af6abb6a4862a3
 - name: loggregator
-  url: https://bosh.io/d/github.com/cloudfoundry/loggregator-release?v=106.3.8
-  version: 106.3.8
-  sha1: 2a3a526ee17b8f3994e396ef81ef79cbb378358d
+  url: https://bosh.io/d/github.com/cloudfoundry/loggregator-release?v=106.3.10
+  version: 106.3.10
+  sha1: 31992561334a0c2b42ea830b3af90d012172e7e5
+- name: metrics-discovery
+  url: https://bosh.io/d/github.com/cloudfoundry/metrics-discovery-release?v=3.0.1
+  version: 3.0.1
+  sha1: 4219b58972d20f6fccf1a4a167d915e34d86ee8a
 - name: nats
-  url: https://bosh.io/d/github.com/cloudfoundry/nats-release?v=33
-  version: "33"
-  sha1: 48074b227e5950fbc06694b20ae9ef7b34a0a09e
+  url: https://bosh.io/d/github.com/cloudfoundry/nats-release?v=34
+  version: "34"
+  sha1: 0d7f4c3203c926e79d85d07b1ac215d73c9268c3
 - name: nginx-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/nginx-buildpack-release?v=1.1.5
-  version: 1.1.5
-  sha1: 37f34ecd9a1e120f4479990e31e87c8da85f7fdb
+  url: https://bosh.io/d/github.com/cloudfoundry/nginx-buildpack-release?v=1.1.12
+  version: 1.1.12
+  sha1: dfb0be8e2c0f14e2f43b10cb437b433ab88a53fb
 - name: r-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/r-buildpack-release?v=1.1.1
-  version: 1.1.1
-  sha1: eb406b09e0cafb176c8ab52752da41e736b81cea
+  url: https://bosh.io/d/github.com/cloudfoundry/r-buildpack-release?v=1.1.7
+  version: 1.1.7
+  sha1: c7ee8762d9ce8da4882c924cb46e77bef3b2fafc
 - name: nodejs-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/nodejs-buildpack-release?v=1.7.13
-  version: 1.7.13
-  sha1: f6bf4499abbc5180d5ead246d2e2fa0607befd57
+  url: https://bosh.io/d/github.com/cloudfoundry/nodejs-buildpack-release?v=1.7.25
+  version: 1.7.25
+  sha1: 8dc75e1c310d8cd1c6321c3ea43943e6714e84bd
 - name: php-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/php-buildpack-release?v=4.4.8
-  version: 4.4.8
-  sha1: 7818cf2f5d11164bb600a7077a808385a06294de
+  url: https://bosh.io/d/github.com/cloudfoundry/php-buildpack-release?v=4.4.19
+  version: 4.4.19
+  sha1: e9f0ef1a1ad27a0d34fe55385ce6b3ef2e947d54
 - name: pxc
-  url: https://bosh.io/d/github.com/cloudfoundry-incubator/pxc-release?v=0.24.0
-  version: 0.24.0
-  sha1: f2a479ab18e7327d67705bb54111b9a0f8ffcba3
+  url: https://bosh.io/d/github.com/cloudfoundry-incubator/pxc-release?v=0.28.0
+  version: 0.28.0
+  sha1: b09790e0d9df109e84416ef28393438846af9f9f
 - name: python-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/python-buildpack-release?v=1.7.8
-  version: 1.7.8
-  sha1: 27667ee2486e2baa3e7ef9a6d8963a6841d19204
+  url: https://bosh.io/d/github.com/cloudfoundry/python-buildpack-release?v=1.7.18
+  version: 1.7.18
+  sha1: 72d8cdd7d8c5bee832de0133568a673dc2641349
 - name: routing
-  url: https://bosh.io/d/github.com/cloudfoundry/routing-release?v=0.198.0
-  version: 0.198.0
-  sha1: 90de2a9bcc5fea7ece8da8b8675949c1772e33be
+  url: https://bosh.io/d/github.com/cloudfoundry/routing-release?v=0.206.0
+  version: 0.206.0
+  sha1: 8188941dcaa06082900acbceae80f9188d96ce0d
 - name: ruby-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/ruby-buildpack-release?v=1.8.11
-  version: 1.8.11
-  sha1: 8ef27c470dcaef844ec606d0b200947befd566da
+  url: https://bosh.io/d/github.com/cloudfoundry/ruby-buildpack-release?v=1.8.23
+  version: 1.8.23
+  sha1: e32eac05ad44279b6c5b3de50998f967e31e7f1b
 - name: silk
-  url: https://bosh.io/d/github.com/cloudfoundry/silk-release?v=2.28.0
-  version: 2.28.0
-  sha1: 43bad37b29a5eb16ac0ce79bc6045c41479d761b
+  url: https://bosh.io/d/github.com/cloudfoundry/silk-release?v=2.33.0
+  version: 2.33.0
+  sha1: 9a2ed4dec4eff614614d6a66b77cd04182e25122
 - name: staticfile-buildpack
-  url: https://bosh.io/d/github.com/cloudfoundry/staticfile-buildpack-release?v=1.5.4
-  version: 1.5.4
-  sha1: 04e887342a28d58bb8ba927af381d9d4d9c70ae2
+  url: https://bosh.io/d/github.com/cloudfoundry/staticfile-buildpack-release?v=1.5.9
+  version: 1.5.9
+  sha1: 67dfff58d2efc40e632f70db6a602c31ee491f6a
 - name: statsd-injector
   url: https://bosh.io/d/github.com/cloudfoundry/statsd-injector-release?v=1.11.15
   version: 1.11.15
   sha1: a0a2d33c6ab7d8fec8c017ea6f2c5a344af1407c
 - name: uaa
-  url: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.15.0
-  version: 74.15.0
-  sha1: 27cf2309644d7c3b6b41c5ee32775b63707062a9
+  url: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.24.0
+  version: 74.24.0
+  sha1: 0de84931c008aa55664a5fc47ace4f694f95d688
 - name: loggregator-agent
-  url: https://bosh.io/d/github.com/cloudfoundry/loggregator-agent-release?v=5.3.7
-  version: 5.3.7
-  sha1: de7eaea3a286489fd979bddabdc5949ae21c1277
+  url: https://bosh.io/d/github.com/cloudfoundry/loggregator-agent-release?v=6.1.1
+  version: 6.1.1
+  sha1: c8f15cb137a5106cd83834721ee2709f37715930
 - name: log-cache
-  url: https://bosh.io/d/github.com/cloudfoundry/log-cache-release?v=2.6.8
-  version: 2.6.8
-  sha1: 3a5bcd3162387cd2fd2deb6e15a29bfff398cdae
+  url: https://bosh.io/d/github.com/cloudfoundry/log-cache-release?v=2.8.0
+  version: 2.8.0
+  sha1: 3b158b60a25bb9e48039012ba124cb419a28d397
 - name: bosh-dns-aliases
   url: https://bosh.io/d/github.com/cloudfoundry/bosh-dns-aliases-release?v=0.0.3
   version: 0.0.3
   sha1: b0d0a0350ed87f1ded58b2ebb469acea0e026ccc
 - name: cf-cli
-  url: https://bosh.io/d/github.com/bosh-packages/cf-cli-release?v=1.25.0
-  version: 1.25.0
-  sha1: 6ef0373f50061d3483b451820af87358b7591d80
+  url: https://bosh.io/d/github.com/bosh-packages/cf-cli-release?v=1.29.0
+  version: 1.29.0
+  sha1: 0dd79b169473a95f1ff39e79f2695edf4c97f38d
 stemcells:
 - alias: default
   os: ubuntu-xenial
-  version: "621.59"
+  version: "621.82"

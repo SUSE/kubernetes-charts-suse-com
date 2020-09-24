@@ -1,3 +1,4 @@
-cf-operator:v4.5.13-0.gd4738712
-coredns:0.1.0-1.6.7-bp152.1.2
-quarks-job:v0.0.86
+cfcontainerization/cf-operator:v6.1.0-0.g5451299e
+registry.opensuse.org/cloud/platform/quarks/images/images/coredns@sha256:e5a6afe73d0823b45e7faaa71574bb1a596c53f1e1f95f693acbb850058d09f6
+cfcontainerization/quarks-job:v1.0.198
+cfcontainerization/quarks-secret:v1.0.738

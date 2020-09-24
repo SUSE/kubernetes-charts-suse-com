@@ -1,3 +1,4 @@
+{{- $_ := include "_config.load" $ }}
 {{- if .Values.features.embedded_database.enabled }}
 
 ---
@@ -195,12 +196,16 @@ spec:
         app.kubernetes.io/version: {{ default .Chart.Version .Chart.AppVersion | quote }}
         helm.sh/chart: {{ include "kubecf.chart" . }}
     spec:
-      {{- with $replicas := default 1 .Values.sizing.database.instances }}
+      {{- $replicas := 1 }}
+      {{- if $.Values.sizing.database.instances }}
+        {{- $replicas = $.Values.sizing.database.instances }}
+      {{- else if $.Values.high_availability }}
+        {{- $replicas = 3 }}
+      {{- end }}
       {{- if eq (mod $replicas 2) 0 }}
-      {{- fail "The number of database instances must be odd to avoid split-brain" }}
+        {{- include "_config.fail" "The number of database instances must be odd to avoid split-brain" }}
       {{- end }}
       replicas: {{ $replicas }}
-      {{- end }}
       selector:
         matchLabels:
           app: database
@@ -238,7 +243,7 @@ spec:
           {{- end }}
           initContainers:
           - name: remove-lost-found
-            {{- with $image := .Values.releases.pxc.image }}
+            {{- with $image := $.Values.releases.database.image }}
             image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
             imagePullPolicy: {{ $image.pullPolicy | quote }}
             {{- end }}
@@ -248,7 +253,7 @@ spec:
               mountPath: /var/lib/mysql
           containers:
           - name: database
-            {{- with $image := .Values.releases.pxc.image }}
+            {{- with $image := $.Values.releases.database.image }}
             image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
             imagePullPolicy: {{ $image.pullPolicy | quote }}
             {{- end }}
@@ -294,7 +299,7 @@ spec:
                   - "/bin/bash"
                   - "-c"
                   - "mysqladmin ping || test -e /var/lib/mysql/sst_in_progress"
-              initialDelaySeconds: 30
+              initialDelaySeconds: 300
               timeoutSeconds: 2
             readinessProbe:
               exec:
@@ -315,7 +320,7 @@ spec:
             - name: var-log
               mountPath: /var/log
           - name: "logs"
-            {{- with $image := .Values.releases.pxc.image }}
+            {{- with $image := $.Values.releases.database.image }}
             image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
             imagePullPolicy: {{ $image.pullPolicy | quote }}
             {{- end }}
@@ -363,6 +368,12 @@ spec:
 {{- $databases = append $databases (dict "name" "routing-api" "path" "routing-api" "secretName" "routing-api") }}
 {{- end }}
 
+{{- if .Values.features.autoscaler.enabled }}
+{{- if .Values.features.autoscaler.mysql.enabled }}
+{{- $databases = append $databases (dict "name" "autoscaler" "path" "autoscaler" "secretName" "autoscaler") }}
+{{- end }}
+{{- end }}
+
 apiVersion: quarks.cloudfoundry.org/v1alpha1
 kind: QuarksJob
 metadata:
@@ -384,7 +395,7 @@ spec:
         spec:
           containers:
           - name: seeder
-            {{- with $image := .Values.releases.pxc.image }}
+            {{- with $image := $.Values.releases.database.image }}
             image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
             imagePullPolicy: {{ $image.pullPolicy | quote }}
             {{- end }}
@@ -396,6 +407,8 @@ spec:
                   key: password
             - name: DATABASE_HOST
               value: {{ printf "database.%s" .Release.Namespace | quote }}
+            - name: DATABASE_CONNECT_TIMEOUT
+              value: {{ $.Values.features.embedded_database.connect_timeout | quote }}
             - name: CHARACTER_SET
               value: utf8
             - name: COLLATE
@@ -447,7 +460,7 @@ spec:
         spec:
           containers:
           - name: migrate-charset
-            {{- with $image := .Values.releases.pxc.image }}
+            {{- with $image := $.Values.releases.database.image }}
             image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
             imagePullPolicy: {{ $image.pullPolicy | quote }}
             {{- end }}

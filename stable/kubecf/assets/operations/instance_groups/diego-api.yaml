@@ -1,7 +1,3 @@
-# Selectively remove jobs temporarily.
-- type: remove
-  path: /instance_groups/name=diego-api/jobs/name=silk-controller
-
 # Override the addresses for the jobs under the diego-api instance group.
 - type: replace
   path: /instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/locket?/api_location
@@ -73,6 +69,18 @@
 - type: replace
   path: /instance_groups/name=diego-api/jobs/name=cfdot/properties/quarks?/bpm/processes
   value: []
+
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=loggr-udp-forwarder/properties?/quarks/envs
+  value:
+  - name: INDEX
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.labels['statefulset.kubernetes.io/pod-name']
+  - name: IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
 
 {{- range $bytes := .Files.Glob "assets/operations/pre_render_scripts/diego-api_*" }}
 {{ $bytes | toString }}

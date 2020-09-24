@@ -1,0 +1,21 @@
+applyCRD: true
+fullnameOverride: ""
+global:
+  contextTimeout: 30
+  image:
+    pullPolicy: IfNotPresent
+  meltdownDuration: 60
+  meltdownRequeueAfter: 30
+  monitoredID: null
+  rbac:
+    create: true
+image:
+  org: cfcontainerization
+  repository: quarks-secret
+  tag: v1.0.738
+logLevel: debug
+maxWorkers: 1
+nameOverride: ""
+serviceAccount:
+  create: true
+  name: null
