@@ -1,8 +1,17 @@
 apiVersion: v1
 appVersion: 2.0.0
-description: A Helm chart for deploying SUSE Stratos Console
+description: A Helm chart for deploying Stratos
+home: https://stratos.app
 icon: https://raw.githubusercontent.com/SUSE/stratos/master/deploy/kubernetes/custom/icon.png
+keywords:
+- Stratos
+- Cloud Foundry
+- Kubernetes
+- Helm
+maintainers:
+- email: stratos-maintainers@suse.de
+  name: Stratos Maintainers
 name: console
 sources:
 - https://github.com/SUSE/stratos
-version: 4.0.1
+version: 4.1.0
