@@ -1,8 +1,8 @@
-stratos-metrics-cf-exporter:1.2.0-bc511c9-cap
-stratos-metrics-firehose-exporter:1.2.0-bc511c9-cap
-stratos-metrics-firehose-init:1.2.0-bc511c9-cap
-stratos-metrics-nginx:1.2.0-bc511c9-cap
-stratos-metrics-configmap-reload:1.2.0-bc511c9-cap
-stratos-metrics-kube-state-metrics:1.2.0-bc511c9-cap
-stratos-metrics-node-exporter:1.2.0-bc511c9-cap
-stratos-metrics-prometheus:1.2.0-bc511c9-cap
+stratos-metrics-cf-exporter:1.3.0-4c982f3-cap
+stratos-metrics-firehose-exporter:1.3.0-4c982f3-cap
+stratos-metrics-firehose-init:1.3.0-4c982f3-cap
+stratos-metrics-nginx:1.3.0-4c982f3-cap
+stratos-metrics-configmap-reload:1.3.0-4c982f3-cap
+stratos-metrics-kube-state-metrics:1.3.0-4c982f3-cap
+stratos-metrics-node-exporter:1.3.0-4c982f3-cap
+stratos-metrics-prometheus:1.3.0-4c982f3-cap
