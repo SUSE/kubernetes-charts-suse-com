@@ -1,0 +1,18 @@
+{{- $stemcell := $.Values.defaults.stemcell }}
+
+- type: replace
+  path: /stemcells/alias=default
+  value:
+    alias: default
+    os: {{ $stemcell.os | quote }}
+    version: {{ $stemcell.version | quote }}
+
+{{- range $addon_name, $addon := $.Values.addon_jobs }}
+  {{- /* All jobs in the addon have the same .condition value */}}
+  {{- $job_name := $addon | keys | first }}
+  {{- if index $addon $job_name "condition" }}
+- type: replace
+  path: /addons/name={{ $addon_name }}/include/stemcell/os=ubuntu-xenial/os
+  value: {{ $stemcell.os | quote }}
+  {{- end }}
+{{- end }}

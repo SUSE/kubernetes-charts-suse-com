@@ -1,5 +1,5 @@
 - type: replace
-  path: /instance_groups/name=diego-cell/jobs/name=rep/properties/quarks?/pre_render_scripts/jobs/-
+  path: /instance_groups/name=diego-cell/jobs/name=rep/properties?/quarks/pre_render_scripts/jobs/-
   value: |
     #!/usr/bin/env bash
     
