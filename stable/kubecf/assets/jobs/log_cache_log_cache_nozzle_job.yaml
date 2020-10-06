@@ -5,7 +5,7 @@ name: log-cache-nozzle
 properties:
   logs_provider:
     tls:
-      ca_cert: ((logs_provider.ca))
-      cert: ((logs_provider.certificate))
-      key: ((logs_provider.private_key))
+      ca_cert: "((logs_provider.ca))"
+      cert: "((logs_provider.certificate))"
+      key: "((logs_provider.private_key))"
 release: log-cache
