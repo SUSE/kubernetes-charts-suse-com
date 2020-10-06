@@ -1,5 +1,5 @@
 # REQUIRED: the domain that the deployment will be visible to the user.
-# system_domain: example.com
+system_domain: example.com
 
 # List of stacks to install; the first one will be used as the default.
 # A stack is a prebuilt root file system that supports a specific
