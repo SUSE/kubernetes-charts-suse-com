@@ -1,5 +1,5 @@
 - type: replace
-  path: /instance_groups/name=eirini/jobs/name=opi/properties/quarks?/pre_render_scripts/bpm/-
+  path: /instance_groups/name=eirini/jobs/name=opi/properties?/quarks/pre_render_scripts/bpm/-
   value: |
     #!/usr/bin/env bash
     

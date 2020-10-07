@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 4.0.1-97ac8e623-cap
+consoleVersion: 4.1.0-07059799c-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -67,6 +67,9 @@ console:
   # Enable/disable Tech Preview
   techPreview: false
 
+  # Enable/disable API key-based access to Stratos API
+  apiKeysEnabled: admin_only
+
   ui:
     # Override the default maximum number of entities that a configured list can fetch. When a list meets this amount additional pages are not fetched 
     listMaxSize:
@@ -128,9 +131,6 @@ images:
   proxy: stratos-jetstream
   mariadb: stratos-mariadb
   configInit: stratos-config-init
-  fdbserver: stratos-fdbserver
-  fdbdoclayer: stratos-fdbdoclayer
-  chartsync: stratos-chartsync
   analyzers: stratos-analyzers
 
 # Specify which storage class should be used for PVCs

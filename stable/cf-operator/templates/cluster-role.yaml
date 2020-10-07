@@ -10,11 +10,22 @@ rules:
   resources:
   - certificatesigningrequests
   verbs:
+  - approve
   - create
+  - delete
   - get
   - list
   - update
   - watch
+
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - signers
+  resourceNames:
+  - kubernetes.io/legacy-unknown
+  verbs:
+  - approve
 
 - apiGroups:
   - ""
@@ -22,7 +33,11 @@ rules:
   - secrets
   verbs:
   - get
+  - create
+  - delete
+  - list
   - update
+  - watch
 
 - apiGroups:
   - certificates.k8s.io
@@ -59,5 +74,112 @@ rules:
   verbs:
   - create
   - delete
+  - update
+
+# for monitored namespaces
+
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - delete
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - configmaps
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - get
+  - list
+
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - quarksjobs
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - boshdeployments
+  - quarksstatefulsets
+  - quarkssecrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - boshdeployments/status
+  - quarkssecrets/status
+  - quarksstatefulsets/status
+  verbs:
+  - create
+  - patch
   - update
 {{- end }}

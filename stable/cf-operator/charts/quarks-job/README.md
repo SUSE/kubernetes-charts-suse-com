@@ -9,12 +9,43 @@ This helm chart deploys the quarks-job operator.
 To install the latest stable helm chart, with `quarks-job` as the release name into the namespace `quarks`:
 
 ```bash
-$ helm install quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.0.1%2B47.g24492ea.tgz --namespace quarks
+helm repo add quarks https://cloudfoundry-incubator.github.io/quarks-helm/
+helm install quarks-job quarks/quarks-job
 ```
 
-## Installing the Chart From the Developmenet Branch
+### Using multiple operators
 
-Run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
+Choose different namespaces and cluster role names. The persist-output service account will be named the same as the cluster role:
+
+```
+helm install relname1 quarks/quarks-job \
+  --namespace namespace1
+  --set "global.singleNamespace.name=staging1" \
+  --set "persistOutputClusterRole.name=clusterrole1" \
+```
+
+### Using multiple namespaces with one operator
+
+The cluster role can be reused between namespaces.
+The service account (and role binding) should be different for each namespace.
+
+```
+helm install relname1 quarks/cf-operator \
+  --set "global.singleNamespace.create=false" \
+  --set "persistOutputClusterRole.name=qjob-persist-output"
+```
+
+Manually create before running `helm install`, for each namespace:
+
+* a namespace "staging1" with the following labels:
+  * quarks.cloudfoundry.org/monitored: relname1
+  * quarks.cloudfoundry.org/qjob-service-account: qjob-account1
+* a service account named "qjob-account1"
+* a role binding from the existing cluster role "qjob-persist-output" to "qjob-account1" in namespace "staging1"
+
+## Installing the Chart From the Development Branch
+
+Download the shared scripts with `bin/tools`, set `PROJECT=quarks-job` and run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
 
 To install the helm chart directly from the [quarks-job repository](https://github.com/cloudfoundry-incubator/quarks-job) (any branch), run `bin/build-helm` first.
 
@@ -28,17 +59,19 @@ $ helm delete quarks-job --purge
 
 ## Configuration
 
-| Parameter                                         | Description                                                                       | Default                                        |
+| Parameter                                         | Description                                                                            | Default                                        |
 | ------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `image.repository`                                | Docker hub repository for the quarks-job image                                         | `quarks-job`                                   |
 | `image.org`                                       | Docker hub organization for the quarks-job image                                       | `cfcontainerization`                           |
 | `image.tag`                                       | Docker image tag                                                                       | `foobar`                                       |
 | `global.contextTimeout`                           | Will set the context timeout in seconds, for future K8S API requests                   | `30`                                           |
 | `global.image.pullPolicy`                         | Kubernetes image pullPolicy                                                            | `IfNotPresent`                                 |
-| `global.operator.watchNamespace`                  | Namespace the operator will watch for BOSH deployments                                 | the release namespace                          |
+| `global.monitoredID`                              | Label value of 'quarks.cloudfoundry.org/monitored'. Matching namespaces are watched    | release name                                   |
 | `global.rbac.create`                              | Install required RBAC service account, roles and rolebindings                          | `true`                                         |
 | `serviceAccount.create`                           | If true, create a service account                                                      |                                                |
 | `serviceAccount.name`                             | If not set and `create` is `true`, a name is generated using the fullname of the chart |                                                |
+| `global.singleNamespace.create`                   | If true, create a service account and a single watch namespace                         | `true`                                         |
+| `global.singleNamespace.name`                     | Namespace the operator will watch for Quarks jobs                                      | `staging`                                      |
 
 ## RBAC
 

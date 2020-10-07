@@ -41,3 +41,10 @@ Create the name of the quarks-job service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Create the monitored ID, either from release name, or values
+*/}}
+{{- define "quarks-job.monitoredID" -}}
+{{ default (include "quarks-job.fullname" .) .Values.global.monitoredID }}
+{{- end -}}

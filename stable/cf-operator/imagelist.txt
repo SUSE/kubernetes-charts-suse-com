@@ -1,3 +1,4 @@
-cf-operator:v4.5.13-0.gd4738712
-coredns:0.1.0-1.6.7-bp152.1.2
-quarks-job:v0.0.86
+cf-operator:v6.1.10-0.g7b1a5f2f
+coredns:0.1.0-1.6.7-bp152.1.19
+quarks-job:v1.0.206
+quarks-secret:v1.0.744
