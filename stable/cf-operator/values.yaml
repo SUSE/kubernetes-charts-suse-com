@@ -20,7 +20,7 @@ image:
   # org that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v6.1.10-0.g7b1a5f2f
+  tag: v6.1.15-0.g89a56300
 
 # logrotateInterval is the time between logrotate calls for instance groups in minutes
 logrotateInterval: 1440
