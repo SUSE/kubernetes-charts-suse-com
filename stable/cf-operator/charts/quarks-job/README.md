@@ -43,7 +43,7 @@ Manually create before running `helm install`, for each namespace:
 * a service account named "qjob-account1"
 * a role binding from the existing cluster role "qjob-persist-output" to "qjob-account1" in namespace "staging1"
 
-## Installing the Chart From the Developmenet Branch
+## Installing the Chart From the Development Branch
 
 Download the shared scripts with `bin/tools`, set `PROJECT=quarks-job` and run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
 
