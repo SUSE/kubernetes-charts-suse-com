@@ -20,7 +20,7 @@ image:
   # org that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v6.1.15-0.g89a56300
+  tag: v6.1.17-0.gec409fd7
 
 # logrotateInterval is the time between logrotate calls for instance groups in minutes
 logrotateInterval: 1440
@@ -45,6 +45,7 @@ operator:
     port: "2999"
   # boshDNSDockerImage is the docker image used for emulating bosh DNS (a CoreDNS image).
   boshDNSDockerImage: "registry.suse.com/cap/coredns:0.1.0-1.6.7-bp152.1.19"
+  preUpgradeHookDockerImage: "registry.suse.com/cap/kubecf-kubectl:v1.19.2"
 
 # serviceAccount contains the configuration
 # values of the service account used by cf-operator.
