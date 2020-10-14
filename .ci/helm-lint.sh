@@ -22,11 +22,18 @@ done
 
 set_helm_args() {
     helm_args=""
-    if [[ "${1}" == "stable/cf" ]]; then
-        helm_args=(
-            "--values=$(realpath .ci/scf-config-values.yaml)"
-        )
-    fi
+    case "${1}" in
+        stable/cf)
+            helm_args=(
+                "--values=$(realpath .ci/scf-config-values.yaml)"
+            )
+            ;;
+        stable/kubecf)
+            helm_args=(
+                "--values=$(realpath .ci/kubecf-config-values.yaml)"
+            )
+            ;;
+    esac
 }
 
 # helm lint test
