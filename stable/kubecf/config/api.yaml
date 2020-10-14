@@ -1,0 +1,11 @@
+properties:
+  api:
+    cloud_controller_ng:
+      name: KubeCF
+      version: 2
+      description: 'SUSE version of CloudFoundry KubeCF'
+      support_address: 'https://www.suse.com/support/'
+      build: {{ default .Chart.Version .Chart.AppVersion | quote }}
+
+# Note that the version information has to be a plain integer, as per the
+# Membrane::SchemaValidation occuring in `bosh-pre-start-cloud-controller-ng`.

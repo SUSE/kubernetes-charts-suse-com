@@ -10,7 +10,7 @@ password=${DATABASE_ROOT_PASSWORD}
 EOF
 
 echo "Waiting for database to be ready..."
-until echo "SELECT 'Ready!'" | mysql --connect-timeout=3 1> /dev/null 2> /dev/null; do
+until echo "SELECT 'Ready!'" | mysql --connect-timeout="${DATABASE_CONNECT_TIMEOUT}" 1> /dev/null 2> /dev/null; do
   sleep 1
 done
 
@@ -42,6 +42,10 @@ mysql < <(
 
       GRANT ALL ON \`${database}\`.* TO '${database}'@'%';
     "
+
+    # Print out the name of the database for troubleshooting; this container
+    # otherwise has very little output.
+    echo "    ... will update database ${database}" >&2
   done
   echo "COMMIT;"
 )
