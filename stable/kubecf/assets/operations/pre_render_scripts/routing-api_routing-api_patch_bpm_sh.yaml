@@ -1,7 +1,22 @@
 - type: replace
-  path: /instance_groups/name=routing-api/jobs/name=routing-api/properties/quarks?/pre_render_scripts/bpm/-
+  path: /instance_groups/name=routing-api/jobs/name=routing-api/properties?/quarks/pre_render_scripts/bpm/-
   value: |
     #!/usr/bin/env bash
+    
+    # This patch changes the BPM command to not use spec.ip because the
+    # quarks-operator implements process management very differently from
+    # BOSH: BPM is rendered from a completely different container (and
+    # therefore has no chance of having a valid spec.ip).
+    #
+    # We have no idea how we can implement the change in an upstream-
+    # compatible way: we hack around things by changing the POD_IP
+    # environment variable via an ops file [1], which wouldn't make any
+    # sense in the BOSH VM world.
+    #
+    # [1] chart/assets/operations/instance_groups/routing-api.yaml
+    #
+    # Result: The patch is extremely specific to kubecf, and cannot be
+    # upstreamed.
     
     set -o errexit -o nounset
     

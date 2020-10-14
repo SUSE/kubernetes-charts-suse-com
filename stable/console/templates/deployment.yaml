@@ -29,7 +29,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 0
-      maxUnavailable: 1  
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: "stratos"
@@ -59,7 +59,7 @@ spec:
 {{- end }}
 {{- end }}
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.0.1-97ac8e623-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.1.0-07059799c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         ports:
@@ -71,7 +71,7 @@ spec:
           protocol: TCP
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.0.1-97ac8e623-cap:{{ .Release.Revision }}"
+          value: "4.1.0-07059799c-cap:{{ .Release.Revision }}"
         - name: CONSOLE_CERT_PATH
           value: "/{{ .Release.Name }}-cert-volume"
         - name: SSL_PROTOCOLS
@@ -82,12 +82,12 @@ spec:
         - mountPath: "/{{ .Release.Name }}-cert-volume"
           name: "{{ .Release.Name }}-cert-volume"
           readOnly: true
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.0.1-97ac8e623-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.1.0-07059799c-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.0.1-97ac8e623-cap:{{ .Release.Revision }}"
+          value: "4.1.0-07059799c-cap:{{ .Release.Revision }}"
         - name: STRATOS_HELM_RELEASE
           value: "{{ .Release.Name }}"
         - name: DB_USER
@@ -282,6 +282,10 @@ spec:
           value: {{ default "" .Values.console.userInviteSubject | quote }}
         - name: ENABLE_TECH_PREVIEW
           value: {{ default "false" .Values.console.techPreview | quote }}
+        - name: API_KEYS_ENABLED
+          value: {{ default "admin_only" .Values.console.apiKeysEnabled | quote }}
+        - name: HELM_CACHE_FOLDER
+          value: /helm-cache
         {{- if .Values.console.ui }}
         {{- if .Values.console.ui.listMaxSize }}
         - name: UI_LIST_MAX_SIZE
@@ -315,9 +319,8 @@ spec:
           name: "{{ .Release.Name }}-templates"
           readOnly: true
         {{- end }}
-        - mountPath: "/etc/monocular-certs"
-          name: "{{ .Release.Name }}-monocular-certs"
-          readOnly: true
+        - mountPath: /helm-cache
+          name: helm-cache-volume          
       {{- if and .Values.kube.registry.username .Values.kube.registry.password }}
       imagePullSecrets:
       - name: {{.Values.dockerRegistrySecret}}
@@ -347,6 +350,5 @@ spec:
         configMap:
           name: {{ .Values.console.templatesConfigMapName }}
       {{- end }}
-      - name: "{{ .Release.Name }}-monocular-certs"
-        secret:
-          secretName: {{ .Release.Name }}-fdbdoclayer-certs
+      - name: helm-cache-volume
+        emptyDir: {}      
