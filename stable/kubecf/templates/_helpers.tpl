@@ -46,6 +46,45 @@ Get the metadata name for an ops file.
 {{- end }}
 
 {{- /*
+==========================================================================================
+| component.selector (list $ $component)
++-----------------------------------------------------------------------------------------
+| Emit standard labels for use in selectors (for services and the like).
+|
+| $component should be the name of a component; ideally this will match the name of the
+| service / pod.
+==========================================================================================
+*/ -}}
+{{- define "component.selector" }}
+{{- $root := first . }}
+{{- $component := index . 1 }}
+app.kubernetes.io/name: {{ include "kubecf.fullname" $root }}
+app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
+app.kubernetes.io/component: {{ $component | quote }}
+{{- end }}
+
+{{- /*
+==========================================================================================
+| component.labels (list $ $component)
++-----------------------------------------------------------------------------------------
+| Emit standard labels for use in pod/etc. declarations.
+|
+| $component should be the name of a component; ideally this will match the name of the
+| service / pod.
+|
+| This will include any labels relevant for selectors.
+==========================================================================================
+*/ -}}
+{{- define "component.labels" }}
+{{- $root := first . }}
+{{- $component := last . }}
+{{- include "component.selector" . }}
+app.kubernetes.io/managed-by: {{ $root.Release.Service | quote }}
+app.kubernetes.io/version: {{ default $root.Chart.Version $root.Chart.AppVersion | quote }}
+helm.sh/chart: {{ include "kubecf.chart" $root }}
+{{- end }}
+
+{{- /*
   Template "kubecf.dig" takes a dict and a list; it indexes the dict with each
   successive element of the list.
 
@@ -83,43 +122,4 @@ flattened and separated by `separator`.
     {{- $value := $toFlatten }}
     {{- $_ := set $flattened $key $value }}
   {{- end }}
-{{- end }}
-
-{{/*
-Returns a JSON map with the stemcell information based on the defaults
-and possible overrides for the respective release.
-*/}}
-{{- define "kubecf.stemcellLookup" }}
-  {{- $releasesMap := index . 0 }}
-  {{- $releaseName := index . 1 }}
-  {{- $result := dict  "os" (index $releasesMap "defaults" "stemcell" "os")  "version" (index $releasesMap "defaults" "stemcell" "version") }}
-
-  {{- if index $releasesMap $releaseName }}
-    {{- if index $releasesMap $releaseName "stemcell" }}
-      {{- if index $releasesMap $releaseName "stemcell" "os" }}
-        {{- $_ := set $result "os" (index $releasesMap $releaseName "stemcell" "os") }}
-      {{- end }}
-
-      {{- if index $releasesMap $releaseName "stemcell" "version" }}
-        {{- $_ := set $result "version" (index $releasesMap $releaseName "stemcell" "version") }}
-      {{- end }}
-    {{- end }}
-  {{- end }}
-
-  {{- toJson $result }}
-{{- end }}
-
-{{/*
-Returns the release URL to use; if there is an override, use that, otherwise
-use the default.
-
-Usage:
-  - path: /releases/name=foo/url
-    type: replace
-    value: {{ include "kubecf.releaseURLLookup" (list .Values.releases "foo") }}
-*/}}
-{{- define "kubecf.releaseURLLookup" }}
-  {{- $releasesMap := index . 0 }}
-  {{- $releaseName := index . 1 }}
-  {{- (default (index $releasesMap "defaults" "url") (index (default (dict) (index $releasesMap $releaseName)) "url")) }}
 {{- end }}

@@ -22,7 +22,10 @@ nodeSelector: {}
   # node-role.rook-ceph/operator: true
 
 # Tolerations for the rook-ceph-operator to allow it to run on nodes with particular taints
-tolerations: []
+tolerations:
+- key: node-role.rook-ceph/operator
+  operator: Equal
+  value: "true"
 
 # Delay to use in node.kubernetes.io/unreachable toleration
 unreachableNodeTolerationSeconds: 5
@@ -218,12 +221,23 @@ csi:
   #        cpu: 100m
   # Set provisonerTolerations and provisionerNodeAffinity for provisioner pod.
   # The CSI provisioner would be best to start on the same nodes as other ceph daemons.
-  # provisionerTolerations:
-  #    - key: key
-  #      operator: Exists
-  #      effect: NoSchedule
-  # provisionerNodeAffinity: key1=value1,value2; key2=value3
-  provisionerNodeAffinity: node-role.rook-ceph/cluster=any,mon,mgr,mon-mgr,osd,mon-mgr-osd
+  provisionerTolerations:
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: any
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: mon
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: mon-mgr
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: osd
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: mon-mgr-osd
+  provisionerNodeAffinity: node-role.rook-ceph/cluster=any,mon,mon-mgr,osd,mon-mgr-osd
   # Set pluginTolerations and pluginNodeAffinity for plugin daemonset pods.
   # The CSI plugins need to be started on all the nodes where the clients need to mount the storage.
   # pluginTolerations:
@@ -264,12 +278,17 @@ enableDiscoveryDaemon: true
 ## tolerations: Array of tolerations in YAML format which will be added to discover deployment
 ## nodeAffinity: Set to labels of the node to match
 discover:
-#   tolerations:
-#   - key: key
-#     operator: Exists
-#     effect: NoSchedule
-#   nodeAffinity: key1=value1,value2; key2=value3
-  nodeAffinity: node-role.rook-ceph/cluster=any,mon,mgr,mon-mgr,osd,mon-mgr-osd
+  tolerations:
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: any
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: osd
+  - key: node-role.rook-ceph/cluster
+    operator: Equal
+    value: mon-mgr-osd
+  nodeAffinity: node-role.rook-ceph/cluster=any,osd,mon-mgr-osd
 
 # In some situations SELinux relabelling breaks (times out) on large filesystems, and doesn't work with cephfs ReadWriteMany volumes (last relabel wins).
 # Disable it here if you have similar issues.

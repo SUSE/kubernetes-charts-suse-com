@@ -1,0 +1,132 @@
+{{- include "_config.load" $ }}
+{{- if .Values.features.embedded_database.enabled }}
+---
+apiVersion: quarks.cloudfoundry.org/v1alpha1
+kind: QuarksStatefulSet
+metadata:
+  name: database
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- list . "database" | include "component.labels" | nindent 4 }}
+spec:
+  updateOnConfigChange: true
+  template:
+    metadata:
+      name: database
+      namespace: {{ .Release.Namespace | quote }}
+      labels:
+        {{- list . "database" | include "component.labels" | nindent 8 }}
+    spec:
+      # Database replicas are not allowed.
+      # High-availability is not currently feasible to support in k8s.
+      # Galera replication on rolling updates of the statefulset is hard to get
+      # right and to maintain as part of KubeCF. For an HA database, prefer
+      # using a specialized external one.
+      replicas: 1
+      selector:
+        matchLabels:
+          {{- list . "database" | include "component.selector" | nindent 10 }}
+      serviceName: database
+      template:
+        metadata:
+          labels:
+            {{- list . "database" | include "component.labels" | nindent 12 }}
+        spec:
+          {{- if $.Values.sizing.database.affinity }}
+          affinity: {{ $.Values.sizing.database.affinity | toJson }}
+          {{- end }}
+          initContainers:
+          - name: remove-lost-found
+            {{- with $image := $.Values.releases.database.image }}
+            image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
+            imagePullPolicy: {{ $image.pullPolicy | quote }}
+            {{- end }}
+            command: ["rm", "-fr", "/var/lib/mysql/lost+found"]
+            volumeMounts:
+            - name: pxc-data
+              mountPath: /var/lib/mysql
+          containers:
+          - name: database
+            {{- with $image := $.Values.releases.database.image }}
+            image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
+            imagePullPolicy: {{ $image.pullPolicy | quote }}
+            {{- end }}
+            command: ["/bin/bash", "/startup-scripts/entrypoint.sh"]
+            env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: var-pxc-root-password
+                  key: password
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: var-pxc-password
+                  key: password
+            - name: ALLOW_ROOT_FROM
+              value: "%"
+            - name: PXC_STRICT_MODE
+              value: ENFORCING
+            ports:
+            - name: mysql
+              containerPort: 3306
+            livenessProbe:
+              exec:
+                command:
+                  - "/bin/bash"
+                  - "-c"
+                  - "mysqladmin ping || test -e /var/lib/mysql/sst_in_progress"
+              initialDelaySeconds: 300
+              timeoutSeconds: 2
+            readinessProbe:
+              exec:
+                command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+              initialDelaySeconds: 30
+              timeoutSeconds: 2
+            volumeMounts:
+            - name: pxc-tls
+              mountPath: /etc/mysql/tls/certs
+            - name: pxc-data
+              mountPath: /var/lib/mysql
+            - name: pxc-config-files
+              mountPath: /etc/mysql/conf.d
+            - name: pxc-startup-scripts
+              mountPath: /startup-scripts
+            - name: slash-root
+              mountPath: /root
+            - name: var-log
+              mountPath: /var/log
+          - name: "logs"
+            {{- with $image := $.Values.releases.database.image }}
+            image: {{ printf "%s:%s" $image.repository $image.tag | quote }}
+            imagePullPolicy: {{ $image.pullPolicy | quote }}
+            {{- end }}
+            command: ["tail", "-f", "/var/log/mysqld.log"]
+            volumeMounts:
+            - name: var-log
+              mountPath: /var/log
+          volumes:
+          - name: slash-root
+            emptyDir: {}
+          - name: var-log
+            emptyDir: {}
+          - name: pxc-config-files
+            configMap:
+              name: database-config-files
+          - name: pxc-startup-scripts
+            configMap:
+              name: database-startup-scripts
+          - name: pxc-tls
+            secret:
+              secretName: var-pxc-tls
+      volumeClaimTemplates:
+      - metadata:
+          name: pxc-data
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: {{ default "" .Values.kube.storage_class }}
+          resources:
+            requests:
+              storage: {{ .Values.sizing.database.persistence.size | quote }}
+
+{{- end }}{{/* .Values.features.embedded_database.enabled */}}

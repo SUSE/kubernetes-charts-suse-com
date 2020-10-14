@@ -1,0 +1,27 @@
+{{- if and .Values.global.rbac.create .Values.persistOutputClusterRole.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: "{{ .Values.persistOutputClusterRole.name }}"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - "*"
+- apiGroups:
+  - quarks.cloudfoundry.org
+  resources:
+  - quarksjobs
+  verbs:
+  - get
+{{- end }}
