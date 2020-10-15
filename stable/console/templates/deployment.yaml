@@ -59,7 +59,7 @@ spec:
 {{- end }}
 {{- end }}
       containers:
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.1.0-07059799c-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.console}}:4.2.0-6344c739d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: ui
         ports:
@@ -71,7 +71,7 @@ spec:
           protocol: TCP
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.1.0-07059799c-cap:{{ .Release.Revision }}"
+          value: "4.2.0-6344c739d-cap:{{ .Release.Revision }}"
         - name: CONSOLE_CERT_PATH
           value: "/{{ .Release.Name }}-cert-volume"
         - name: SSL_PROTOCOLS
@@ -82,12 +82,12 @@ spec:
         - mountPath: "/{{ .Release.Name }}-cert-volume"
           name: "{{ .Release.Name }}-cert-volume"
           readOnly: true
-      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.1.0-07059799c-cap
+      - image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.proxy}}:4.2.0-6344c739d-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         name: proxy
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.1.0-07059799c-cap:{{ .Release.Revision }}"
+          value: "4.2.0-6344c739d-cap:{{ .Release.Revision }}"
         - name: STRATOS_HELM_RELEASE
           value: "{{ .Release.Name }}"
         - name: DB_USER
@@ -294,6 +294,16 @@ spec:
         - name: UI_LIST_ALLOW_LOAD_MAXED
           value: {{ default "false" .Values.console.ui.listAllowLoadMaxed | quote }}
         {{- end }}
+        - name: ANALYSIS_SERVICES_API
+          value: "http://{{ .Release.Name }}-analyzers:8090"
+        - name: STRATOS_KUBERNETES_NAMESPACE
+          value: "{{ .Release.Namespace }}"
+        - name: STRATOS_KUBERNETES_TERMINAL_IMAGE
+          value: "{{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-kube-terminal:4.2.0-6344c739d-cap"
+        - name: STRATOS_KUBERNETES_DASHBOARD_IMAGE
+          value: "{{.Values.console.kubeDashboardImage}}"        
+        - name: ARTIFACT_HUB_DISABLED
+          value: {{ default "false" .Values.console.artifactHubDisabled | quote }}
         {{- include "stratosJetstreamEnv" . | indent 8 }}
         readinessProbe:
           httpGet:
