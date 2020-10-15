@@ -1,99 +1,176 @@
+{{- if .Values.rbac.create }}
+{{- if .Values.rbac.serviceAccount.create }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: minibroker
-  {{- template "minibroker.labels" . }}
+  name: {{ .Values.rbac.serviceAccount.name | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
+    {{- range $k, $v := .Values.rbac.serviceAccount.labels }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{- end }}
+  annotations:
+    {{- range $k, $v := .Values.rbac.serviceAccount.annotations }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{- end }}
+{{- end }}{{/* if .Values.rbac.serviceAccount.create */}}
 
-{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
-
-# If a "defaultNamespace" has been defined, then only grant access to the
-# release namespace itself (for storing data in a configmap), and to the
-# defaultNamespace (to maintain the service instances).
+{{- if .Values.rbac.namespaced.enabled }}
+{{/* Checks for when the rbac is namespaced. */}}
 {{- if .Values.defaultNamespace }}
+{{- if not has .Values.defaultNamespace .Values.rbac.namespaced.whitelist }}
+{{- fail "The default namespace is not whitelisted in rbac.namespaced.whitelist" }}
+{{- end }}{{/* if not has .Values.defaultNamespace .Values.rbac.namespaced.whitelist */}}
+{{- end }}{{/* if .Values.defaultNamespace */}}
 
-# If we install the services into the release namespace, then the namespace
-# already exists, and the configmap role binding becomes redundant because
-# we'll grant full access to the defaultNamespace.
-{{- if ne .Release.Namespace .Values.defaultNamespace }}
 ---
-apiVersion: v1
-kind: Namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: {{ .Values.defaultNamespace }}
-  {{- template "minibroker.labels" . }}
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.rbac.serviceAccount.name | quote }}
+  namespace: {{ .Release.Namespace | quote }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: minibroker-configmap
-  {{- template "minibroker.labels" . }}
+  name: minibroker
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources: ["configmaps"]
-  verbs:     ["*"]
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: minibroker-configmap
-  {{- template "minibroker.labels" . }}
+  name: minibroker
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: minibroker-configmap
+  name: minibroker
 subjects:
 - kind: ServiceAccount
-  name: minibroker
-  namespace: {{ .Release.Namespace }}
-{{- end }}{{/* if ne .Release.Namespace .Values.defaultNamespace */}}
-
-# Provide full access to the defaultNamespace to the release namespace
-# service account.
+  name: {{ .Values.rbac.serviceAccount.name | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+{{- range $namespace := .Values.rbac.namespaced.whitelist }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: minibroker-services
-  namespace: {{ .Values.defaultNamespace }}
-  {{- template "minibroker.labels" . }}
+  name: minibroker
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: ["*"]
   resources: ["*"]
-  verbs:     ["*"]
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: minibroker-services
-  namespace: {{ .Values.defaultNamespace }}
-  {{- template "minibroker.labels" . }}
+  name: minibroker
+  namespace: {{ $namespace | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: minibroker-services
+  name: minibroker
 subjects:
 - kind: ServiceAccount
-  name: minibroker
-  namespace: {{ .Release.Namespace }}
-
-# If a defaultNamespace has not been defined, then run everything
-# using cluster-admin permissions; we now own this place! :)
-{{- else }}{{/* if .Values.defaultNamespace */}}
+  name: {{ $.Values.rbac.serviceAccount.name | quote }}
+  namespace: {{ $.Release.Namespace | quote }}
+{{- end }}{{/* range $namespace := .Values.rbac.namespaced.whitelist */}}
+{{- else }}{{/* if .Values.rbac.namespaced.enabled */}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - endpoints
+  - limitranges
+  - persistentvolumeclaims
+  - pods
+  - podtemplates
+  - replicationcontrollers
+  - resourcequotas
+  - secrets
+  - serviceaccounts
+  - services
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  - autoscaling
+  - batch
+  - networking.k8s.io
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs: ["*"]
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: minibroker
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
 subjects:
 - kind: ServiceAccount
-  name: minibroker
-  namespace: {{ .Release.Namespace }}
-{{- end }}{{/* if .Values.defaultNamespace */}}
+  name: {{ .Values.rbac.serviceAccount.name | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+{{- end }}{{/* if .Values.rbac.namespaced.enabled */}}
 
-{{- end }}{{/* if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" */}}
+{{- end }}{{/* if .Values.rbac.create */}}
