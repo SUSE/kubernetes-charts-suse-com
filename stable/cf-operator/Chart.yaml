@@ -18,4 +18,4 @@ sources:
 - https://github.com/cloudfoundry-incubator/quarks-secret
 - https://github.com/cloudfoundry-incubator/quarks-utils
 - https://build.opensuse.org/package/show/Cloud:Platform:quarks/quarks-operator-base
-version: 6.1.17+0.gec409fd7-rc3
+version: 6.1.17-rc3+0.gec409fd7
