@@ -1,8 +1,12 @@
+{{- $deploymentPort := 8080 }}
+{{- $configPath := "/minibroker" }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "minibroker.fullname" . }}
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 spec:
   replicas: 1
   strategy:
@@ -12,16 +16,19 @@ spec:
       app: {{ template "minibroker.fullname" . }}
   template:
     metadata:
-      {{- include "minibroker.labels" . | nindent 6 }}
+      labels:
+        {{- include "minibroker.labels" . | nindent 8 }}
     spec:
       serviceAccountName: minibroker
       containers:
       - name: minibroker
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/{{ .Values.image }}"
+        image: {{ .Values.image | quote }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-        command:
-        - minibroker
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
         args:
+        - minibroker
         {{- if .Values.serviceCatalogEnabledOnly }}
         - --service-catalog-enabled-only
         {{- end }}
@@ -34,7 +41,7 @@ spec:
         - "{{ .Values.defaultNamespace }}"
         {{- end }}
         - --port
-        - "8080"
+        - {{ $deploymentPort | quote }}
         {{- if .Values.tls.cert }}
         - --tlsCert
         - "{{ .Values.tls.cert }}"
@@ -44,17 +51,38 @@ spec:
         - "{{ .Values.tls.key }}"
         {{- end }}
         - -v
-        - {{ .Values.logLevel | default "5" | quote }}
+        - {{ .Values.logLevel | quote }}
         - -logtostderr
+        - --provisioningSettings
+        - {{ printf "%s/provisioning-settings.yaml" $configPath }}
         ports:
-        - containerPort: 8080
-      - name: tiller
-        image: "gcr.io/kubernetes-helm/tiller:v2.13.1"
-        imagePullPolicy: IfNotPresent
+        - name: broker
+          containerPort: {{ $deploymentPort }}
         env:
-        - name: TILLER_NAMESPACE
-          value: {{ .Release.Namespace }}
-        - name: TILLER_HISTORY_MAX
-          value: "1"
-        command: ["/tiller"]
-        args: ["--listen=localhost:44134"]
+        - name: CONFIG_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        readinessProbe:
+          httpGet: &readinessHTTPGet
+            path: /healthz
+            port: {{ $deploymentPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 3
+        livenessProbe:
+          httpGet: *readinessHTTPGet
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          failureThreshold: 2
+        volumeMounts:
+        - name: cache
+          mountPath: /home/minibroker/.cache
+        - name: provisioning-settings
+          mountPath: {{ $configPath | quote}}
+          readOnly: true
+      volumes:
+      - name: cache
+        emptyDir: {}
+      - name: provisioning-settings
+        configMap:
+          name: {{ printf "%s-provisioning-settings" .Release.Name | quote }}
