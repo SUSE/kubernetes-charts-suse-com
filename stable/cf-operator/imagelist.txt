@@ -1,4 +1,5 @@
-cf-operator:v6.1.10-0.g7b1a5f2f
+cf-operator:v6.1.17-0.gec409fd7
 coredns:0.1.0-1.6.7-bp152.1.19
+kubecf-kubectl:v1.19.2
 quarks-job:v1.0.206
 quarks-secret:v1.0.744

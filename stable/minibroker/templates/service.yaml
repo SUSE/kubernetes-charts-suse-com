@@ -2,11 +2,12 @@ kind: Service
 apiVersion: v1
 metadata:
   name: {{ template "minibroker.fullname" . }}
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 spec:
   selector:
     app: {{ template "minibroker.fullname" . }}
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 8080
+    port: {{ .Values.broker.service.port }}
+    targetPort: broker

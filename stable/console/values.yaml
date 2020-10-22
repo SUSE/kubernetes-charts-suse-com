@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 4.1.0-07059799c-cap
+consoleVersion: 4.2.0-6344c739d-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -115,6 +115,9 @@ console:
 
   # Download link when installing the Kubernetes Dashboard in a targetted Kube Endpoint
   kubeDashboardImage:
+
+  # Enable Artifact Hub
+  artifactHubEnabled: true
 
   # Size for analysis reports volume
   reportsVolumeSize: 1Gi
