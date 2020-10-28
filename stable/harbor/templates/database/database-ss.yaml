@@ -32,6 +32,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      automountServiceAccountToken: false
       initContainers:
       - name: "change-permission-of-directory"
         securityContext:
@@ -72,9 +73,12 @@ spec:
         resources:
 {{ toYaml .Values.database.internal.resources | indent 10 }}
 {{- end }}
-        envFrom:
-          - secretRef:
-              name: "{{ template "harbor.database" . }}"
+        env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "{{ template "harbor.database" . }}"
+                key: POSTGRES_PASSWORD
         volumeMounts:
         - name: database-data
           mountPath: /var/lib/postgresql/data

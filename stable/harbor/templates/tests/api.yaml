@@ -20,93 +20,48 @@ spec:
     - name: api-tests
       image: {{ .Values.tests.api.image.repository }}:{{ .Values.tests.api.image.tag }}
       imagePullPolicy: {{ .Values.imagePullPolicy }}
-      command: ["/bin/bash", "-c"]
-      args:
-        - |
-          trap "touch /sidecar/main-terminated" EXIT
-          /usr/local/bin/entrypoint.sh
       env:
         - name: HARBOR_IP
           value: {{ .Values.externalURL | replace "https://" "" }}
+        {{- if and .Values.notary.enabled (eq .Values.expose.type "ingress") }}
+        - name: NOTARY_URL
+          value: https://{{ .Values.expose.ingress.hosts.notary }}
+        {{- end }}
         - name: ROBOT_OPTIONS
           value: "{{ template "harbor.tests.api.options" . }}"
-        - name: DOCKER_HOST
-          value: "tcp://localhost:2376"
-        - name: DOCKER_TLS_VERIFY
-          value: "1"
-        - name: DOCKER_CERT_PATH
-          value: /certs/client
       volumeMounts:
-        - name: sidecar
-          mountPath: /sidecar
-        - name: dind-certs
-          mountPath: /certs/client
-          readOnly: true
-        - name: containerd-socket
-          mountPath: /run/containerd
         {{- if .Values.expose.tls.enabled }}
         - name: ca-download
           mountPath: /usr/share/pki/trust/anchors
           readOnly: true
         {{- end }}
+      securityContext:
+        privileged: true
+        allowPrivilegeEscalation: true
 {{- if .Values.tests.api.resources }}
       resources:
 {{ toYaml .Values.tests.api.resources | indent 8 }}
 {{- end }}
-    - name: sidecar-docker-server
-      image: {{ .Values.tests.api.dind.image.repository }}:{{ .Values.tests.api.dind.image.tag }}
-      imagePullPolicy: {{ .Values.imagePullPolicy }}
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          dockerd-entrypoint.sh --storage-driver=vfs --userland-proxy=false &
-          CHILD_PID=$!
-          (while true; do if [[ -f "/sidecar/main-terminated" ]]; then kill $CHILD_PID; fi; sleep 1; done) &
-          wait $CHILD_PID
-          if [[ -f "/sidecar/main-terminated" ]]; then exit 0; fi
-      env:
-        - name: DOCKER_TLS_CERTDIR
-          value: /certs
-      volumeMounts:
-        - name: sidecar
-          mountPath: /sidecar
-          readOnly: true
-        - name: dind-certs
-          mountPath: /certs/client
-        - name: containerd-socket
-          mountPath: /var/run/docker/containerd
-        {{- if .Values.expose.tls.enabled }}
-        - name: ca-download
-          mountPath: /etc/docker/certs.d/{{ .Values.externalURL | replace "https://" "" }}
-          readOnly: true
-        {{- end }}
-      securityContext:
-        privileged: true
-        allowPrivilegeEscalation: true
-{{- if .Values.tests.api.dind.resources }}
-      resources:
-{{ toYaml .Values.tests.api.dind.resources | indent 8 }}
-{{- end }}
   volumes:
-    - name: sidecar
-      emptyDir: {}
-    - name: dind-certs
-      emptyDir: {}
-    - name: containerd-socket
-      emptyDir: {}
     {{- if .Values.expose.tls.enabled }}
     - name: ca-download
       secret:
-      {{- if eq (include "harbor.autoGenCertForIngress" .) "true" }}
-        secretName: "{{ template "harbor.ingress" . }}"
-      {{- else if eq (include "harbor.autoGenCertForNginx" .) "true" }}
-        secretName: {{ template "harbor.nginx" . }}
-      {{- else }}
-        secretName: {{ .Values.expose.tls.secretName }}
-      {{- end }}
+      {{- if .Values.caSecretName }}
+        secretName: {{ .Values.caSecretName }}
         items:
           - key: ca.crt
             path: ca.crt
+      {{- else if eq (include "harbor.autoGenCertForIngress" .) "true" }}
+        secretName: "{{ template "harbor.ingress" . }}"
+        items:
+          - key: ca.crt
+            path: ca.crt
+      {{- else if eq (include "harbor.autoGenCertForNginx" .) "true" }}
+        secretName: {{ template "harbor.tlsSecretForNginx" . }}
+        items:
+          - key: ca.crt
+            path: ca.crt
+      {{- end }}
     {{- end }}
   restartPolicy: Never
 {{- end }}

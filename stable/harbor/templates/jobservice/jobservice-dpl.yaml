@@ -26,6 +26,7 @@ spec:
         checksum/configmap-env: {{ include (print $.Template.BasePath "/jobservice/jobservice-cm-env.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/jobservice/jobservice-secrets.yaml") . | sha256sum }}
         checksum/secret-core: {{ include (print $.Template.BasePath "/core/core-secret.yaml") . | sha256sum }}
+        checksum/secret-redis: {{ include (print $.Template.BasePath "/redis/secret.yaml") . | sha256sum }}
 {{- if and .Values.internalTLS.enabled (eq .Values.internalTLS.certSource "auto") }}
         checksum/tls: {{ include (print $.Template.BasePath "/internal/auto-tls.yaml") . | sha256sum }}
 {{- else if and .Values.internalTLS.enabled (eq .Values.internalTLS.certSource "manual") }}
@@ -35,12 +36,38 @@ spec:
 {{ toYaml .Values.jobservice.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      securityContext:
+        fsGroup: 10000
 {{- if .Values.jobservice.serviceAccountName }}
       serviceAccountName: {{ .Values.jobservice.serviceAccountName }}
 {{- end -}}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName }}
+      initContainers:
+      - name: "install-certificates"
+        securityContext:
+          runAsUser: 0
+        image: {{ .Values.jobservice.image.repository }}:{{ .Values.jobservice.image.tag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/sh"]
+        args: [
+            '-c',
+            '/usr/bin/harbor-install-cert.sh && cp -ar /var/lib/ca-certificates/* /tmp/ca-certificates' ]
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /tmp/ca-certificates
+          readOnly: false
+        {{- if .Values.internalTLS.enabled }}
+        - name: jobservice-internal-certs
+          mountPath: /etc/harbor/ssl/jobservice
+        {{- end }}
+        {{- if .Values.caBundleSecretName }}
+{{ include "harbor.caBundleVolumeMount" . | indent 8 }}
+        {{- end }}
       {{- end }}
       containers:
       - name: jobservice
@@ -70,15 +97,20 @@ spec:
               secretKeyRef:
                 name: {{ template "harbor.core" . }}
                 key: secret
+          - name: JOB_SERVICE_POOL_REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "harbor.redis" . }}
+                key: REDIS_URL_JOBSERVICE
           {{- if .Values.internalTLS.enabled }}
           - name: INTERNAL_TLS_ENABLED
             value: "true"
           - name: INTERNAL_TLS_KEY_PATH
-            value: /etc/harbor/ssl/job_service.key
+            value: /etc/harbor/ssl/jobservice/tls.key
           - name: INTERNAL_TLS_CERT_PATH
-            value: /etc/harbor/ssl/job_service.crt
+            value: /etc/harbor/ssl/jobservice/tls.crt
           - name: INTERNAL_TLS_TRUST_CA_PATH
-            value: /harbor_cust_cert/harbor_internal_ca.crt
+            value: /etc/harbor/ssl/jobservice/ca.crt
           {{- end }}
         envFrom:
         - configMapRef:
@@ -88,6 +120,10 @@ spec:
         ports:
         - containerPort: {{ template "harbor.jobservice.containerPort" . }}
         volumeMounts:
+        {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName }}
+        - name: ca-certificates
+          mountPath: /var/lib/ca-certificates
+        {{- end }}
         - name: jobservice-config
           mountPath: /etc/jobservice/config.yml
           subPath: config.yml
@@ -96,19 +132,16 @@ spec:
           subPath: {{ .Values.persistence.persistentVolumeClaim.jobservice.subPath }}
         {{- if .Values.internalTLS.enabled }}
         - name: jobservice-internal-certs
-          mountPath: /harbor_cust_cert/harbor_internal_ca.crt
-          subPath: ca.crt
-        - name: jobservice-internal-certs
-          mountPath: /etc/harbor/ssl/job_service.crt
-          subPath: tls.crt
-        - name: jobservice-internal-certs
-          mountPath: /etc/harbor/ssl/job_service.key
-          subPath: tls.key
+          mountPath: /etc/harbor/ssl/jobservice
         {{- end }}
         {{- if .Values.caBundleSecretName }}
 {{ include "harbor.caBundleVolumeMount" . | indent 8 }}
         {{- end }}
       volumes:
+      {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName }}
+      - name: "ca-certificates"
+        emptyDir: {}
+      {{- end }}
       - name: jobservice-config
         configMap:
           name: "{{ template "harbor.jobservice" . }}"
