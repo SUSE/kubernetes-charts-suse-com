@@ -22,7 +22,7 @@ Check the repository was successfully added by searching for the `console`, for 
 ```
 helm search repo console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	4.2.0           4.2.0      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	4.2.1           2.1.0      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Version numbers will depend on the version of SUSE Stratos Console available from the Helm repository
