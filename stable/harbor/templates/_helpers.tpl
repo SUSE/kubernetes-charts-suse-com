@@ -31,7 +31,7 @@ app: "{{ template "harbor.name" . }}"
 {{- end -}}
 
 {{- define "harbor.autoGenCert" -}}
-  {{- if and .Values.expose.tls.enabled (not .Values.expose.tls.secretName) -}}
+  {{- if and .Values.expose.tls.enabled (eq .Values.expose.tls.certSource "auto") -}}
     {{- printf "true" -}}
   {{- else -}}
     {{- printf "false" -}}
@@ -52,6 +52,28 @@ app: "{{ template "harbor.name" . }}"
   {{- else -}}
     {{- printf "false" -}}
   {{- end -}}
+{{- end -}}
+
+{{- define "harbor.getGenCertOrLoadFromSecret" -}}
+  {{- $certData := dict "tls_crt" (.cert.Cert | b64enc) "tls_key" (.cert.Key | b64enc) -}}
+  {{- if .ca -}}
+    {{- $_ := set $certData "ca_crt" (.ca.Cert | b64enc) -}}
+  {{- end -}}
+  {{- if not .rotateCert -}}
+    {{- $prevSecret := (lookup "v1" "Secret" .Release.Namespace .secret) -}}
+    {{- if $prevSecret -}}
+      {{- $_ := set $certData "tls_crt" (index $prevSecret.data "tls.crt") -}}
+      {{- $_ := set $certData "tls_key" (index $prevSecret.data "tls.key") -}}
+      {{- if .ca -}}
+        {{- $_ := set $certData "ca_crt" (index $prevSecret.data "ca.crt") -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if .ca -}}
+ca.crt: {{ get $certData "ca_crt" | quote }}
+  {{- end }}
+tls.crt: {{ get $certData "tls_crt" | quote }}
+tls.key: {{ get $certData "tls_key" | quote }}
 {{- end -}}
 
 {{- define "harbor.database.host" -}}
@@ -78,20 +100,25 @@ app: "{{ template "harbor.name" . }}"
   {{- end -}}
 {{- end -}}
 
-{{- define "harbor.database.rawPassword" -}}
+{{- define "harbor.database.internalPassword" -}}
+  {{- $prevSecret := (lookup "v1" "Secret" .Release.Namespace (include "harbor.database" $)) }}
+  {{- if $prevSecret -}}
+    {{- $prevSecret.data.POSTGRES_PASSWORD | b64dec }}
+  {{- else -}}
+    {{- randAlphaNum 16 }}
+  {{- end -}}
+{{- end -}}
+
+{{- define "harbor.database.password" -}}
   {{- if eq .Values.database.type "internal" -}}
-    {{- .Values.database.internal.password -}}
+    {{- .Values.database.internal.password | default (include "harbor.database.internalPassword" .) -}}
   {{- else -}}
     {{- .Values.database.external.password -}}
   {{- end -}}
 {{- end -}}
 
 {{- define "harbor.database.escapedRawPassword" -}}
-  {{- include "harbor.database.rawPassword" . | urlquery | replace "+" "%20" -}}
-{{- end -}}
-
-{{- define "harbor.database.encryptedPassword" -}}
-  {{- include "harbor.database.rawPassword" . | b64enc | quote -}}
+  {{- .databasePassword | urlquery | replace "+" "%20" -}}
 {{- end -}}
 
 {{- define "harbor.database.coreDatabase" -}}
@@ -146,123 +173,91 @@ postgres://{{ template "harbor.database.username" . }}:{{ template "harbor.datab
 postgres://{{ template "harbor.database.username" . }}:{{ template "harbor.database.escapedRawPassword" . }}@{{ template "harbor.database.host" . }}:{{ template "harbor.database.port" . }}/{{ template "harbor.database.notarySignerDatabase" . }}?sslmode={{ template "harbor.database.sslmode" . }}
 {{- end -}}
 
-{{- define "harbor.redis.host" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- template "harbor.redis" . -}}
+{{- define "harbor.redis.scheme" -}}
+  {{- with .Values.redis }}
+    {{- ternary "redis+sentinel" "redis"  (and (eq .type "external" ) (not (not .external.sentinelMasterSet))) }}
+  {{- end }}
+{{- end -}}
+
+/*host:port*/
+{{- define "harbor.redis.addr" -}}
+  {{- with .Values.redis }}
+    {{- ternary (printf "%s:6379" (include "harbor.redis" $ )) .external.addr (eq .type "internal") }}
+  {{- end }}
+{{- end -}}
+
+{{- define "harbor.redis.masterSet" -}}
+  {{- with .Values.redis }}
+    {{- ternary .external.sentinelMasterSet "" (eq "redis+sentinel" (include "harbor.redis.scheme" $)) }}
+  {{- end }}
+{{- end -}}
+
+{{- define "harbor.redis.internalPassword" -}}
+  {{- $prevSecret := (lookup "v1" "Secret" .Release.Namespace (include "harbor.redis" $)) }}
+  {{- if $prevSecret -}}
+    {{- $prevSecret.data.REDIS_PASSWORD | b64dec }}
   {{- else -}}
-    {{- .Values.redis.external.host -}}
+    {{- randAlphaNum 16 }}
   {{- end -}}
 {{- end -}}
 
-{{- define "harbor.redis.port" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "6379" -}}
-  {{- else -}}
-    {{- .Values.redis.external.port -}}
-  {{- end -}}
+/*scheme://[redis:password@]host:port[/master_set]*/
+{{- define "harbor.redis.url" -}}
+  {{- $path := ternary "" (printf "/%s" (include "harbor.redis.masterSet" $)) (not (include "harbor.redis.masterSet" $)) }}
+  {{- $cred := ternary (printf "redis:%s@" (.redisPassword | urlquery)) "" (not (not (include "harbor.redis.addr" $))) }}
+  {{- printf "%s://%s%s%s" (include "harbor.redis.scheme" $) $cred (include "harbor.redis.addr" $) $path -}}
 {{- end -}}
 
-{{- define "harbor.redis.coreDatabaseIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "0" }}
-  {{- else -}}
-    {{- .Values.redis.external.coreDatabaseIndex -}}
-  {{- end -}}
+/*scheme://[redis:password@]addr/db_index?idle_timeout_seconds=30*/
+{{- define "harbor.redis.urlForCore" -}}
+  {{- with .Values.redis }}
+    {{- $index := ternary "0" .external.coreDatabaseIndex (eq .type "internal") }}
+    {{- printf "%s/%s?idle_timeout_seconds=30" (include "harbor.redis.url" $) $index -}}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.jobserviceDatabaseIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "1" }}
-  {{- else -}}
-    {{- .Values.redis.external.jobserviceDatabaseIndex -}}
-  {{- end -}}
+/*scheme://[redis:password@]addr/db_index*/
+{{- define "harbor.redis.urlForJobservice" -}}
+  {{- with .Values.redis }}
+    {{- $index := ternary "1" .external.jobserviceDatabaseIndex (eq .type "internal") }}
+    {{- printf "%s/%s" (include "harbor.redis.url" $) $index -}}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.registryDatabaseIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "2" }}
-  {{- else -}}
-    {{- .Values.redis.external.registryDatabaseIndex -}}
-  {{- end -}}
+/*scheme://[redis:password@]addr/db_index?idle_timeout_seconds=30*/
+{{- define "harbor.redis.urlForRegistry" -}}
+  {{- with .Values.redis }}
+    {{- $index := ternary "2" .external.registryDatabaseIndex (eq .type "internal") }}
+    {{- printf "%s/%s?idle_timeout_seconds=30" (include "harbor.redis.url" $) $index -}}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.chartmuseumDatabaseIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "3" }}
-  {{- else -}}
-    {{- .Values.redis.external.chartmuseumDatabaseIndex -}}
-  {{- end -}}
+/*scheme://[redis:password@]addr/db_index?idle_timeout_seconds=30*/
+{{- define "harbor.redis.urlForClair" -}}
+  {{- with .Values.redis }}
+    {{- $index := ternary "4" .external.clairAdapterIndex (eq .type "internal") }}
+    {{- printf "%s/%s?idle_timeout_seconds=30" (include "harbor.redis.url" $) $index -}}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.clairAdapterIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "4" }}
-  {{- else -}}
-    {{- .Values.redis.external.clairAdapterIndex -}}
-  {{- end -}}
+/*scheme://[redis:password@]addr/db_index?idle_timeout_seconds=30*/
+{{- define "harbor.redis.urlForTrivy" -}}
+  {{- with .Values.redis }}
+    {{- $index := ternary "5" .external.trivyAdapterIndex (eq .type "internal") }}
+    {{- printf "%s/%s?idle_timeout_seconds=30" (include "harbor.redis.url" $) $index -}}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.trivyAdapterIndex" -}}
-  {{- if eq .Values.redis.type "internal" -}}
-    {{- printf "%s" "5" }}
-  {{- else -}}
-    {{- .Values.redis.external.trivyAdapterIndex -}}
-  {{- end -}}
+{{- define "harbor.redis.dbForRegistry" -}}
+  {{- with .Values.redis }}
+    {{- ternary "2" .external.registryDatabaseIndex (eq .type "internal") }}
+  {{- end }}
 {{- end -}}
 
-{{- define "harbor.redis.rawPassword" -}}
-  {{- if and (eq .Values.redis.type "external") .Values.redis.external.password -}}
-    {{- .Values.redis.external.password -}}
-  {{- end -}}
-{{- end -}}
-
-{{- define "harbor.redis.escapedRawPassword" -}}
-  {{- if (include "harbor.redis.rawPassword" . ) -}}
-    {{- include "harbor.redis.rawPassword" . | urlquery | replace "+" "%20" -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*the username redis is used for a placeholder as no username needed in redis*/}}
-{{- define "harbor.redisForJobservice" -}}
-  {{- if (include "harbor.redis.escapedRawPassword" . ) -}}
-    {{- printf "redis://redis:%s@%s:%s/%s" (include "harbor.redis.escapedRawPassword" . ) (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.jobserviceDatabaseIndex" . ) }}
-  {{- else }}
-    {{- template "harbor.redis.host" . }}:{{ template "harbor.redis.port" . }}/{{ template "harbor.redis.jobserviceDatabaseIndex" . }}
-  {{- end -}}
-{{- end -}}
-
-{{/*the username redis is used for a placeholder as no username needed in redis*/}}
-{{- define "harbor.redisForGC" -}}
-  {{- if (include "harbor.redis.escapedRawPassword" . ) -}}
-    {{- printf "redis://redis:%s@%s:%s/%s" (include "harbor.redis.escapedRawPassword" . ) (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.registryDatabaseIndex" . ) }}
-  {{- else }}
-    {{- printf "redis://%s:%s/%s" (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.registryDatabaseIndex" . ) -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*the username redis is used for a placeholder as no username needed in redis*/}}
-{{- define "harbor.redisForClairAdapter" -}}
-  {{- if (include "harbor.redis.escapedRawPassword" . ) -}}
-    {{- printf "redis://redis:%s@%s:%s/%s" (include "harbor.redis.escapedRawPassword" . ) (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.clairAdapterIndex" . ) }}
-  {{- else }}
-    {{- printf "redis://%s:%s/%s" (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.clairAdapterIndex" . ) -}}
-  {{- end -}}
-{{- end -}}
-
-{{- define "harbor.redisForTrivyAdapter" -}}
-  {{- if (include "harbor.redis.escapedRawPassword" . ) -}}
-    {{- printf "redis://redis:%s@%s:%s/%s" (include "harbor.redis.escapedRawPassword" . ) (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.trivyAdapterIndex" . ) }}
-  {{- else }}
-    {{- printf "redis://%s:%s/%s" (include "harbor.redis.host" . ) (include "harbor.redis.port" . ) (include "harbor.redis.trivyAdapterIndex" . ) -}}
-  {{- end -}}
-{{- end -}}
-
-{{/*
-host:port,pool_size,password
-100 is the default value of pool size
-*/}}
-{{- define "harbor.redisForCore" -}}
-  {{- template "harbor.redis.host" . }}:{{ template "harbor.redis.port" . }},100,{{ template "harbor.redis.rawPassword" . }}
+{{- define "harbor.redis.dbForChartmuseum" -}}
+  {{- with .Values.redis }}
+    {{- ternary "3" .external.chartmuseumDatabaseIndex (eq .type "internal") }}
+  {{- end }}
 {{- end -}}
 
 {{- define "harbor.portal" -}}
@@ -587,6 +582,34 @@ host:port,pool_size,password
   {{- end -}}
 {{- end -}}
 
+{{- define "harbor.tlsCoreSecretForIngress" -}}
+  {{- if eq .Values.expose.tls.certSource "none" -}}
+    {{- printf "" -}}
+  {{- else if eq .Values.expose.tls.certSource "secret" -}}
+    {{- .Values.expose.tls.secret.secretName -}}
+  {{- else -}}
+    {{- include "harbor.ingress" . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "harbor.tlsNotarySecretForIngress" -}}
+  {{- if eq .Values.expose.tls.certSource "none" -}}
+    {{- printf "" -}}
+  {{- else if eq .Values.expose.tls.certSource "secret" -}}
+    {{- .Values.expose.tls.secret.notarySecretName -}}
+  {{- else -}}
+    {{- include "harbor.ingress" . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "harbor.tlsSecretForNginx" -}}
+  {{- if eq .Values.expose.tls.certSource "secret" -}}
+    {{- .Values.expose.tls.secret.secretName -}}
+  {{- else -}}
+    {{- include "harbor.nginx" . -}}
+  {{- end -}}
+{{- end -}}
+
 {{- define "harbor.test" -}}
   {{- printf "%s-test" (include "harbor.fullname" .) -}}
 {{- end -}}
@@ -614,8 +637,6 @@ host:port,pool_size,password
   {{- end -}}
   {{- if not .Values.trivy.enabled -}}
     {{- $el = append $el "push_index" -}}
-  {{- end -}}
-  {{- if or (not .Values.trivy.enabled) (not .Values.clair.enabled) -}}
     {{- $el = append $el "scan" -}}
     {{- $el = append $el "scan_all" -}}
   {{- end -}}
