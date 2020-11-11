@@ -26,6 +26,7 @@ spec:
         checksum/secret: {{ include (print $.Template.BasePath "/registry/registry-secret.yaml") . | sha256sum }}
         checksum/secret-jobservice: {{ include (print $.Template.BasePath "/jobservice/jobservice-secrets.yaml") . | sha256sum }}
         checksum/secret-core: {{ include (print $.Template.BasePath "/core/core-secret.yaml") . | sha256sum }}
+        checksum/secret-redis: {{ include (print $.Template.BasePath "/redis/secret.yaml") . | sha256sum }}
 {{- if and .Values.internalTLS.enabled (eq .Values.internalTLS.certSource "auto") }}
         checksum/tls: {{ include (print $.Template.BasePath "/internal/auto-tls.yaml") . | sha256sum }}
 {{- else if and .Values.internalTLS.enabled (eq .Values.internalTLS.certSource "manual") }}
@@ -35,12 +36,43 @@ spec:
 {{ toYaml .Values.registry.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      securityContext:
+        fsGroup: 10000
 {{- if .Values.registry.serviceAccountName }}
       serviceAccountName: {{ .Values.registry.serviceAccountName }}
 {{- end -}}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName .Values.persistence.imageChartStorage.caBundleSecretName }}
+      initContainers:
+      - name: "install-certificates"
+        securityContext:
+          runAsUser: 0
+        image: {{ .Values.registry.registry.image.repository }}:{{ .Values.registry.registry.image.tag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/sh"]
+        args: [
+            '-c',
+            '/usr/bin/harbor-install-cert.sh && cp -ar /var/lib/ca-certificates/* /tmp/ca-certificates' ]
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /tmp/ca-certificates
+          readOnly: false
+        {{- if .Values.internalTLS.enabled }}
+        - name: registry-internal-certs
+          mountPath: /etc/harbor/ssl/registry
+        {{- end }}
+        {{- if .Values.persistence.imageChartStorage.caBundleSecretName }}
+        - name: storage-service-ca
+          mountPath: /harbor_cust_cert/custom-ca-bundle.crt
+          subPath: ca.crt
+        {{- end }}
+        {{- if .Values.caBundleSecretName }}
+{{ include "harbor.caBundleVolumeMount" . | indent 8 }}
+        {{- end }}
       {{- end }}
       containers:
       - name: registry
@@ -81,16 +113,25 @@ spec:
         - name: INTERNAL_TLS_ENABLED
           value: "true"
         - name: INTERNAL_TLS_KEY_PATH
-          value: /etc/harbor/tls/registry.key
+          value: /etc/harbor/ssl/registry/tls.key
         - name: INTERNAL_TLS_CERT_PATH
-          value: /etc/harbor/tls/registry.crt
+          value: /etc/harbor/ssl/registry/tls.crt
         - name: INTERNAL_TLS_TRUST_CA_PATH
-          value: /harbor_cust_cert/harbor_internal_ca.crt
+          value: /etc/harbor/ssl/registry/ca.crt
         {{- end }}
+        - name: REGISTRY_REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "harbor.redis" . }}
+              key: REDIS_PASSWORD
         ports:
         - containerPort: {{ template "harbor.registry.containerPort" . }}
         - containerPort: 5001
         volumeMounts:
+        {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName .Values.persistence.imageChartStorage.caBundleSecretName }}
+        - name: ca-certificates
+          mountPath: /var/lib/ca-certificates
+        {{- end }}
         - name: registry-data
           mountPath: {{ .Values.persistence.imageChartStorage.filesystem.rootdirectory }}
           subPath: {{ .Values.persistence.persistentVolumeClaim.registry.subPath }}
@@ -105,14 +146,7 @@ spec:
           subPath: config.yml
         {{- if .Values.internalTLS.enabled }}
         - name: registry-internal-certs
-          mountPath: /harbor_cust_cert/harbor_internal_ca.crt
-          subPath: ca.crt
-        - name: registry-internal-certs
-          mountPath: /etc/harbor/tls/registry.crt
-          subPath: tls.crt
-        - name: registry-internal-certs
-          mountPath: /etc/harbor/tls/registry.key
-          subPath: tls.key
+          mountPath: /etc/harbor/ssl/registry
         {{- end }}
         {{- if and .Values.persistence.enabled (eq .Values.persistence.imageChartStorage.type "gcs") }}
         - name: gcs-key
@@ -155,7 +189,6 @@ spec:
         resources:
 {{ toYaml .Values.registry.controller.resources | indent 10 }}
 {{- end }}
-        args: ["serve", "/etc/registry/config.yml"]
         envFrom:
         - secretRef:
             name: "{{ template "harbor.registry" . }}"
@@ -174,15 +207,19 @@ spec:
         - name: INTERNAL_TLS_ENABLED
           value: "true"
         - name: INTERNAL_TLS_KEY_PATH
-          value: /etc/harbor/ssl/registryctl.key
+          value: /etc/harbor/ssl/registry/tls.key
         - name: INTERNAL_TLS_CERT_PATH
-          value: /etc/harbor/ssl/registryctl.crt
+          value: /etc/harbor/ssl/registry/tls.crt
         - name: INTERNAL_TLS_TRUST_CA_PATH
-          value: /harbor_cust_cert/harbor_internal_ca.crt
+          value: /etc/harbor/ssl/registry/ca.crt
         {{- end }}
         ports:
         - containerPort: {{ template "harbor.registryctl.containerPort" . }}
         volumeMounts:
+        {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName .Values.persistence.imageChartStorage.caBundleSecretName }}
+        - name: ca-certificates
+          mountPath: /var/lib/ca-certificates
+        {{- end }}
         - name: registry-data
           mountPath: {{ .Values.persistence.imageChartStorage.filesystem.rootdirectory }}
           subPath: {{ .Values.persistence.persistentVolumeClaim.registry.subPath }}
@@ -194,14 +231,7 @@ spec:
           subPath: ctl-config.yml
         {{- if .Values.internalTLS.enabled }}
         - name: registry-internal-certs
-          mountPath: /harbor_cust_cert/harbor_internal_ca.crt
-          subPath: ca.crt
-        - name: registry-internal-certs
-          mountPath: /etc/harbor/ssl/registryctl.crt
-          subPath: tls.crt
-        - name: registry-internal-certs
-          mountPath: /etc/harbor/ssl/registryctl.key
-          subPath: tls.key
+          mountPath: /etc/harbor/ssl/registry
         {{- end }}
         {{- if .Values.persistence.imageChartStorage.caBundleSecretName }}
         - name: storage-service-ca
@@ -217,6 +247,10 @@ spec:
 {{ include "harbor.caBundleVolumeMount" . | indent 8 }}
         {{- end }}
       volumes:
+      {{- if or .Values.internalTLS.enabled .Values.caBundleSecretName .Values.persistence.imageChartStorage.caBundleSecretName }}
+      - name: "ca-certificates"
+        emptyDir: {}
+      {{- end }}
       - name: registry-htpasswd
         secret:
           secretName: {{ template "harbor.registry" . }}
