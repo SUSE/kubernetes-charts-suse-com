@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 4.2.1-52f5e5081-cap
+consoleVersion: 4.3.0-2090d3c76-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -129,6 +129,9 @@ console:
   sslProtocols:
   sslCiphers:
   
+  # Number of replicas to deploy
+  replicaCount: 1
+
 images:
   console: stratos-console
   proxy: stratos-jetstream
