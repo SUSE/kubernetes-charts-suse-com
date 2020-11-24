@@ -1,5 +1,5 @@
 apiVersion: v1
-appVersion: 2.1.0
+appVersion: 2.1.1
 description: A Helm chart for deploying Stratos
 home: https://stratos.app
 icon: https://raw.githubusercontent.com/SUSE/stratos/master/deploy/kubernetes/custom/icon.png
@@ -14,4 +14,4 @@ maintainers:
 name: console
 sources:
 - https://github.com/SUSE/stratos
-version: 4.2.1
+version: 4.3.0
