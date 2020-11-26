@@ -23,12 +23,26 @@ spec:
       env:
         - name: HARBOR_IP
           value: {{ .Values.externalURL | replace "https://" "" }}
+        - name: HARBOR_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "harbor.core" . }}
+              key: HARBOR_ADMIN_PASSWORD
         {{- if and .Values.notary.enabled (eq .Values.expose.type "ingress") }}
         - name: NOTARY_URL
           value: https://{{ .Values.expose.ingress.hosts.notary }}
         {{- end }}
         - name: ROBOT_OPTIONS
           value: "{{ template "harbor.tests.api.options" . }}"
+        {{- if and .Values.tests.dockerCredentials.username .Values.tests.dockerCredentials.password }}
+        - name: HARBOR_TEST_DOCKER_USERNAME
+          value: {{ .Values.tests.dockerCredentials.username }}
+        - name: HARBOR_TEST_DOCKER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ template "harbor.test" . }}
+              key: .docker-password
+        {{- end }}
       volumeMounts:
         {{- if .Values.expose.tls.enabled }}
         - name: ca-download
