@@ -1,1 +1,1 @@
-registry.suse.com/cap-staging/minibroker:1.1.0
+registry.suse.com/cap-staging/minibroker:1.2.0
