@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 4.1.0-07059799c-cap
+consoleVersion: 4.3.0-2090d3c76-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required
@@ -116,6 +116,9 @@ console:
   # Download link when installing the Kubernetes Dashboard in a targetted Kube Endpoint
   kubeDashboardImage:
 
+  # Enable Artifact Hub
+  artifactHubEnabled: true
+
   # Size for analysis reports volume
   reportsVolumeSize: 1Gi
 
@@ -126,6 +129,9 @@ console:
   sslProtocols:
   sslCiphers:
   
+  # Number of replicas to deploy
+  replicaCount: 1
+
 images:
   console: stratos-console
   proxy: stratos-jetstream

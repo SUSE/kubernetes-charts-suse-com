@@ -15,6 +15,12 @@ metadata:
     app.kubernetes.io/component: "stratos-analyzers"
     helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: "stratos"
@@ -38,14 +44,14 @@ spec:
     spec:
       containers:
       - name: analyzers
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.1.0-07059799c-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.3.0-2090d3c76-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         ports:
         - name: api
           containerPort: 8090
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.1.0-07059799c-cap:{{ .Release.Revision }}"
+          value: "4.3.0-2090d3c76-cap:{{ .Release.Revision }}"
         - name: ANALYSIS_SCRIPTS_DIR
           value: "/scripts"
         - name: ANALYSIS_REPORTS_DIR

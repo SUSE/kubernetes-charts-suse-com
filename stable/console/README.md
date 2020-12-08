@@ -22,7 +22,7 @@ Check the repository was successfully added by searching for the `console`, for 
 ```
 helm search repo console
 NAME               	CHART VERSION   APP VERSION	DESCRIPTION                                  
-suse/console      	4.1.0           4.1.0      	A Helm chart for deploying SUSE Stratos Console
+suse/console      	4.3.0           2.1.1      	A Helm chart for deploying SUSE Stratos Console
 ```
 
 > Note: Version numbers will depend on the version of SUSE Stratos Console available from the Helm repository
@@ -88,6 +88,7 @@ The following table lists the configurable parameters of the SUSE Stratos Consol
 |console.mariadb.host|Hostname of the database when using an external db||
 |console.mariadb.port|Port of the database when using an external db|3306|
 |console.mariadb.tls|TLS mode when connecting to database (true, false, skip-verify, preferred)|false|
+|console.artifactHubDisabled|Disable the Helm Artifact Hub Endpoint|false|
 |uaa.endpoint|URL of the UAA endpoint to authenticate with ||
 |uaa.consoleClient|Client to use when authenticating with the UAA|cf|
 |uaa.consoleClientSecret|Client secret to use when authenticating with the UAA||
