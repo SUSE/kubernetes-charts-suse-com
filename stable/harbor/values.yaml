@@ -9,7 +9,7 @@ expose:
     # images. Refer to https://github.com/goharbor/harbor/issues/5291
     # for the detail.
     enabled: true
-    # The source of the tls certificate. Set it as "auto", "secret" 
+    # The source of the tls certificate. Set it as "auto", "secret"
     # or "none" and fill the information in the corresponding section
     # 1) auto: generate the tls certificate automatically
     # 2) secret: read the tls certificate from the specified secret.
@@ -373,7 +373,7 @@ proxy:
 nginx:
   image:
     repository: registry.suse.com/harbor/harbor-nginx
-    tag: 2.1.1
+    tag: 2.1.2
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   replicas: 1
@@ -389,7 +389,7 @@ nginx:
 portal:
   image:
     repository: registry.suse.com/harbor/harbor-portal
-    tag: 2.1.1
+    tag: 2.1.2
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   replicas: 1
@@ -405,12 +405,13 @@ portal:
 core:
   image:
     repository: registry.suse.com/harbor/harbor-core
-    tag: 2.1.1
+    tag: 2.1.2
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   replicas: 1
   ## Startup probe values
   startupProbe:
+    enabled: true
     initialDelaySeconds: 10
   # resources:
   #  requests:
@@ -441,7 +442,7 @@ core:
 jobservice:
   image:
     repository: registry.suse.com/harbor/harbor-jobservice
-    tag: 2.1.1
+    tag: 2.1.2
   replicas: 1
   # set the service account to be used, default if left empty
   serviceAccountName: ""
@@ -467,7 +468,7 @@ registry:
   registry:
     image:
       repository: registry.suse.com/harbor/harbor-registry
-      tag: 2.1.1
+      tag: 2.1.2
       # resources:
       #  requests:
       #    memory: 256Mi
@@ -475,7 +476,7 @@ registry:
   controller:
     image:
       repository: registry.suse.com/harbor/harbor-registryctl
-      tag: 2.1.1
+      tag: 2.1.2
       # resources:
       #  requests:
       #    memory: 256Mi
@@ -519,7 +520,7 @@ chartmuseum:
   absoluteUrl: false
   image:
     repository: goharbor/chartmuseum-photon
-    tag: v2.1.1
+    tag: v2.1.2
   replicas: 1
   # resources:
   #  requests:
@@ -537,7 +538,7 @@ clair:
   clair:
     image:
       repository: goharbor/clair-photon
-      tag: v2.1.1
+      tag: v2.1.2
       # resources:
       #  requests:
       #    memory: 256Mi
@@ -545,7 +546,7 @@ clair:
   adapter:
     image:
       repository: goharbor/clair-adapter-photon
-      tag: v2.1.1
+      tag: v2.1.2
       # resources:
       #  requests:
       #    memory: 256Mi
@@ -566,7 +567,7 @@ trivy:
     # repository the repository for Trivy adapter image
     repository: registry.suse.com/harbor/harbor-trivy-adapter
     # tag the tag for Trivy adapter image
-    tag: 2.1.1
+    tag: 2.1.2
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   # replicas the number of Pod replicas
@@ -622,7 +623,7 @@ notary:
     serviceAccountName: ""
     image:
       repository: registry.suse.com/harbor/harbor-notary-server
-      tag: 2.1.1
+      tag: 2.1.2
     replicas: 1
     # resources:
     #  requests:
@@ -638,7 +639,7 @@ notary:
     serviceAccountName: ""
     image:
       repository: registry.suse.com/harbor/harbor-notary-signer
-      tag: 2.1.1
+      tag: 2.1.2
     replicas: 1
     # resources:
     #  requests:
@@ -669,7 +670,7 @@ database:
     serviceAccountName: ""
     image:
       repository: registry.suse.com/harbor/harbor-db
-      tag: 2.1.1
+      tag: 2.1.2
     # The initial superuser password for internal database
     # If a password is not specified, Helm will generate one.
     password: ""
@@ -715,7 +716,7 @@ redis:
     serviceAccountName: ""
     image:
       repository: registry.suse.com/harbor/harbor-redis
-      tag: 2.1.1
+      tag: 2.1.2
     # The password for internal redis.
     # If a password is not specified, Helm will generate one.
     password: ""
@@ -752,6 +753,9 @@ tests:
   dockerCredentials:
     username: ""
     password: ""
+  # Repository from where to pull the images used for the tests.
+  # By default the images are pulled from DockerHub
+  imagesPullRepository: ""
   api:
     # Enable/disable API tests
     enabled: true
@@ -767,7 +771,7 @@ tests:
       - singularity # CLI not yet included in the harbor-test-image
     image:
       repository: registry.suse.com/harbor/harbor-test
-      tag: 2.1.1
+      tag: 2.1.2
     # resources:
     #  requests:
     #    memory: 128Mi

@@ -35,18 +35,29 @@ spec:
         - name: ROBOT_OPTIONS
           value: "{{ template "harbor.tests.api.options" . }}"
         {{- if and .Values.tests.dockerCredentials.username .Values.tests.dockerCredentials.password }}
-        - name: HARBOR_TEST_DOCKER_USERNAME
+        - name: DOCKER_USER
           value: {{ .Values.tests.dockerCredentials.username }}
-        - name: HARBOR_TEST_DOCKER_PASSWORD
+        - name: DOCKER_PWD
           valueFrom:
             secretKeyRef:
               name: {{ template "harbor.test" . }}
               key: .docker-password
         {{- end }}
+        {{- if .Values.tests.imagesPullRepository }}
+        - name: HARBOR_TEST_IMAGES_REPOSITORY
+          value: {{ .Values.tests.imagesPullRepository }}
+        {{- end }}
       volumeMounts:
         {{- if .Values.expose.tls.enabled }}
         - name: ca-download
-          mountPath: /usr/share/pki/trust/anchors
+          mountPath: /usr/share/pki/trust/anchors/harbor-ca.crt
+          subPath: ca.crt
+          readOnly: true
+        {{- end }}
+        {{- if .Values.caBundleSecretName }}
+        - name: ca-bundle-certs
+          mountPath: /usr/share/pki/trust/anchors/custom-ca.crt
+          subPath: ca.crt
           readOnly: true
         {{- end }}
       securityContext:
@@ -62,20 +73,14 @@ spec:
       secret:
       {{- if .Values.caSecretName }}
         secretName: {{ .Values.caSecretName }}
-        items:
-          - key: ca.crt
-            path: ca.crt
       {{- else if eq (include "harbor.autoGenCertForIngress" .) "true" }}
         secretName: "{{ template "harbor.ingress" . }}"
-        items:
-          - key: ca.crt
-            path: ca.crt
       {{- else if eq (include "harbor.autoGenCertForNginx" .) "true" }}
         secretName: {{ template "harbor.tlsSecretForNginx" . }}
-        items:
-          - key: ca.crt
-            path: ca.crt
       {{- end }}
+    {{- end }}
+    {{- if .Values.caBundleSecretName }}
+{{ include "harbor.caBundleVolume" . | indent 4 }}
     {{- end }}
   restartPolicy: Never
 {{- end }}

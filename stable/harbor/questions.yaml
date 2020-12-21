@@ -99,7 +99,7 @@ questions:
   label: Select a Secret Holding the Notary TLS Certificate
   show_if: "expose.tls.certSource=secret&&expose.type=ingress"
   group: "Expose TLS Options"
-- variable: internalTLS.enable
+- variable: internalTLS.enabled
   default: false
   required: true
   description: "Use TLS to secure internal communication between Harbor components"
@@ -111,7 +111,7 @@ questions:
   description: "Generate new TLS certificates during post-deployment configuration changes and upgrades"
   type: boolean
   label: Rotate TLS Certificates
-  show_if: "internalTLS.enable=true"
+  show_if: "internalTLS.enabled=true"
   group: "Internal TLS Options"
 # config imageChartStorage type
 - variable: persistence.imageChartStorage.type

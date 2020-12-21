@@ -1,7 +1,5 @@
 # Helm Chart for SUSE Private Registry
 
-**Notes:** A high available solution for Harbor based on chart can be find [here](docs/High%20Availability.md). And refer to the [guide](docs/Upgrade.md) to upgrade the existing deployment.
-
 ## Introduction
 
 This Helm chart installs SUSE Private Registry in a Kubernetes cluster.
@@ -14,7 +12,7 @@ This Helm chart installs SUSE Private Registry in a Kubernetes cluster.
 ## Installation
 
 Please refer to the installation instructions for SUSE Private Registry that are provided by SUSE
-at https://documentation.suse.com/sbp/all/
+at https://documentation.suse.com/sbp/all/html/SBP-Private-Registry/index.html
 
 ### Configure the chart
 
