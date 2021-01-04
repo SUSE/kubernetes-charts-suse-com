@@ -201,6 +201,15 @@ postgres://{{ template "harbor.database.username" . }}:{{ template "harbor.datab
   {{- end -}}
 {{- end -}}
 
+{{- define "harbor.redis.externalPassword" -}}
+  {{- $prevSecret := (lookup "v1" "Secret" .Release.Namespace .Values.redisfailover.auth.secretPath) }}
+  {{- if $prevSecret -}}
+    {{- $prevSecret.data.password | b64dec }}
+  {{- else if .Values.redisfailover.enabled -}}
+    {{- randAlphaNum 16 }}
+  {{- end -}}
+{{- end -}}
+
 /*scheme://[redis:password@]host:port[/master_set]*/
 {{- define "harbor.redis.url" -}}
   {{- $path := ternary "" (printf "/%s" (include "harbor.redis.masterSet" $)) (not (include "harbor.redis.masterSet" $)) }}

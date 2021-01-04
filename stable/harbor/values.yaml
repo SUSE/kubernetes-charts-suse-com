@@ -777,3 +777,21 @@ tests:
     #    memory: 128Mi
     #    cpu: 100m
     podAnnotations: {}
+redisfailover:
+  # for all possible configuration options, see
+  # charts/redisfailover/values.yaml
+  enabled: false
+  # name of the redisfailover deployment will also control its address;
+  # it must be set if redisfailover is used, and when set,
+  # redis.external.addr parameters needs to be set to rfs-<name>:26379
+  name: ""
+  auth:
+    # name of the secret containing the password for redis.
+    # If it does not exist, it will be created by Helm.
+    # If it exists, redis.external.password configration value
+    # needs to be populated accordingly.
+    # This option needs to be here because redisfailover is
+    # implemented as a subchart and not as a dependency, and
+    # password generation requires a name of the secret where to
+    # store the password.
+    secretPath: harbor-redisfailover-auth

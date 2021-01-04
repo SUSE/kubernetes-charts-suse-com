@@ -1,0 +1,44 @@
+# set to true to deploy redisfailover with existing
+# deployment of spotahome/redis-operator
+enabled: false
+# name of the redisfailover deployment. The name also controls the
+# domain name of redis deployment: sentinel will be available on
+# rfs-<name>:26379.
+name: ""
+sentinel:
+  image: registry.suse.com/harbor/harbor-redis:2.1.2
+  replicas: 3
+# resources:
+#   requests:
+#     cpu: 100m
+#   limits:
+#     memory: 100Mi
+redis:
+  replicas: 3
+  image: registry.suse.com/harbor/harbor-redis:2.1.2
+# resources:
+#   requests:
+#     cpu: 100m
+#     memory: 100Mi
+#   limits:
+#     cpu: 400m
+#     memory: 500Mi
+  storage:
+    # set keepAfterDeletion to false to also delete pvs when the
+    # deployment is deleted
+    keepAfterDeletion: true
+    persistentVolumeClaim:
+      metadata:
+        name: harbor-redis-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+auth:
+  # name of the secret containing the password for redis.
+  # If it does not exist, it will be created by Helm.
+  # If it exists, redis.external.password configration value
+  # needs to be populated accordingly.
+  secretPath: harbor-redisfailover-auth

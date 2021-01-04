@@ -1,0 +1,46 @@
+{{- /*
+Normally, this should be controlled via Helm's dependencies mechanism.
+But OBS and/or registry.s.d strip some values from Chart.yaml,
+including dependencies information.
+The check of .enabled is a workaround for this problem.
+*/}}
+{{- if .Values.enabled -}}
+apiVersion: databases.spotahome.com/v1
+kind: RedisFailover
+metadata:
+  name: {{ required "name for redisfailover must be set" .Values.name }}
+
+spec:
+  sentinel:
+    replicas: {{ .Values.sentinel.replicas }}
+    image: {{ .Values.sentinel.image }}
+    customConfig:
+      - "dir /data"
+{{- if .Values.sentinel.resources }}
+    resources:
+{{ toYaml .Values.sentinel.resources | indent 6 }}
+{{- end }}
+    securityContext:
+      fsGroup: 999
+      runAsUser: 999
+      runAsGroup: 999
+  redis:
+    replicas: {{ .Values.redis.replicas }}
+    image: {{ .Values.redis.image }}
+    customConfig:
+      - "dir /data"
+{{- if .Values.redis.resources }}
+    resources:
+{{ toYaml .Values.redis.resources | indent 6 }}
+{{- end }}
+    securityContext:
+      fsGroup: 999
+      runAsUser: 999
+      runAsGroup: 999
+{{- if .Values.redis.storage }}
+    storage:
+{{ toYaml .Values.redis.storage | indent 6 }}
+{{- end }}
+  auth:
+    secretPath: {{ .Values.auth.secretPath }}
+{{- end -}}
