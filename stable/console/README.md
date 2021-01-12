@@ -58,6 +58,8 @@ The following table lists the configurable parameters of the SUSE Stratos Consol
 |imagePullPolicy|Image pull policy|IfNotPresent|
 |console.sessionStoreSecret|Secret to use when encrypting session tokens|auto-generated random value|
 |console.ssoLogin|Whether to enable SSO Login and use the UAA Login UI instead of the built-in one|false|
+|console.ssoOptions|Advanced options to customize the SSO experience||
+|console.ssoAllowList|List of permitted redirect URLs for SSO authentication||
 |console.backendLogLevel|Log level for backend (info, debug)|info|
 |console.service.externalIPs|External IPs to add to the console service|[]|
 |console.service.loadBalancerIP|IP address to assign to the load balancer for the metrics service (if supported)||
@@ -66,9 +68,9 @@ The following table lists the configurable parameters of the SUSE Stratos Consol
 |console.service.servicePort|Service port for the console service|443|
 |console.service.externalName|External name for the console service when service type is ExternalName||
 |console.service.nodePort|Node port to use for the console service when service type is NodePort or LoadBalancer||
-|console.ingress.enabled|Enable ingress for the console service|false|
-|console.ingress.host|Host for the ingress resource|||
-|console.ingress.secretName|Name of an existing secret containing the TLS certificate for ingress|||
+|console.service.ingress.enabled|Enable ingress for the console service|false|
+|console.service.ingress.host|Host for the ingress resource|||
+|console.service.ingress.secretName|Name of an existing secret containing the TLS certificate for ingress|||
 |console.service.http.enabled|Enabled HTTP access to the console service (as well as HTTPS)|false|
 |console.service.http.servicePort|Service port for HTTP access to the console service when enabled|80|
 |console.service.http.nodePort|Node port for HTTP access to the console service (as well as HTTPS)||
@@ -190,6 +192,32 @@ helm install my-console suse/console   --namespace=console --set console.service
 
 ## Using an Ingress Controller
 
+### Bare minimum SUSE Stratos Console deployment with an Ingress
+
+1. Deploy `ingress-nginx` Ingress controller into your Kubernetes cluster using the [Helm chart](https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx) or [Kubernetes spec files](https://kubernetes.github.io/ingress-nginx/deploy/).
+2. Create `values.yaml` with the following SUSE Stratos Console Helm chart configuration values:
+```
+console:
+  service:
+    ingress:
+      enabled: true
+```
+3. Install SUSE Stratos Console:
+```
+helm repo add suse https://registry.suse.com
+kubectl create namespace console
+helm install my-console suse/console   --namespace=console --values values.yaml
+```
+4. Obtain Ingress address by running `kubectl get ingress --namespace=console`, your SUSE Stratos Console installation should be accessible at that address.
+
+Note that configuration above would result in a deployment with self-signed HTTPS certificates and SUSE Stratos Console service being a default backend for the Ingress. The following steps most likely would be required for a production deployment:
+
+1. Acquire a static IP address for the Ingress.
+2. Assign a domain name to the static IP via a DNS record and set `console.service.ingress.host` value.
+3. Create a Kubernetes secret containing valid HTTPS certificates for the domain and set `console.service.ingress.secretName` value.
+
+### Ingress configuration
+
 If your Kubernetes Cluster supports Ingress, you can expose SUSE Stratos Console through Ingress by supplying the appropriate ingress configuration when installing.
 
 This configuration is described below:
@@ -202,7 +230,7 @@ This configuration is described below:
 |console.service.ingress.host|The host name that will be used for the SUSE Stratos Console service.||
 |console.service.ingress.secretName|The existing TLS secret that contains the certificate for ingress.||
 
-You must provide `console.service.ingress.host` when enabling ingress.
+If `console.service.ingress.host` isn't provided, SUSE Stratos Console service will be used as the default backend.
 
 By default a certificate will be generated for TLS. You can provide your own certificate by creating a secret and specifying this with `console.service.ingress.secretName`.
 
