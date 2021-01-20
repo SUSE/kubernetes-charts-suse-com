@@ -72,12 +72,22 @@
     {{- include "_jobs.update" . }}
     {{- include "_resources.update" . }}
     {{- include "_database.update" . }}{{/* database/_database.tpl */}}
+    {{- include "_multicluster.update" . }}
+    {{- include "_credhub.update" . }}
 
     {{- range $condition, $message := $.Values.unsupported }}
       {{- if eq "true" (include "_config.condition" (list $ $condition)) }}
         {{- include "_config.fail" $message }}
       {{- end }}
     {{- end }}
+
+    {{- if and $.Release.IsUpgrade $.Values.features.embedded_database.enabled }}
+      {{- $database := lookup "apps/v1" "StatefulSet" $.Release.Namespace "database" }}
+      {{- if gt $database.spec.replicas 1 }}
+        {{- include "_config.fail" "Cannot upgrade until database has been scaled down to single instance" }}
+      {{- end }}
+    {{- end }}
+
   {{- end }}
 {{- end }}
 
