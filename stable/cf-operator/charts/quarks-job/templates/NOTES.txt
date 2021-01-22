@@ -1,0 +1,27 @@
+Running the operator will install the following CRD:
+
+- quarksjobs.quarks.cloudfoundry.org
+
+You can always verify if the CRD´s are installed, by running:
+ $ kubectl get crds
+
+
+
+{{- if and .Release.IsInstall }}
+
+Interacting with the quarks-job pod
+
+1. Check the quarks-job pod status
+  kubectl -n {{ .Release.Namespace }} get pods
+
+2. Tail the quarks-job pod logs
+  export OPERATOR_POD=$(kubectl get pods -l name=quarks-job --namespace {{ .Release.Namespace }} --output name)
+  kubectl -n {{ .Release.Namespace }} logs $OPERATOR_POD -f
+
+3. Apply one of the Quarks job examples
+  kubectl -n {{ .Release.Namespace }} create -f docs/examples/qjob_output.yaml
+
+4. See the quarks-job in action!
+  watch -c "kubectl -n {{ .Release.Namespace }} get pods"
+
+{{- end -}}

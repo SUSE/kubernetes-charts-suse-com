@@ -35,13 +35,13 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8888
-        {{- if eq .Values.features.blobstore.provider "singleton" }}
+        {{- if and (.Values.bits.blobstore.secret.name) (.Values.bits.blobstore.secret.passwordPath) }}
         env:
         - name: BITS_BLOBSTORE_PASSWORD
           valueFrom:
             secretKeyRef:
-              key: password
-              name: var-blobstore-admin-users-password
+              key: "{{ .Values.bits.blobstore.secret.passwordPath }}"
+              name: "{{ .Values.bits.blobstore.secret.name }}"
         {{- end }}
         volumeMounts:
         - name: bits-config

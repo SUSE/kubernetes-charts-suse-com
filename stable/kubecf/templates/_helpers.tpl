@@ -85,38 +85,6 @@ helm.sh/chart: {{ include "kubecf.chart" $root }}
 {{- end }}
 
 {{- /*
-==========================================================================================
-| kubecf.varSecretName (list $ $var_name)
-+-----------------------------------------------------------------------------------------
-| Returns the name of the kube secret for $var_name. This is normally the variable name
-| prefixed with "var-", unless the value is overridden via $.Values.credentials, in which
-| case it is prefixed with `cred-`.
-==========================================================================================
-*/ -}}
-{{- define "kubecf.varSecretName" }}
-  {{- $root := first . }}
-  {{- $var_name := index . 1 }}
-  {{- $prefix := "var" }}
-  {{- range $name, $value := $root.Values.credentials }}
-    {{- if eq $var_name (splitList "." $name | first) }}
-      {{- $prefix = "cred" }}
-    {{- end }}
-  {{- end }}
-  {{- printf "%s-%s" $prefix $var_name | replace "_" "-" }}
-{{- end }}
-
-{{- /*
-==========================================================================================
-| Add imagePullSecrets to service accounts.
-==========================================================================================
-*/ -}}
-{{- define "kubecf.imagePullSecrets" }}
-  {{- range $secret_name := .Values.kube.image_pull_secrets }}
-    - name: {{ $secret_name | quote }}
-  {{- end }}
-{{- end }}
-
-{{- /*
   Template "kubecf.dig" takes a dict and a list; it indexes the dict with each
   successive element of the list.
 

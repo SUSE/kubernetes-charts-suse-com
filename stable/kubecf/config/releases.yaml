@@ -9,8 +9,8 @@ releases:
   '$defaults':
     url: registry.suse.com/cap
     stemcell:
-      os: SLE_15_SP2
-      version: 29.1-7.0.0_374.gb8e8e6af
+      os: SLE_15_SP1
+      version: 27.5-7.0.0_374.gb8e8e6af
   app-autoscaler:
     condition: features.autoscaler.enabled
     version: 3.0.1
@@ -18,12 +18,6 @@ releases:
     image:
       repository: registry.suse.com/cap/kubecf-apps-dns
       tag: 0.1.0
-  # Can also use image `google/cloud-sdk` as an alternative image to provide
-  # kubectl capability
-  kubecf_kubectl:
-    image:
-      repository: registry.suse.com/cap/kubecf-kubectl
-      tag: v1.19.2
   brain-tests:
     condition: testing.brain_tests.enabled
     version: v0.0.15
@@ -44,24 +38,20 @@ releases:
     image:
       repository: registry.suse.com/cap/pxc
       tag: 0.9.11
-  garden-runc:
-    version: 1.19.17
   metrics-discovery:
     # metrics-agent add-on (new in cf-deployment 13.0) is not used by kubecf
     condition: false
-  nats:
-    version: "39"
   pxc:
     # not needed for kubecf; functionality provided by a native kube role
     # called "database" (still pxc based so far)
     condition: false
   postgres:
     condition: features.autoscaler.enabled
-    version: "43"
+    version: "39"
   sync-integration-tests:
     # XXX SITS only makes sense when using Diego; add error check somewhere?
     condition: testing.sync_integration_tests.enabled
-    version: v0.0.2
+    version: v0.0.3
 
 unsupported:
   ? releases.defaults

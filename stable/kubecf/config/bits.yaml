@@ -2,6 +2,9 @@ bits:
   blobstore:
     serviceName: "singleton-blobstore"
     userName: "blobstore-user"
+    secret:
+      name: "var-blobstore-admin-users-password"
+      passwordPath: "password"
 
   global:
     images:
