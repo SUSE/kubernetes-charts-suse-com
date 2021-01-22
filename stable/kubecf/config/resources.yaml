@@ -118,7 +118,7 @@ resources:
   api:
     cloud_controller_ng:
       cloud_controller_ng: {memory: {limit: 2048, request: 1024}}
-      nginx: 512
+      nginx: 192
       # Template for all `local_worker_N` processes. Will be applied by _jobs.update.
       '$local_worker': {memory: {limit: 800, request: 400}}
     file_server: 96
@@ -149,10 +149,11 @@ resources:
       rotate: {memory: {limit: 512, request: 192}}
   router: 200
   scheduler:
+    cc_deployment_updater: 320
     cloud_controller_clock: 512
   singleton-blobstore:
     blobstore:
-      nginx: 768
+      nginx: 400
   smoke-tests: 1000
   tcp-router: 96
   uaa:

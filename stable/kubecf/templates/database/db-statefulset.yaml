@@ -31,8 +31,6 @@ spec:
         metadata:
           labels:
             {{- list . "database" | include "component.labels" | nindent 12 }}
-          annotations:
-            quarks.cloudfoundry.org/restart-on-update: "true"
         spec:
           {{- if $.Values.sizing.database.affinity }}
           affinity: {{ $.Values.sizing.database.affinity | toJson }}
@@ -120,7 +118,7 @@ spec:
               name: database-startup-scripts
           - name: pxc-tls
             secret:
-              secretName: {{ include "kubecf.varSecretName" (list $ "pxc_tls") }}
+              secretName: var-pxc-tls
       volumeClaimTemplates:
       - metadata:
           name: pxc-data

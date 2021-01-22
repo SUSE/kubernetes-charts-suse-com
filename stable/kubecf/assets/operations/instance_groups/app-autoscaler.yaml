@@ -136,6 +136,7 @@
     stemcell: default
     update:
       max_in_flight: 1
+      serial: true
     jobs:
     - name: scalingengine
       release: app-autoscaler
@@ -249,6 +250,7 @@
     stemcell: default
     update:
       max_in_flight: 1
+      serial: true
     jobs:
     - name: metricsserver
       release: app-autoscaler
@@ -340,6 +342,7 @@
     stemcell: default
     update:
       max_in_flight: 1
+      serial: true
     jobs:
     - name: metricsgateway
       release: app-autoscaler
@@ -386,6 +389,7 @@
     stemcell: default
     update:
       max_in_flight: 1
+      serial: true
     jobs:
     - name: golangapiserver
       release: app-autoscaler
@@ -919,10 +923,9 @@
     bpm:
       processes:
       - name: golangapiserver
-        executable: /var/vcap/packages/golangapiserver/api
+        executable: /var/vcap/jobs/golangapiserver/bin/apiserver_ctl
         args:
-        - -c
-        - /var/vcap/jobs/golangapiserver/config/apiserver.yml
+        - start
     run:
       healthcheck:
         golangapiserver:
@@ -972,9 +975,7 @@
           readiness:
             exec:
               command:
-              - /bin/sh
-              - -c
-              - exec /var/vcap/packages/postgres-11.*/bin/pg_isready
+              - /var/vcap/packages/postgres-11.5/bin/pg_isready
     bpm:
       processes:
       - name: postgres

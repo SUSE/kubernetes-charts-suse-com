@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "quarks-job.fullname" . }}
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: quarks-job
+  template:
+    metadata:
+      labels:
+        name: quarks-job
+    spec:
+      serviceAccountName: {{ template "quarks-job.serviceAccountName" . }}
+      containers:
+        - name: quarks-job
+          image: "{{ .Values.image.org }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+          - containerPort: 60000
+            name: metrics
+          command:
+          - quarks-job
+          imagePullPolicy: {{ .Values.global.image.pullPolicy | quote }}
+          env:
+            - name: APPLY_CRD
+              value: "{{ .Values.applyCRD }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
+            - name: MAX_WORKERS
+              value: "{{ .Values.maxWorkers }}"
+            - name: CTX_TIMEOUT
+              value: "{{ .Values.global.contextTimeout }}"
+            - name: MELTDOWN_DURATION
+              value: "{{ .Values.global.meltdownDuration }}"
+            - name: MELTDOWN_REQUEUE_AFTER
+              value: "{{ .Values.global.meltdownRequeueAfter }}"
+            - name: MONITORED_ID
+              value: {{ template "quarks-job.monitoredID" . }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "quarks-job"
+            - name: DOCKER_IMAGE_ORG
+              value: "{{ .Values.image.org }}"
+            - name: DOCKER_IMAGE_REPOSITORY
+              value: "{{ .Values.image.repository }}"
+            - name: DOCKER_IMAGE_TAG
+              value: "{{ .Values.image.tag }}"
+            - name: DOCKER_IMAGE_PULL_POLICY
+              value: "{{ .Values.global.image.pullPolicy }}"

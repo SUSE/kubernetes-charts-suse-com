@@ -61,7 +61,7 @@ spec:
           {{- range $secret := $.kubecf.databases }}
           - name: {{ printf  "%s-database-password" $secret | quote }}
             secret:
-              secretName: {{ include "kubecf.varSecretName" (list $ (printf "%s_database_password" $secret)) }}
+              secretName: {{ printf "var-%s-database-password" $secret | quote }}
           {{- end }}
           restartPolicy: Never
 

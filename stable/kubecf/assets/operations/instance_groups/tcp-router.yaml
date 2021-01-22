@@ -6,16 +6,12 @@
   value: "{{ $service.port_range.start }}-{{ $service.port_range.end }}"
 
 - type: replace
-  path: /instance_groups/name=tcp-router/jobs/name=tcp_router/properties/tcp_router?/health_check_port
-  value: 8787
-
-- type: replace
   path: /instance_groups/name=tcp-router/jobs/name=tcp_router/properties/quarks?
   value:
     ports:
     - name: healthcheck
       protocol: TCP
-      internal: 8787
+      internal: 80
     {{- range $port := until (int (add 1 (sub $service.port_range.end $service.port_range.start))) }}
     {{- $port = add $port $service.port_range.start }}
     - name: "tcp-route-{{ $port }}"
@@ -27,7 +23,7 @@
         tcp_router:
           readiness:
             httpGet:
-              port: 8787
+              port: 80
               path: /health
 
 # Add necessary labels to the tcp-router instance group so that the service can select it to create
