@@ -1,0 +1,45 @@
+{{- if .Values.global.singleNamespace.create }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "{{ .Values.global.singleNamespace.name }}"
+  labels:
+    quarks.cloudfoundry.org/monitored: {{ .Values.global.monitoredID }}
+    quarks.cloudfoundry.org/qjob-service-account: {{ index .Values "quarks-job" "persistOutputClusterRole" "name" }}
+    quarks.cloudfoundry.org/coredns-quarks-service-account: {{ .Values.corednsServiceAccount.name }}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{ .Values.corednsServiceAccount.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
+imagePullSecrets:
+- name: "{{ .Values.corednsServiceAccount.name }}"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: "{{ .Values.corednsServiceAccount.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
+subjects:
+- kind: ServiceAccount
+  name: "{{ .Values.corednsServiceAccount.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
+roleRef:
+  kind: ClusterRole
+  name: "{{ .Values.corednsServiceAccount.name }}"
+  apiGroup: rbac.authorization.k8s.io
+{{- if .Values.global.image.credentials }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/dockerconfigjson
+metadata:
+  name: "{{ .Values.corednsServiceAccount.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
+data:
+  .dockerconfigjson: {{ printf "{%q:{%q:{%q:%q,%q:%q,%q:%q}}}" "auths" .Values.global.image.credentials.servername "username" .Values.global.image.credentials.username "password" .Values.global.image.credentials.password "auth" (printf "%s:%s" .Values.global.image.credentials.username .Values.global.image.credentials.password | b64enc) | b64enc }}
+{{- end }}
+{{- end }}
