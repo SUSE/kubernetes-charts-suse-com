@@ -1,0 +1,31 @@
+Running the operator will install the following CRD:
+
+- quarksstatefulset.quarks.cloudfoundry.org
+
+You can always verify if the CRD´s are installed, by running:
+ $ kubectl get crds
+
+
+
+{{- if and .Release.IsInstall }}
+
+Interacting with the quarks-statefulset pod
+
+1. Check the quarks-statefulset pod status
+  kubectl -n {{ .Release.Namespace }} get pods
+
+2. Tail the quarks-statefulset pod logs
+  export OPERATOR_POD=$(kubectl get pods -l name=quarks-statefulset --namespace {{ .Release.Namespace }} --output name)
+  kubectl -n {{ .Release.Namespace }} logs $OPERATOR_POD -f
+
+3. Label a namespace so it will be watched for quarks-statefulset CRDs
+
+  kubectl patch namespace {{ .Release.Namespace }} --type=json -p '[{"op": "add", "path": "/metadata/labels", "value": {"quarks.cloudfoundry.org/monitored": "{{ template "quarks-statefulset.monitoredID" . }}"}}]'
+
+4. Apply one of the Quarks Statefulset examples to that namespace
+  kubectl -n {{ .Release.Namespace }} create -f docs/examples/password.yaml
+
+5. See the quarks-statefulset in action!
+  kubectl -n {{ .Release.Namespace }} get statefulset --watch
+
+{{- end -}}
