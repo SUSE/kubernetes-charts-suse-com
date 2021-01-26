@@ -1,30 +1,76 @@
+## Default values for Quarks Job Helm Chart.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
+
+
+# applyCRD is a boolean to control the installation of CRD's.
 applyCRD: true
+
+# fullnameOverride overrides the release name
 fullnameOverride: ""
+
+# image is the docker image of quarks job.
+image:
+  # repository that provides the operator docker image.
+  repository: quarks-job
+  # organization that provides the operator docker image.
+  org: registry.suse.com/cap
+  # tag of the operator docker image
+  tag: v1.0.213
+
+# logLevel defines from which level the logs should be printed.
+logLevel: debug
+
+# maxWorkers is the count of workers concurrently running the controller.
+maxWorkers: 1
+
+# nameOverride overrides the chart name part of the release name
+nameOverride: ""
+
+serviceAccount:
+  # create is a boolean to control the creation of service account name.
+  create: true
+  # name of the service account.
+  name:
+
+persistOutputClusterRole:
+  # create is a boolean to control the creation of the persist output cluster role
+  create: true
+  # name of the cluster role.
+  name: qjob-persist-output
+
+# singleNamespace requires global.singleNamespace.create to be true
+singleNamespace:
+  # namespace is a boolean to control the creation of a single namespace for a simplified setup
+  createNamespace: true
+  # account is a boolean to control the creation of rbac resources
+  # (service account, rolebinding) for watching a single namespace in a
+  # simplified setup.
+  createAccount: true
+
 global:
+  # contextTimeout is the timeout value for each K8's API request in seconds.
   contextTimeout: 30
-  image:
-    pullPolicy: IfNotPresent
+  # MeltdownDuration is the duration (in seconds) of the meltdown period, in which we
+  # postpone further reconciles for the same resource
   meltdownDuration: 60
+  # MeltdownRequeueAfter is the duration (in seconds) for which we delay the requeuing of the reconcile
   meltdownRequeueAfter: 30
-  monitoredID: null
+  image:
+    # pullPolicy defines the policy used for pulling docker images.
+    pullPolicy: IfNotPresent
+    credentials: ~
+      # username:
+      # password:
+      # servername:
+  # monitoredID is a string that has to match the content of the 'monitored' label in each monitored namespace.
+  # The monitoredID helper uses the release fullname, unless this is set.
+  monitoredID:
   rbac:
+    # create is a boolean to control the installation of rbac resources.
     create: true
   singleNamespace:
+    # create is a boolean to control the creation of resources for a simplified setup
     create: true
+    # name is  the name of the single namespace.
     name: staging
-image:
-  org: registry.suse.com/cap
-  repository: quarks-job
-  tag: v1.0.206
-logLevel: debug
-maxWorkers: 1
-nameOverride: ""
-persistOutputClusterRole:
-  create: true
-  name: qjob-persist-output
-serviceAccount:
-  create: true
-  name: null
-singleNamespace:
-  createAccount: true
-  createNamespace: true
