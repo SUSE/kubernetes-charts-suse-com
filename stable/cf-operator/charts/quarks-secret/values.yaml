@@ -1,21 +1,59 @@
+## Default values for Quarks Secret Helm Chart.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
+
+
+# applyCRD is a boolean to control the installation of CRDs
+# when this is true, the operator will install the CRDs
+# an rbac rule will be set for the operator to control CRDs
+# when this is false, helm will install the CRDs
 applyCRD: true
+
+# fullnameOverride overrides the release name
 fullnameOverride: ""
-global:
-  contextTimeout: 30
-  image:
-    pullPolicy: IfNotPresent
-  meltdownDuration: 60
-  meltdownRequeueAfter: 30
-  monitoredID: null
-  rbac:
-    create: true
+
+# image is the docker image of quarks secret.
 image:
-  org: registry.suse.com/cap
+  # repository that provides the operator docker image.
   repository: quarks-secret
-  tag: v1.0.744
+  # organization that provides the operator docker image.
+  org: registry.suse.com/cap
+  # tag of the operator docker image
+  tag: v1.0.754
+
+# logLevel defines from which level the logs should be printed.
 logLevel: debug
+
+# maxWorkers is the count of workers concurrently running the controller.
 maxWorkers: 1
+
+# nameOverride overrides the chart name part of the release name
 nameOverride: ""
+
 serviceAccount:
+  # create is a boolean to control the creation of service account name.
   create: true
-  name: null
+  # name of the service account.
+  name:
+
+global:
+  # contextTimeout is the timeout value for each K8's API request in seconds.
+  contextTimeout: 30
+  # MeltdownDuration is the duration (in seconds) of the meltdown period, in which we
+  # postpone further reconciles for the same resource
+  meltdownDuration: 60
+  # MeltdownRequeueAfter is the duration (in seconds) for which we delay the requeuing of the reconcile
+  meltdownRequeueAfter: 30
+  rbac:
+    # create is a boolean to control the installation of rbac resources.
+    create: true
+  image:
+    # pullPolicy defines the policy used for pulling docker images.
+    pullPolicy: IfNotPresent
+    credentials: ~
+      # username:
+      # password:
+      # servername:
+  # monitoredID is a string that has to match the content of the 'monitored' label in each monitored namespace.
+  # The monitoredID helper uses the release fullname, unless this is set.
+  monitoredID:
