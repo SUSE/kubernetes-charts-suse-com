@@ -237,7 +237,7 @@ kube:
     persistent:
   organization: cap
   registry:
-    hostname: registry.suse.de
+    hostname: registry.suse.com
     username:
     password:
     email: default
