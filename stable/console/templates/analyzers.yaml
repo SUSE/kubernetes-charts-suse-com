@@ -63,7 +63,12 @@ spec:
       imagePullSecrets:
       - name: {{.Values.dockerRegistrySecret}}
       {{- end }}
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "stratos"
+      {{- end }}
       {{- if not .Values.console.reportsVolumeDisabled }}
+      securityContext:
+        runAsNonRoot: false
       volumes:
       - name: data
         persistentVolumeClaim:

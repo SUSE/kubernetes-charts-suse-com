@@ -26,6 +26,16 @@ metadata:
     app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
     helm.sh/chart:  "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
 rules:
+{{- if .Values.console.pspEnabled }}
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+  resourceNames:
+  - {{ default (printf "%s-psp" .Release.Name) .Values.console.pspName }}
+{{- end }}  
 - apiGroups:
   - ""
   resources:
@@ -135,6 +145,8 @@ spec:
       serviceAccountName: "config-init"
       {{- end }}
       terminationGracePeriodSeconds: 600
+      securityContext:
+        runAsNonRoot: false
 ---
 {{- if .Values.autoCleanup }}
 # Cleanup job will delete the created secret when the release is deleted
