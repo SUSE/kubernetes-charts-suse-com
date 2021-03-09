@@ -19,7 +19,7 @@ image:
   # organization that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v1.0.1311
+  tag: v1.0.1319
 
 # logLevel defines from which level the logs should be printed.
 logLevel: debug
@@ -57,6 +57,10 @@ global:
   image:
     # pullPolicy defines the policy used for pulling docker images.
     pullPolicy: IfNotPresent
+    credentials: ~
+      # username:
+      # password:
+      # servername:
   # monitoredID is a string that has to match the content of the 'monitored' label in each monitored namespace.
   # The monitoredID helper uses the release fullname, unless this is set.
   monitoredID:

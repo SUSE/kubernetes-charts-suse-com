@@ -1,12 +1,12 @@
 dependencies:
 - name: quarks-job
   repository: https://cloudfoundry-incubator.github.io/quarks-helm
-  version: 1.0.213
+  version: 1.0.218
 - name: quarks-secret
   repository: https://cloudfoundry-incubator.github.io/quarks-helm
-  version: 1.0.754
+  version: 1.0.758
 - name: quarks-statefulset
   repository: https://cloudfoundry-incubator.github.io/quarks-helm
-  version: 1.0.1311
-digest: sha256:8605846f728aa7fe3e0dcf48f2c0f44d87ffc1a4cf937ae1cb1536e30f508ff2
-generated: "2021-01-15T17:30:22.881676718Z"
+  version: 1.0.1319
+digest: sha256:6a000e46da8035ca42a70732ad1e2862bf71048ebc0d2ab34fe49e8db564d002
+generated: "2021-03-03T17:52:29.045937043Z"
