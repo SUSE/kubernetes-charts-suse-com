@@ -16,7 +16,7 @@ image:
   # organization that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v1.0.213
+  tag: v1.0.218
 
 # logLevel defines from which level the logs should be printed.
 logLevel: debug

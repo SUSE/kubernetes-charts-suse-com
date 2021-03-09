@@ -20,7 +20,7 @@ image:
   # org that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v7.1.3-0.g0ce050b
+  tag: v7.2.1-0.gaeb6ef3
 
 # creates a service account for coredns-quarks, the must be unique as it is used for the cluster role too.
 corednsServiceAccount:
@@ -48,7 +48,7 @@ operator:
     port: "2999"
   # boshDNSDockerImage is the docker image used for emulating bosh DNS (a CoreDNS image).
   boshDNSDockerImage: "registry.suse.com/cap/coredns:0.1.0-1.6.7-bp152.1.19"
-  hookDockerImage: "registry.suse.com/cap/kubecf-kubectl:v1.19.2"
+  hookDockerImage: "registry.suse.com/cap/kubecf-kubectl:v1.20.2"
 
 # serviceAccount contains the configuration
 # values of the service account used by quarks-operator.
@@ -88,9 +88,10 @@ global:
     # create is a boolean to control the creation of resources for a simplified setup
     create: true
     # name is  the name of the single namespace, being watched for BOSH deployments.
-    name: staging
+    name: kubecf
 
 quarks-job:
+  logLevel: info
   serviceAccount:
     # create is a boolean to control the creation of service account name.
     create: true
@@ -103,3 +104,9 @@ quarks-job:
     name: qjob-persist-output
   singleNamespace:
     createNamespace: false
+
+quarks-secret:
+  logLevel: info
+
+quarks-statefulset:
+  logLevel: info
