@@ -4,34 +4,33 @@ unsupported:
 
 stacks:
   sle15:
-    description: "SUSE Linux Enterprise-based filesystem (SLE 15 SP1)"
+    description: "SUSE Linux Enterprise-based filesystem (SLE 15 SP2)"
     install_buildpacks: [staticfile, java, ruby, dotnet-core, nodejs, go, python, php, nginx, binary]
     release_prefix: suse
     releases:
       '$defaults':
         url: registry.suse.com/cap
         stemcell:
-          version: 27.7-7.0.0_374.gb8e8e6af
+          version: 29.6-7.0.0_374.gb8e8e6af
       sle15:
-        version: "10.93"
-        url: registry.suse.com/cap
+        version: "26.14"
       suse-staticfile-buildpack:
-        version: "1.5.12.1"
+        version: "1.5.13.1"
       suse-java-buildpack:
-        version: "4.32.1.1"
+        version: "4.36.0.1"
       suse-ruby-buildpack:
-        version: "1.8.25.1"
+        version: "1.8.27.1"
       suse-dotnet-core-buildpack:
-        version: "2.3.16.1"
+        version: "2.3.18.1"
       suse-nodejs-buildpack:
-        version: "1.7.30.1"
+        version: "1.7.35.1"
       suse-go-buildpack:
-        version: "1.9.19.1"
+        version: "1.9.23.1"
       suse-python-buildpack:
-        version: "1.7.23.1"
+        version: "1.7.26.1"
       suse-php-buildpack:
-        version: "4.4.22.1"
+        version: "4.4.26.1"
       suse-nginx-buildpack:
-        version: "1.1.15.1"
+        version: "1.1.18.1"
       suse-binary-buildpack:
         version: "1.0.36.1"

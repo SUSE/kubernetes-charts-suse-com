@@ -1,5 +1,6 @@
-cf-operator:v6.1.17-0.gec409fd7
+quarks-operator:v7.2.1-0.gaeb6ef3
 coredns:0.1.0-1.6.7-bp152.1.19
-kubecf-kubectl:v1.19.2
-quarks-job:v1.0.206
-quarks-secret:v1.0.744
+kubecf-kubectl:v1.20.2
+quarks-job:v1.0.218
+quarks-secret:v1.0.758
+quarks-statefulset:v1.0.1319

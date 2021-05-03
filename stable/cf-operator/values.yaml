@@ -1,4 +1,4 @@
-## Default values for CF-operator Helm Chart.
+## Default values for Quarks Operator Helm Chart.
 ## This is a YAML-formatted file.
 ## Declare variables to be passed into your templates.
 
@@ -16,11 +16,16 @@ fullnameOverride: ""
 # image is the docker image of quarks job.
 image:
   # repository that provides the operator docker image.
-  repository: cf-operator
+  repository: quarks-operator
   # org that provides the operator docker image.
   org: registry.suse.com/cap
   # tag of the operator docker image
-  tag: v6.1.17-0.gec409fd7
+  tag: v7.2.1-0.gaeb6ef3
+
+# creates a service account for coredns-quarks, the must be unique as it is used for the cluster role too.
+corednsServiceAccount:
+  create: true
+  name: coredns-quarks
 
 # logrotateInterval is the time between logrotate calls for instance groups in minutes
 logrotateInterval: 1440
@@ -34,8 +39,6 @@ nameOverride: ""
 # workers are the int values for running maximum number of workers of the respective controller.
 workers:
   boshdeployment: 1
-  quarksSecret: 1
-  quarksStatefulset: 1
 
 operator:
   webhook:
@@ -45,10 +48,10 @@ operator:
     port: "2999"
   # boshDNSDockerImage is the docker image used for emulating bosh DNS (a CoreDNS image).
   boshDNSDockerImage: "registry.suse.com/cap/coredns:0.1.0-1.6.7-bp152.1.19"
-  preUpgradeHookDockerImage: "registry.suse.com/cap/kubecf-kubectl:v1.19.2"
+  hookDockerImage: "registry.suse.com/cap/kubecf-kubectl:v1.20.2"
 
 # serviceAccount contains the configuration
-# values of the service account used by cf-operator.
+# values of the service account used by quarks-operator.
 serviceAccount:
   # create is a boolean to control the creation of service account name.
   create: true
@@ -85,9 +88,10 @@ global:
     # create is a boolean to control the creation of resources for a simplified setup
     create: true
     # name is  the name of the single namespace, being watched for BOSH deployments.
-    name: staging
+    name: kubecf
 
 quarks-job:
+  logLevel: info
   serviceAccount:
     # create is a boolean to control the creation of service account name.
     create: true
@@ -100,3 +104,9 @@ quarks-job:
     name: qjob-persist-output
   singleNamespace:
     createNamespace: false
+
+quarks-secret:
+  logLevel: info
+
+quarks-statefulset:
+  logLevel: info

@@ -44,14 +44,14 @@ spec:
     spec:
       containers:
       - name: analyzers
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.3.0-2090d3c76-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.4.0-defcc460f-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         ports:
         - name: api
           containerPort: 8090
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.3.0-2090d3c76-cap:{{ .Release.Revision }}"
+          value: "4.4.0-defcc460f-cap:{{ .Release.Revision }}"
         - name: ANALYSIS_SCRIPTS_DIR
           value: "/scripts"
         - name: ANALYSIS_REPORTS_DIR
@@ -63,7 +63,12 @@ spec:
       imagePullSecrets:
       - name: {{.Values.dockerRegistrySecret}}
       {{- end }}
+      {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
+      serviceAccountName: "stratos"
+      {{- end }}
       {{- if not .Values.console.reportsVolumeDisabled }}
+      securityContext:
+        runAsNonRoot: false
       volumes:
       - name: data
         persistentVolumeClaim:

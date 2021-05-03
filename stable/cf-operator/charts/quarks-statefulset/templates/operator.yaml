@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "quarks-statefulset.name" . }}
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: quarks-statefulset
+  template:
+    metadata:
+      labels:
+        name: quarks-statefulset
+    spec:
+      serviceAccountName: {{ template "quarks-statefulset.serviceAccountName" . }}
+      containers:
+        - name: quarks-statefulset
+          image: "{{ .Values.image.org }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+          - containerPort: 60000
+            name: metrics
+          - containerPort: 2999
+            name: webhook
+          command:
+          - quarks-statefulset
+          imagePullPolicy: {{ .Values.global.image.pullPolicy | quote }}
+          env:
+            - name: APPLY_CRD
+              value: "{{ .Values.applyCRD }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
+            - name: MAX_WORKERS
+              value: "{{ .Values.maxWorkers }}"
+            - name: CTX_TIMEOUT
+              value: "{{ .Values.global.contextTimeout }}"
+            - name: MELTDOWN_DURATION
+              value: "{{ .Values.global.meltdownDuration }}"
+            - name: MELTDOWN_REQUEUE_AFTER
+              value: "{{ .Values.global.meltdownRequeueAfter }}"
+            - name: MONITORED_ID
+              value: {{ template "quarks-statefulset.monitoredID" . }}
+            - name: QUARKS_STATEFULSET_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "quarks-statefulset"
+            {{- if and .Values.operator.webhook.host (not .Values.operator.webhook.useServiceReference) }}
+            - name: QUARKS_STS_WEBHOOK_SERVICE_HOST
+              value: {{ .Values.operator.webhook.host | quote }}
+            {{- end }}
+            - name: QUARKS_STS_WEBHOOK_SERVICE_PORT
+              value: {{ .Values.operator.webhook.port | quote }}
+            {{- if .Values.global.operator.webhook.useServiceReference  }}
+            - name: QUARKS_STS_WEBHOOK_USE_SERVICE_REFERENCE
+              value: "{{ .Values.global.operator.webhook.useServiceReference }}"
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 2999
+              scheme: "HTTPS"
+            initialDelaySeconds: 2

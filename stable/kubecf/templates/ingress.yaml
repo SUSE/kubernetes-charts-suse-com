@@ -151,7 +151,7 @@ metadata:
     {{- toYaml $service.annotations | nindent 4 }}
   {{- end }}
   labels:
-    app.kubernetes.io/component: ssh-proxy
+    app.kubernetes.io/component: scheduler
     app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
     app.kubernetes.io/managed-by: {{ $root.Release.Service | quote }}
     app.kubernetes.io/name: {{ default $root.Chart.Name $root.Values.nameOverride | trunc 63 | trimSuffix "-" | quote }}
@@ -159,7 +159,7 @@ metadata:
     helm.sh/chart: {{ printf "%s-%s" $root.Chart.Name ($root.Chart.Version | replace "+" "_") | quote }}
 spec:
   selector:
-    app.kubernetes.io/component: ssh-proxy
+    app.kubernetes.io/component: scheduler
     app.kubernetes.io/instance: {{ $root.Release.Name | quote }}
   ports:
   - name: ssh
@@ -178,6 +178,7 @@ spec:
   {{- end }}
 {{- end }}
 {{- end }} {{/* not .features.eirini.enabled */}}
+{{- if .Values.features.routing_api.enabled }}
 ---
 {{- with $service := index .Values.services "tcp-router" }}
 apiVersion: v1
@@ -203,8 +204,8 @@ spec:
   ports:
   - name: healthcheck
     protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 8787
+    targetPort: 8787
   {{- range $port := until (int (add 1 (sub $service.port_range.end $service.port_range.start))) }}
   {{- $port = add $port $service.port_range.start }}
   - name: "tcp-route-{{ $port }}"
@@ -223,4 +224,5 @@ spec:
   loadBalancerIP: {{ $service.loadBalancerIP | quote }}
   {{- end }}
 {{- end }}
+{{- end }} {{/* .Values.features.routing_api.enabled  */}}
 {{- end }}
