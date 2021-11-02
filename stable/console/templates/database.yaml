@@ -168,6 +168,8 @@ spec:
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") (.Values.console.pspEnabled) }}
       serviceAccountName: "stratos-db"
       {{- end }}
+      securityContext:
+        runAsNonRoot: false
       volumes:
       - name: data
       {{- if .Values.mariadb.persistence.enabled }}
