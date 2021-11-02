@@ -1,6 +1,6 @@
-stratos-analyzers:4.4.0-defcc460f-cap
-stratos-config-init:4.4.0-defcc460f-cap
-stratos-console:4.4.0-defcc460f-cap
-stratos-jetstream:4.4.0-defcc460f-cap
-stratos-mariadb:4.4.0-defcc460f-cap
-stratos-kube-terminal:4.4.0-defcc460f-cap
+stratos-analyzers:4.4.2-7c6a6793a-cap
+stratos-config-init:4.4.2-7c6a6793a-cap
+stratos-console:4.4.2-7c6a6793a-cap
+stratos-jetstream:4.4.2-7c6a6793a-cap
+stratos-mariadb:4.4.2-7c6a6793a-cap
+stratos-kube-terminal:4.4.2-7c6a6793a-cap

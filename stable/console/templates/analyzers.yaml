@@ -44,14 +44,14 @@ spec:
     spec:
       containers:
       - name: analyzers
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.4.0-defcc460f-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.4.2-7c6a6793a-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         ports:
         - name: api
           containerPort: 8090
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.4.0-defcc460f-cap:{{ .Release.Revision }}"
+          value: "4.4.2-7c6a6793a-cap:{{ .Release.Revision }}"
         - name: ANALYSIS_SCRIPTS_DIR
           value: "/scripts"
         - name: ANALYSIS_REPORTS_DIR
@@ -67,8 +67,6 @@ spec:
       serviceAccountName: "stratos"
       {{- end }}
       {{- if not .Values.console.reportsVolumeDisabled }}
-      securityContext:
-        runAsNonRoot: false
       volumes:
       - name: data
         persistentVolumeClaim:
