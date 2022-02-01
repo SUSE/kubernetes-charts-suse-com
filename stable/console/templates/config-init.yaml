@@ -113,7 +113,7 @@ spec:
       containers:
       - env:
         - name: STRATOS_IMAGE_REF
-          value: "4.4.2-7c6a6793a-cap:{{ .Release.Revision }}"
+          value: "4.4.3-ce049114c-cap:{{ .Release.Revision }}"
         - name: "STRATOS_VOLUME_MIGRATION"
           value: "true"
         - name: "IS_UPGRADE"
@@ -130,7 +130,7 @@ spec:
           value:  "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
         - name: CONSOLE_TLS_SECRET_NAME
           value: "{{ default "" .Values.console.tlsSecretName }}"
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:4.4.2-7c6a6793a-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:4.4.3-ce049114c-cap
         command: ["/config-init.sh"]
         imagePullPolicy: {{.Values.imagePullPolicy}}
         livenessProbe: ~
@@ -145,8 +145,6 @@ spec:
       serviceAccountName: "config-init"
       {{- end }}
       terminationGracePeriodSeconds: 600
-      securityContext:
-        runAsNonRoot: false
 ---
 {{- if .Values.autoCleanup }}
 # Cleanup job will delete the created secret when the release is deleted
@@ -188,7 +186,7 @@ spec:
           value: "{{ .Release.Revision }}"
         - name: "RELEASE_VERSION"
           value: "{{ .Chart.AppVersion }}"
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:4.4.2-7c6a6793a-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{default "stratos-config-init" .Values.images.configInit}}:4.4.3-ce049114c-cap
         command: ["/config-init.sh", "--delete"]
         imagePullPolicy: {{.Values.imagePullPolicy}}
         livenessProbe: ~
