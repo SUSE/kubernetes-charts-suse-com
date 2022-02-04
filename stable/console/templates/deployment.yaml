@@ -342,6 +342,8 @@ spec:
       {{- if and (eq (printf "%s" .Values.kube.auth) "rbac") (.Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1") }}
       serviceAccountName: "stratos"
       {{- end }}
+      securityContext:
+        runAsNonRoot: false
       volumes:
       - name: "{{ .Release.Name }}-encryption-key-volume"
         secret:

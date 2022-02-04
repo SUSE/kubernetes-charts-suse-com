@@ -67,6 +67,8 @@ spec:
       serviceAccountName: "stratos"
       {{- end }}
       {{- if not .Values.console.reportsVolumeDisabled }}
+      securityContext:
+        runAsNonRoot: false
       volumes:
       - name: data
         persistentVolumeClaim:
