@@ -1,5 +1,5 @@
 # Tag for images - do not edit
-consoleVersion: 4.4.3-ce049114c-cap
+consoleVersion: 4.4.4-b4438a921-cap
 dockerRegistrySecret: regsecret
 
 # Provide Proxy settings if required

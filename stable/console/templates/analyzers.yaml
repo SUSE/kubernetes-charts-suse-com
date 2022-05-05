@@ -44,14 +44,14 @@ spec:
     spec:
       containers:
       - name: analyzers
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.4.3-ce049114c-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/stratos-analyzers:4.4.4-b4438a921-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         ports:
         - name: api
           containerPort: 8090
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.4.3-ce049114c-cap:{{ .Release.Revision }}"
+          value: "4.4.4-b4438a921-cap:{{ .Release.Revision }}"
         - name: ANALYSIS_SCRIPTS_DIR
           value: "/scripts"
         - name: ANALYSIS_REPORTS_DIR
