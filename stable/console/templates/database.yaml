@@ -115,11 +115,11 @@ spec:
 {{- end }}
       containers:
       - name: mariadb
-        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:4.4.4-b4438a921-cap
+        image: {{.Values.kube.registry.hostname}}/{{.Values.kube.organization}}/{{.Values.images.mariadb}}:4.4.5-d32e3f2ea-cap
         imagePullPolicy: {{.Values.imagePullPolicy}}
         env:
         - name: STRATOS_IMAGE_REF
-          value: "4.4.4-b4438a921-cap:{{ .Release.Revision }}"
+          value: "4.4.5-d32e3f2ea-cap:{{ .Release.Revision }}"
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
